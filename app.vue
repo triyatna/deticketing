@@ -15,9 +15,9 @@ await callOnce("load-global-branding", async () => {
 });
 
 useHead(() => ({
-  title: appName.value || "NexTicket",
+  title: appName.value || "DeTicketing",
   titleTemplate: (titleChunk) => {
-    const name = appName.value || "NexTicket";
+    const name = appName.value || "DeTicketing";
     const tagline = appTagline.value || "Premium Ticketing System";
     if (titleChunk) return `${name} - ${titleChunk}`;
     return `${name} - ${tagline}`;

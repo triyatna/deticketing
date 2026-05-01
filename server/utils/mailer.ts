@@ -80,7 +80,7 @@ export const sendTicketEmail = async (
   const smtpPass = settingsMap["SMTP_PASS"];
   const smtpFromName = settingsMap["SMTP_FROM_NAME"];
   const smtpFromEmail = settingsMap["SMTP_FROM_EMAIL"];
-  const appName = settingsMap["APP_NAME"] || "NexTicket";
+  const appName = settingsMap["APP_NAME"] || "DeTicketing";
   let appFooterLogoUrl =
     settingsMap["APP_FAVICON_URL"] || settingsMap["APP_LOGO_URL"] || "";
 

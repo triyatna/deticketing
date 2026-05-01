@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
       return acc
     }, {} as Record<string, string>)
 
-    const appName = settingsMap.APP_NAME || 'NexTicket'
+    const appName = settingsMap.APP_NAME || 'DeTicketing'
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
