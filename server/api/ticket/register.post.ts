@@ -1,6 +1,43 @@
 import prisma from '../../utils/prisma'
 import { saveEncryptedFile } from '../../utils/fileCrypto'
 
+const firstCsvValue = (value: string | undefined) => {
+  if (!value) return ''
+  return String(value).split(',')[0]?.trim() || ''
+}
+
+const collectServerDeviceMeta = (event: any) => {
+  const headers = event.node.req.headers || {}
+  const remoteAddress = String(event.node.req.socket?.remoteAddress || '').trim()
+  const xForwardedFor = firstCsvValue(headers['x-forwarded-for'] as string | undefined)
+  const cfConnectingIp = String(headers['cf-connecting-ip'] || '').trim()
+  const realIp = String(headers['x-real-ip'] || '').trim()
+  const ip = cfConnectingIp || xForwardedFor || realIp || remoteAddress
+
+  return {
+    ip,
+    source: {
+      cfConnectingIp,
+      xForwardedFor,
+      xRealIp: realIp,
+      remoteAddress
+    },
+    headers: {
+      userAgent: String(headers['user-agent'] || '').trim(),
+      acceptLanguage: String(headers['accept-language'] || '').trim(),
+      secChUa: String(headers['sec-ch-ua'] || '').trim(),
+      secChUaMobile: String(headers['sec-ch-ua-mobile'] || '').trim(),
+      secChUaPlatform: String(headers['sec-ch-ua-platform'] || '').trim(),
+      secFetchSite: String(headers['sec-fetch-site'] || '').trim(),
+      secFetchMode: String(headers['sec-fetch-mode'] || '').trim(),
+      referer: String(headers.referer || '').trim(),
+      origin: String(headers.origin || '').trim(),
+      host: String(headers.host || '').trim()
+    },
+    recordedAt: new Date().toISOString()
+  }
+}
+
 export default defineEventHandler(async (event) => {
   // Parsing multipart/form-data
   const formData = await readMultipartFormData(event)
@@ -104,6 +141,7 @@ export default defineEventHandler(async (event) => {
 
     let parsedDeviceMeta: Record<string, any> = {}
     let deviceHash = ''
+    const serverDeviceMeta = collectServerDeviceMeta(event)
     try {
       const parsed = JSON.parse(deviceMetaStr || '{}')
       if (parsed && typeof parsed === 'object') {
@@ -172,9 +210,12 @@ export default defineEventHandler(async (event) => {
       parsedFormData = {}
     }
 
-    if (parsedDeviceMeta && Object.keys(parsedDeviceMeta).length > 0) {
-      parsedFormData.__deviceMeta = parsedDeviceMeta
+    parsedDeviceMeta = {
+      ...(parsedDeviceMeta || {}),
+      server: serverDeviceMeta
     }
+
+    parsedFormData.__deviceMeta = parsedDeviceMeta
 
     for (const [questionId, file] of Object.entries(dynamicFiles)) {
       if (!file?.data) continue

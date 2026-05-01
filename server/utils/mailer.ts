@@ -29,7 +29,7 @@ export const sendTicketEmail = async (
   const appName = settingsMap["APP_NAME"] || "NexTicket";
   let appLogoUrl = settingsMap["APP_LOGO_URL"] || "";
 
-  if (appLogoUrl && !appLogoUrl.startsWith("http") && baseUrl) {
+  if (appLogoUrl && !/^https?:\/\//i.test(appLogoUrl) && baseUrl) {
     const prefix = appLogoUrl.startsWith("/") ? "" : "/";
     appLogoUrl = `${baseUrl.replace(/\/$/, "")}${prefix}${appLogoUrl}`;
   }
@@ -60,7 +60,6 @@ export const sendTicketEmail = async (
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
       <div style="background-color: #3b82f6; padding: 20px; color: white; text-align: center;">
-        ${appLogoUrl ? `<img src="${appLogoUrl}" alt="${appName}" style="max-height: 50px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;" />` : ""}
         <h1 style="margin: 0; font-size: 24px;">E-Ticket: ${eventName}</h1>
       </div>
       <div style="padding: 30px; text-align: center;">
@@ -72,6 +71,7 @@ export const sendTicketEmail = async (
         <p style="font-size: 14px; color: #64748b;">Harap tunjukkan QR Code ini kepada panitia saat acara berlangsung.</p>
       </div>
       <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+        ${appLogoUrl ? `<img src="${appLogoUrl}" alt="${appName}" style="max-height: 30px; margin: 0 auto 12px; display: block;" />` : ""}
         <p style="margin: 0; font-size: 13px; color: #475569; font-weight: 600;">${appName} by TY Studio DEV</p>
         <p style="margin: 6px 0 0; font-size: 12px; color: #64748b; line-height: 1.5;">
           Jln. Selang Ciwaringin, Kec. Lemahabang, Karawang, Jawa Barat 41383

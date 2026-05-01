@@ -37,6 +37,15 @@
       </div>
     </div>
 
+    <div v-else-if="deviceGatePending" class="container pt-8">
+      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 3rem 2rem; border-radius: 20px;">
+        <h2 class="gradient-text mb-4" style="font-size: 1.8rem; font-weight: 800;">Memverifikasi Pendaftaran...</h2>
+        <p class="text-muted" style="font-size: 1rem; line-height: 1.6; max-width: 460px; margin: 0 auto;">
+          Mohon tunggu sebentar, sistem sedang mengecek status pendaftaran perangkat Anda.
+        </p>
+      </div>
+    </div>
+
     <div v-else class="container pt-8">
       <div class="glass-panel max-w-3xl mx-auto registration-shell">
         <div class="event-header mb-8 text-center">
@@ -503,6 +512,7 @@
             </div>
 
             <input
+              ref="proofInputRef"
               @change="handleProofUpload"
               type="file"
               accept="image/jpeg, image/png, image/webp"
@@ -550,6 +560,7 @@
 <script setup>
 import { computed, ref, watchEffect, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import Swal from "sweetalert2";
 
 const route = useRoute();
 const router = useRouter();
@@ -557,6 +568,17 @@ const { appName, appLogoUrl } = useBranding();
 const slug = route.params.slug;
 
 const DEVICE_CACHE_KEY = `form_device_meta_${slug}`;
+
+const showAlert = (title, text, icon = "info") => {
+  return Swal.fire({
+    title,
+    text,
+    icon,
+    background: "#0f172a",
+    color: "#f8fafc",
+    confirmButtonColor: "#3b82f6",
+  });
+};
 
 const toBase64Url = (bytes) => {
   const binary = String.fromCharCode(...bytes);
@@ -569,14 +591,33 @@ const buildRawDeviceMeta = () => {
   const nav = window.navigator;
   const scr = window.screen;
   const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+  const userAgentData = nav.userAgentData || null;
+  const visualViewport = window.visualViewport || null;
+  const cpuClass = nav.cpuClass || "";
+  const oscpu = nav.oscpu || "";
 
   return {
     userAgent: nav.userAgent || "",
+    userAgentData: userAgentData
+      ? {
+          platform: userAgentData.platform || "",
+          mobile: !!userAgentData.mobile,
+          brands: Array.isArray(userAgentData.brands)
+            ? userAgentData.brands.map((brand) => ({
+                brand: String(brand?.brand || ""),
+                version: String(brand?.version || ""),
+              }))
+            : [],
+        }
+      : null,
     platform: nav.platform || "",
     vendor: nav.vendor || "",
+    oscpu,
+    cpuClass,
     language: nav.language || "",
     languages: Array.isArray(nav.languages) ? nav.languages : [],
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    timeZoneOffsetMinutes: new Date().getTimezoneOffset(),
     screen: {
       width: scr?.width || 0,
       height: scr?.height || 0,
@@ -590,10 +631,24 @@ const buildRawDeviceMeta = () => {
       width: window.innerWidth || 0,
       height: window.innerHeight || 0,
     },
+    visualViewport: visualViewport
+      ? {
+          width: Math.round(visualViewport.width || 0),
+          height: Math.round(visualViewport.height || 0),
+          scale: Number(visualViewport.scale || 1),
+        }
+      : null,
+    urlContext: {
+      href: window.location.href || "",
+      origin: window.location.origin || "",
+      pathname: window.location.pathname || "",
+      referrer: document.referrer || "",
+    },
     hardwareConcurrency: nav.hardwareConcurrency || 0,
     deviceMemory: nav.deviceMemory || 0,
     maxTouchPoints: nav.maxTouchPoints || 0,
     cookieEnabled: !!nav.cookieEnabled,
+    webdriver: !!nav.webdriver,
     doNotTrack: nav.doNotTrack || "",
     online: !!nav.onLine,
     connection: conn
@@ -851,6 +906,12 @@ const allowDuplicateDevice = computed(() => {
   return formMeta.value?.allowDuplicateDevice !== false;
 });
 
+const deviceGatePending = computed(() => {
+  if (!event.value?.id) return false;
+  if (isSuccess.value) return false;
+  return allowDuplicateDevice.value === false && !deviceStatusChecked.value;
+});
+
 const registrationDeadlineLabel = computed(() => {
   const raw = registrationDeadlineAt.value;
   if (!raw) return "-";
@@ -885,6 +946,7 @@ const isSuccess = ref(false);
 const proofFileCache = ref(null);
 const deviceMeta = ref(null);
 const deviceStatusChecked = ref(false);
+const proofInputRef = ref(null);
 
 const PROOF_CACHE_KEY = computed(() => `proof_cache_${slug}`);
 
@@ -955,6 +1017,26 @@ const clearCache = () => {
   }
 };
 
+const resetDraftState = () => {
+  form.value = {
+    registrantName: "",
+    registrantEmail: "",
+  };
+  answers.value = {};
+  fileAnswers.value = {};
+  selectedProofFile.value = null;
+  proofFileCache.value = null;
+
+  if (proofInputRef.value) {
+    proofInputRef.value.value = "";
+  }
+};
+
+const clearAllRegistrationState = () => {
+  clearCache();
+  resetDraftState();
+};
+
 const loadOrCreateDeviceMeta = async () => {
   if (!import.meta.client) return;
 
@@ -992,13 +1074,14 @@ const loadOrCreateDeviceMeta = async () => {
 
 const checkDeviceDuplicateStatus = async () => {
   if (!import.meta.client) return;
-  if (!event.value?.slug) return;
+  if (!slug) return;
+  if (!event.value?.id) return;
   if (allowDuplicateDevice.value) return;
   if (!deviceMeta.value?.hash) return;
   if (deviceStatusChecked.value) return;
 
   try {
-    const res = await $fetch(`/api/public/event/${event.value.slug}/device-status`, {
+    const res = await $fetch(`/api/public/event/${slug}/device-status`, {
       method: "POST",
       body: {
         deviceHash: String(deviceMeta.value.hash || ""),
@@ -1007,7 +1090,7 @@ const checkDeviceDuplicateStatus = async () => {
 
     if (res?.success && res?.blocked) {
       isSuccess.value = true;
-      clearCache();
+      clearAllRegistrationState();
     }
   } catch {
     // no-op, keep form accessible if check fails
@@ -1038,7 +1121,7 @@ watchEffect(() => {
 });
 
 watch(
-  [() => event.value?.slug, allowDuplicateDevice, () => deviceMeta.value?.hash],
+  [() => event.value?.id, allowDuplicateDevice, () => deviceMeta.value?.hash],
   async () => {
     deviceStatusChecked.value = false;
     await checkDeviceDuplicateStatus();
@@ -1050,7 +1133,7 @@ const handleProofUpload = (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) {
-    alert("Ukuran file maksimal 2MB!");
+    showAlert("Ukuran File Terlalu Besar", "Ukuran file maksimal 2MB.", "warning");
     e.target.value = "";
     selectedProofFile.value = null;
     return;
@@ -1075,7 +1158,11 @@ const handleDynamicFileUpload = (questionId, e) => {
     return;
   }
   if (file.size > 10 * 1024 * 1024) {
-    alert("Ukuran file untuk pertanyaan upload maksimal 10MB!");
+    showAlert(
+      "Ukuran File Terlalu Besar",
+      "Ukuran file untuk pertanyaan upload maksimal 10MB.",
+      "warning",
+    );
     e.target.value = "";
     fileAnswers.value[questionId] = null;
     return;
@@ -1237,13 +1324,21 @@ const validateRequired = () => {
 
 const submitRegistration = async () => {
   if (isDeadlinePassed.value) {
-    alert(`Pendaftaran sudah ditutup pada ${registrationDeadlineLabel.value}.`);
+    await showAlert(
+      "Pendaftaran Ditutup",
+      `Pendaftaran sudah ditutup pada ${registrationDeadlineLabel.value}.`,
+      "warning",
+    );
     return;
   }
 
   const invalidField = validateRequired();
   if (invalidField) {
-    alert(`Field wajib belum lengkap: ${invalidField}`);
+    await showAlert(
+      "Form Belum Lengkap",
+      `Field wajib belum lengkap: ${invalidField}`,
+      "warning",
+    );
     return;
   }
 
@@ -1282,17 +1377,17 @@ const submitRegistration = async () => {
 
     if (res.success) {
       isSuccess.value = true;
-      clearCache();
+      clearAllRegistrationState();
       window.scrollTo(0, 0);
     }
   } catch (err) {
     const statusMessage = err?.data?.statusMessage || "Pendaftaran gagal";
     if (/perangkat ini sudah pernah mendaftar/i.test(statusMessage)) {
       isSuccess.value = true;
-      clearCache();
+      clearAllRegistrationState();
       return;
     }
-    alert(statusMessage);
+    await showAlert("Pendaftaran Gagal", statusMessage, "error");
   } finally {
     isSubmitting.value = false;
   }
