@@ -17,8 +17,6 @@
       </button>
     </div>
 
-
-
     <div class="cards-grid">
       <section class="glass-panel setting-card card-scanner">
         <div class="card-head">
@@ -85,7 +83,8 @@
               </button>
             </div>
             <p class="field-hint">
-              Secret dibuat otomatis oleh server saat kosong, disimpan terenkripsi, dan tidak bisa diedit manual.
+              Secret dibuat otomatis oleh server saat kosong, disimpan
+              terenkripsi, dan tidak bisa diedit manual.
             </p>
             <p class="field-hint">
               Anda hanya bisa menyalin secret aktif bila sudah terkonfigurasi.
@@ -93,13 +92,40 @@
             <p class="field-hint secret-status">
               Status:
               <strong>
-                {{ settings.APP_SECRET_CONFIGURED === "true" ? "Sudah dikonfigurasi" : "Belum dikonfigurasi" }}
+                {{
+                  settings.APP_SECRET_CONFIGURED === "true"
+                    ? "Sudah dikonfigurasi"
+                    : "Belum dikonfigurasi"
+                }}
               </strong>
             </p>
           </div>
         </div>
       </section>
-      
+
+      <section class="glass-panel setting-card card-update">
+        <div class="card-head">
+          <h3>Pembaruan Sistem</h3>
+        </div>
+
+        <div class="update-content">
+          <div class="mt-3">
+            <button
+              type="button"
+              class="btn-primary w-full"
+              :disabled="isUpdating"
+              @click="runUpdate"
+            >
+              {{
+                isUpdating
+                  ? "Sedang Memproses Smart Update..."
+                  : "Jalankan Smart Update (Full Sync)"
+              }}
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="glass-panel setting-card card-security">
         <div class="card-head">
           <h3>Keamanan Akun (Ganti Password)</h3>
@@ -130,8 +156,12 @@
           </div>
 
           <div class="form-group mt-auto">
-            <button type="submit" class="btn-warning w-full" :disabled="isChangingPass">
-              {{ isChangingPass ? 'Memproses...' : 'Perbarui Password' }}
+            <button
+              type="submit"
+              class="btn-warning w-full"
+              :disabled="isChangingPass"
+            >
+              {{ isChangingPass ? "Memproses..." : "Perbarui Password" }}
             </button>
           </div>
         </form>
@@ -249,6 +279,7 @@ const settings = ref({
 const testEmail = ref("");
 const isSaving = ref(false);
 const isTesting = ref(false);
+const isUpdating = ref(false);
 const isChangingPass = ref(false);
 const passwordForm = ref({
   currentPassword: "",
@@ -375,6 +406,43 @@ const changePassword = async () => {
     isChangingPass.value = false;
   }
 };
+
+const runUpdate = async () => {
+  const result = await Swal.fire({
+    title: "Konfirmasi Smart Update",
+    text: "Sistem akan menarik kode, menginstal dependensi, dan membangun ulang aplikasi (build). Proses ini memerlukan waktu beberapa saat.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#64748b",
+    confirmButtonText: "Mulai Smart Update",
+    cancelButtonText: "Batal",
+    background: "#0f172a",
+    color: "#f8fafc",
+  });
+
+  if (!result.isConfirmed) return;
+
+  isUpdating.value = true;
+  try {
+    const res = await $fetch("/api/admin/system/update", { method: "POST" });
+    if (res.success) {
+      await Swal.fire({
+        title: "Update Berhasil",
+        text:
+          res.message ||
+          "Kode berhasil diperbarui. Jika ada perubahan besar, Anda mungkin perlu melakukan build ulang di server.",
+        icon: "success",
+        background: "#0f172a",
+        color: "#f8fafc",
+      });
+    }
+  } catch (err) {
+    showNotice("error", err.data?.statusMessage || "Gagal melakukan update.");
+  } finally {
+    isUpdating.value = false;
+  }
+};
 </script>
 
 <style scoped lang="scss">
@@ -402,8 +470,6 @@ const changePassword = async () => {
   max-width: 680px;
 }
 
-
-
 .cards-grid {
   margin-top: 1rem;
   display: grid;
@@ -419,7 +485,8 @@ const changePassword = async () => {
 
 .card-scanner,
 .card-app-secret,
-.card-security {
+.card-security,
+.card-update {
   grid-column: span 6;
 }
 
@@ -479,6 +546,25 @@ label {
   font-size: 0.82rem;
   color: #d8e4f4;
   font-weight: 600;
+}
+
+.update-content {
+  margin-top: 1rem;
+}
+
+.repo-link {
+  color: #38bdf8;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+.mt-3 {
+  margin-top: 0.75rem;
 }
 
 .test-row {

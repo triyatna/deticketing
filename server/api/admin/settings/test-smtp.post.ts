@@ -51,6 +51,13 @@ export default defineEventHandler(async (event) => {
       message: 'Koneksi berhasil dan email test telah terkirim!'
     }
   } catch (error: any) {
-    throw createError({ statusCode: 400, statusMessage: `Gagal: ${error.message}` })
+    console.error('SMTP Test Error Detail:', error)
+    
+    // Berikan pesan yang lebih deskriptif
+    const errorMessage = error.response || error.message || 'Gagal terhubung ke server SMTP'
+    throw createError({ 
+      statusCode: 400, 
+      statusMessage: `SMTP Error: ${errorMessage}` 
+    })
   }
 })
