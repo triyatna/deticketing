@@ -1,0 +1,202 @@
+:root {
+  --bg-dark: #0f1b33;
+  --bg-darker: #0a1222;
+  --bg-main: #0a1222;
+  --bg-soft: #0f1b33;
+  --bg-card: rgba(17, 31, 56, 0.72);
+  --line-soft: rgba(148, 163, 184, 0.24);
+  --line-strong: rgba(125, 211, 252, 0.36);
+  --primary: #14b8a6;
+  --primary-strong: #0f766e;
+  --primary-glow: rgba(20, 184, 166, 0.3);
+  --secondary: #38bdf8;
+  --accent: #38bdf8;
+  --text-light: #e5edf8;
+  --text-muted: #9fb0c8;
+  --glass-bg: rgba(17, 31, 56, 0.5);
+  --glass-border: rgba(148, 163, 184, 0.24);
+  --danger: #fb7185;
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-soft: 0 24px 60px rgba(3, 10, 26, 0.45);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(20, 184, 166, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 6%, rgba(56, 189, 248, 0.2), transparent 38%),
+    linear-gradient(165deg, #080f1e 0%, #0a1222 45%, #09182b 100%);
+  color: var(--text-light);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+}
+
+.glass-panel {
+  background: linear-gradient(170deg, rgba(19, 35, 64, 0.88) 0%, rgba(12, 24, 45, 0.84) 100%);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, var(--accent), #2dd4bf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.btn-primary,
+.btn-outline,
+.btn-warning {
+  padding: 0.72rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  border: 1px solid rgba(20, 184, 166, 0.48);
+  color: #f4fdfa;
+  background: linear-gradient(130deg, #14b8a6 0%, #0ea5e9 100%);
+  box-shadow: 0 12px 32px rgba(20, 184, 166, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.btn-outline {
+  border: 1px solid var(--line-soft);
+  background: rgba(11, 21, 39, 0.66);
+  color: var(--text-light);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: rgba(13, 28, 49, 0.85);
+}
+
+.btn-warning {
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: linear-gradient(130deg, #f59e0b, #d97706);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.form-input,
+select.form-input,
+textarea.form-input {
+  width: 100%;
+  background: rgba(10, 21, 40, 0.86);
+  border: 1px solid var(--line-soft);
+  color: var(--text-light);
+  padding: 0.72rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.93rem;
+  outline: none;
+  transition: 0.18s ease;
+}
+
+.form-input::placeholder {
+  color: #7f90aa;
+}
+
+.form-input:focus {
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.95rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  vertical-align: top;
+}
+
+.data-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.badge-green {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #7af5a2;
+}
+
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.34);
+  color: #fcd486;
+}
+
+.badge-gray {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.32);
+  color: #c2d2e9;
+}
+
+.badge-primary {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.32);
+  color: #8ddfff;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  border-radius: var(--radius-md);
+}

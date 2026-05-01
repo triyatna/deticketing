@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  quota        Int?     // null means unlimited
+  formSchema   String   // JSON string representing the dynamic form fields
+  requireProof Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tickets      Ticket[]
+}
+
+model Ticket {
+  id              String   @id @default(uuid())
+  eventId         String
+  event           Event    @relation(fields: [eventId], references: [id])
+  
+  registrantName  String
+  registrantEmail String
+  
+  formData        String   // JSON string of the submitted answers
+  paymentProofUrl String?  // URL to the uploaded payment proof, if required
+  
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  scanStatus      String   @default("BELUM_HADIR") // BELUM_HADIR, MASUK, KELUAR
+  
+  qrCodeToken     String?  @unique // Encrypted token for QR
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scanLogs        ScanLog[]
+}
+
+model ScanLog {
+  id          String   @id @default(uuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  
+  action      String   // MASUK, KELUAR
+  scannedAt   DateTime @default(now())
+  scannedBy   String   // Admin identifier or name
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // bcrypt hashed
+  name      String
+  role      String   @default("PANITIA") // ADMIN, PANITIA
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
