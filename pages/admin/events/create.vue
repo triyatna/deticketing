@@ -1236,8 +1236,15 @@ const submitEvent = async () => {
         : "",
     };
 
-    if (form.value.requireProof && !validPaymentMethods.value.length) {
-      Swal.fire({ title: "Perhatian", text: "Lengkapi minimal 1 metode pembayaran valid sebelum mengaktifkan bukti transfer.", icon: "warning", background: "#0f172a", color: "#f8fafc" });
+    if (form.value.paymentEnabled && !validPaymentMethods.value.length) {
+      Swal.fire({
+        title: "Perhatian",
+        text: "Fitur Pembayaran Aktif! Anda wajib menambahkan minimal 1 metode pembayaran yang valid.",
+        icon: "warning",
+        background: "#0f172a",
+        color: "#f8fafc"
+      });
+      isLoading.value = false;
       return;
     }
 

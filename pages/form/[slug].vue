@@ -4,9 +4,32 @@
     :style="registrationBackgroundStyle"
   >
     <div v-if="pending" class="text-center py-8">Memuat Event...</div>
-    <div v-else-if="error || !event" class="text-center py-8">
-      <h2>Event tidak ditemukan</h2>
-      <NuxtLink to="/" class="btn-outline mt-4">Kembali ke Beranda</NuxtLink>
+    <div v-else-if="error || !event" class="error-container">
+      <div class="glass-panel error-card text-center">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <line x1="9" y1="14" x2="15" y2="20"></line>
+            <line x1="15" y1="14" x2="9" y2="20"></line>
+          </svg>
+        </div>
+        <h2 class="error-title">Event Tidak Ditemukan</h2>
+        <p class="text-muted error-desc">
+          Maaf, halaman pendaftaran yang Anda cari tidak tersedia, URL mungkin salah, atau event telah dihapus oleh penyelenggara.
+        </p>
+        <div class="error-actions">
+          <NuxtLink to="/" class="btn-primary error-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Kembali ke Beranda
+          </NuxtLink>
+        </div>
+      </div>
     </div>
 
     <div v-else class="container pt-8">
@@ -1562,4 +1585,72 @@ label {
   margin-left: auto;
   margin-right: auto;
 }
+.error-container {
+  min-height: calc(100vh - 6rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.error-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 3rem 2rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.error-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.error-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.error-title {
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  margin-bottom: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.error-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  max-width: 380px;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.error-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
 </style>
