@@ -1,10 +1,13 @@
 <template>
   <div class="admin-layout">
-    <div v-if="isMobileMenuOpen" class="mobile-overlay" @click="isMobileMenuOpen = false"></div>
+    <div
+      v-if="isMobileMenuOpen"
+      class="mobile-overlay"
+      @click="isMobileMenuOpen = false"
+    ></div>
 
     <aside :class="['sidebar', { open: isMobileMenuOpen }]">
       <div class="sidebar-header">
-        <p class="brand-kicker">Ticketing Suite</p>
         <img
           v-if="appLogoUrl"
           :src="appLogoUrl"
@@ -29,11 +32,19 @@
           <span>Scanner QR</span>
         </NuxtLink>
         <div class="nav-divider"></div>
-        <NuxtLink v-if="user?.role === 'ADMIN'" to="/admin/settings" class="nav-item">
+        <NuxtLink
+          v-if="user?.role === 'ADMIN'"
+          to="/admin/settings"
+          class="nav-item"
+        >
           <span class="nav-icon">ST</span>
           <span>Pengaturan</span>
         </NuxtLink>
-        <NuxtLink v-if="user?.role === 'ADMIN'" to="/admin/staff" class="nav-item">
+        <NuxtLink
+          v-if="user?.role === 'ADMIN'"
+          to="/admin/staff"
+          class="nav-item"
+        >
           <span class="nav-icon">SF</span>
           <span>Manajemen Staff</span>
         </NuxtLink>
@@ -47,14 +58,18 @@
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="mobile-menu-btn" @click="isMobileMenuOpen = true" aria-label="Buka menu">
+          <button
+            class="mobile-menu-btn"
+            @click="isMobileMenuOpen = true"
+            aria-label="Buka menu"
+          >
             <span></span>
             <span></span>
             <span></span>
           </button>
           <div>
             <p class="topbar-kicker">Admin Workspace</p>
-            <h3 class="topbar-title">Halo, {{ user?.name || 'Admin' }}</h3>
+            <h3 class="topbar-title">Halo, {{ user?.name || "Admin" }}</h3>
           </div>
         </div>
       </header>
@@ -62,42 +77,48 @@
       <div class="page-container">
         <slot />
       </div>
+
+      <footer class="admin-footer">
+        <div class="footer-content">
+          <p>Copyright &copy; 2026 TY Studio DEV. Allright reserved.</p>
+        </div>
+      </footer>
     </main>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
-const router = useRouter()
-const route = useRoute()
-const { appName, appLogoUrl } = useBranding()
-const user = ref(null)
-const isMobileMenuOpen = ref(false)
+const router = useRouter();
+const route = useRoute();
+const { appName, appLogoUrl } = useBranding();
+const user = ref(null);
+const isMobileMenuOpen = ref(false);
 
 onMounted(async () => {
   try {
-    const res = await $fetch('/api/auth/me')
+    const res = await $fetch("/api/auth/me");
     if (res.success) {
-      user.value = res.user
+      user.value = res.user;
     }
   } catch (e) {
     // handled by middleware
   }
-})
+});
 
 watch(
   () => route.fullPath,
   () => {
-    isMobileMenuOpen.value = false
-  }
-)
+    isMobileMenuOpen.value = false;
+  },
+);
 
 const logout = async () => {
-  await $fetch('/api/auth/logout', { method: 'POST' })
-  router.push('/admin/login')
-}
+  await $fetch("/api/auth/logout", { method: "POST" });
+  router.push("/admin/login");
+};
 </script>
 
 <style scoped lang="scss">
@@ -115,7 +136,11 @@ const logout = async () => {
 
 .sidebar {
   width: 284px;
-  background: linear-gradient(180deg, rgba(12, 24, 46, 0.92), rgba(9, 17, 33, 0.96));
+  background: linear-gradient(
+    180deg,
+    rgba(12, 24, 46, 0.92),
+    rgba(9, 17, 33, 0.96)
+  );
   border-right: 1px solid var(--line-soft);
   display: flex;
   flex-direction: column;
@@ -146,10 +171,9 @@ const logout = async () => {
 }
 
 .brand-logo {
-  max-width: 160px;
-  max-height: 42px;
+  max-width: 180px;
   object-fit: contain;
-  margin: 0.15rem 0;
+  margin: 0;
 }
 
 .brand-subtitle {
@@ -319,5 +343,24 @@ const logout = async () => {
   .page-container {
     padding: 0.9rem;
   }
+}
+
+.admin-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(8, 17, 32, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-content p {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
 }
 </style>

@@ -41,13 +41,21 @@
               </td>
               <td>{{ new Date(staff.createdAt).toLocaleDateString('id-ID') }}</td>
               <td>
-                <button 
-                  v-if="!staff.isOwner && !staff.isCurrentUser"
-                  @click="deleteStaff(staff.id)" 
-                  class="btn-delete small"
-                >
-                  Hapus
-                </button>
+                <div v-if="!staff.isOwner && !staff.isCurrentUser" class="flex-actions">
+                  <button 
+                    @click="resetPassword(staff)" 
+                    class="btn-reset small"
+                    title="Ubah/Reset Password"
+                  >
+                    Reset Pass
+                  </button>
+                  <button 
+                    @click="deleteStaff(staff.id)" 
+                    class="btn-delete small"
+                  >
+                    Hapus
+                  </button>
+                </div>
                 <span v-else class="text-muted">Protected</span>
               </td>
             </tr>
@@ -99,6 +107,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import Swal from 'sweetalert2'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 
@@ -123,29 +132,115 @@ const createStaff = async () => {
     })
     
     if (res.success) {
-      alert('Staff berhasil ditambahkan!')
+      Swal.fire({
+        title: 'Sukses!',
+        text: 'Staff berhasil ditambahkan!',
+        icon: 'success',
+        background: '#0f172a',
+        color: '#f8fafc',
+        confirmButtonColor: '#3b82f6'
+      })
       openModal.value = false
       form.value = { name: '', username: '', password: '', role: 'PANITIA' }
       refresh()
     }
   } catch (err) {
-    alert(err.data?.statusMessage || 'Gagal menambahkan staff')
+    Swal.fire({
+      title: 'Error',
+      text: err.data?.statusMessage || 'Gagal menambahkan staff',
+      icon: 'error',
+      background: '#0f172a',
+      color: '#f8fafc'
+    })
   } finally {
     isSubmitting.value = false
   }
 }
 
 const deleteStaff = async (id) => {
-  if (!confirm('Anda yakin ingin menghapus staff ini secara permanen?')) return
+  const result = await Swal.fire({
+    title: 'Konfirmasi',
+    text: 'Anda yakin ingin menghapus staff ini secara permanen?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, hapus!',
+    cancelButtonText: 'Batal',
+    background: '#0f172a',
+    color: '#f8fafc',
+    confirmButtonColor: '#ef4444'
+  })
+  if (!result.isConfirmed) return
   
   try {
     const res = await $fetch(`/api/admin/staff/${id}`, { method: 'DELETE' })
     if (res.success) {
-      alert(res.message)
+      Swal.fire({
+        title: 'Terhapus!',
+        text: res.message,
+        icon: 'success',
+        background: '#0f172a',
+        color: '#f8fafc',
+        confirmButtonColor: '#3b82f6'
+      })
       refresh()
     }
   } catch (err) {
-    alert(err.data?.statusMessage || 'Gagal menghapus staff')
+    Swal.fire({
+      title: 'Error',
+      text: err.data?.statusMessage || 'Gagal menghapus staff',
+      icon: 'error',
+      background: '#0f172a',
+      color: '#f8fafc'
+    })
+  }
+}
+const resetPassword = async (staff) => {
+  const { value: newPassword } = await Swal.fire({
+    title: `Reset Password: ${staff.name}`,
+    input: 'password',
+    inputLabel: 'Password Baru',
+    inputPlaceholder: 'Masukkan password baru',
+    inputAttributes: {
+      autocapitalize: 'off',
+      autocorrect: 'off'
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Reset Sekarang',
+    cancelButtonText: 'Batal',
+    background: '#0f172a',
+    color: '#f8fafc',
+    confirmButtonColor: '#3b82f6',
+    inputValidator: (value) => {
+      if (!value) return 'Password tidak boleh kosong!'
+      if (value.length < 6) return 'Minimal 6 karakter!'
+    }
+  })
+
+  if (newPassword) {
+    try {
+      const res = await $fetch(`/api/admin/staff/${staff.id}`, {
+        method: 'PUT',
+        body: { password: newPassword }
+      })
+      if (res.success) {
+        Swal.fire({
+          title: 'Sukses!',
+          text: 'Password staff berhasil diperbarui.',
+          icon: 'success',
+          background: '#0f172a',
+          color: '#f8fafc',
+          confirmButtonColor: '#3b82f6'
+        })
+      }
+    } catch (err) {
+      Swal.fire({
+        title: 'Gagal',
+        text: err.data?.statusMessage || 'Gagal mengubah password',
+        icon: 'error',
+        background: '#0f172a',
+        color: '#f8fafc'
+      })
+    }
   }
 }
 </script>
@@ -180,6 +275,22 @@ const deleteStaff = async (id) => {
   font-size: 0.8rem;
 }
 .btn-delete.small:hover { background: rgba(239, 68, 68, 0.1); }
+
+.btn-reset.small {
+  background: none;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.btn-reset.small:hover { background: rgba(59, 130, 246, 0.1); }
+
+.flex-actions {
+  display: flex;
+  gap: 0.5rem;
+}
 
 /* Modal Styles */
 .modal-overlay {

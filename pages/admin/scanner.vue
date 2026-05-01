@@ -126,57 +126,6 @@
           </div>
         </div>
       </section>
-
-      <section class="glass-panel result-panel">
-        <h3>Hasil Scan</h3>
-
-        <div v-if="!scannedTicket" class="empty-result">
-          <p>Belum ada tiket terdeteksi.</p>
-          <p class="hint">Arahkan kamera ke QR peserta lalu tunggu validasi.</p>
-        </div>
-
-        <div v-else class="ticket-detail">
-          <p><strong>Nama:</strong> {{ scannedTicket.registrantName }}</p>
-          <p><strong>Event:</strong> {{ scannedTicket.eventName }}</p>
-          <p>
-            <strong>Status:</strong>
-            <span
-              :class="['badge', getBadgeClass(scannedTicket.currentStatus)]"
-            >
-              {{ scannedTicket.currentStatus.replace("_", " ") }}
-            </span>
-          </p>
-
-          <div class="action-row">
-            <button
-              v-if="
-                scannedTicket.currentStatus === 'BELUM_HADIR' ||
-                scannedTicket.currentStatus === 'KELUAR'
-              "
-              class="btn-primary"
-              :disabled="isProcessing"
-              @click="openActionModal('MASUK')"
-            >
-              {{ isProcessing ? "Memproses..." : "Tandai MASUK" }}
-            </button>
-            <button
-              v-if="scannedTicket.currentStatus === 'MASUK'"
-              class="btn-warning"
-              :disabled="isProcessing"
-              @click="openActionModal('KELUAR')"
-            >
-              {{ isProcessing ? "Memproses..." : "Tandai KELUAR" }}
-            </button>
-            <button
-              class="btn-outline"
-              :disabled="isProcessing"
-              @click="resetScan"
-            >
-              Selesai
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
 
     <div v-if="actionModal.open" class="modal-overlay" @click.self="closeActionModal">
@@ -193,6 +142,58 @@
             @click="submitActionFromModal"
           >
             {{ isProcessing ? "Memproses..." : actionModal.confirmLabel }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="scanResultModal.open && scannedTicket"
+      class="modal-overlay"
+      @click.self="closeScanResultModal"
+    >
+      <div class="glass-panel modal-card scan-result-modal">
+        <div class="scan-modal-head">
+          <h3>Konfirmasi Hasil Scan</h3>
+          <p class="scan-modal-subtitle">QR valid terdeteksi. Lanjutkan dengan aksi kehadiran.</p>
+        </div>
+
+        <div class="scan-modal-body">
+          <div class="scan-info-row">
+            <span class="scan-info-label">Nama Peserta</span>
+            <strong class="scan-info-value">{{ scannedTicket.registrantName }}</strong>
+          </div>
+          <div class="scan-info-row">
+            <span class="scan-info-label">Event</span>
+            <strong class="scan-info-value">{{ scannedTicket.eventName }}</strong>
+          </div>
+          <div class="scan-info-row">
+            <span class="scan-info-label">Status Saat Ini</span>
+            <span :class="['badge', getBadgeClass(scannedTicket.currentStatus)]">
+              {{ scannedTicket.currentStatus.replace("_", " ") }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-actions scan-modal-actions">
+          <button class="btn-outline" :disabled="isProcessing" @click="closeScanResultModal">
+            Tutup
+          </button>
+          <button
+            v-if="getRecommendedAction(scannedTicket.currentStatus) === 'MASUK'"
+            class="btn-primary"
+            :disabled="isProcessing"
+            @click="openActionModalFromScanResult('MASUK')"
+          >
+            Konfirmasi MASUK
+          </button>
+          <button
+            v-if="getRecommendedAction(scannedTicket.currentStatus) === 'KELUAR'"
+            class="btn-warning"
+            :disabled="isProcessing"
+            @click="openActionModalFromScanResult('KELUAR')"
+          >
+            Konfirmasi KELUAR
           </button>
         </div>
       </div>
@@ -245,6 +246,9 @@ const actionModal = ref({
   description: "",
   confirmLabel: "",
 });
+const scanResultModal = ref({
+  open: false,
+});
 const toasts = ref([]);
 
 const isIosStandalonePwa = ref(false);
@@ -296,6 +300,14 @@ const getNextActionLabel = (currentStatus) => {
   return currentStatus === "MASUK" ? "keluar" : "masuk";
 };
 
+const getRecommendedAction = (currentStatus) => {
+  if (currentStatus === "MASUK") return "KELUAR";
+  if (currentStatus === "BELUM_HADIR" || currentStatus === "KELUAR") {
+    return "MASUK";
+  }
+  return "";
+};
+
 const announceParticipant = (name, currentStatus) => {
   if (!import.meta.client || !("speechSynthesis" in window) || !name) return;
 
@@ -304,6 +316,24 @@ const announceParticipant = (name, currentStatus) => {
     const actionLabel = getNextActionLabel(currentStatus);
     const utter = new SpeechSynthesisUtterance(
       `Scan berhasil! Nama ${name}, silahkan ${actionLabel}`,
+    );
+    utter.lang = "id-ID";
+    utter.rate = 1;
+    utter.pitch = 1;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    // noop
+  }
+};
+
+const announceStatusConfirmed = (name, action) => {
+  if (!import.meta.client || !("speechSynthesis" in window) || !name) return;
+
+  try {
+    window.speechSynthesis.cancel();
+    const statusLabel = action === "KELUAR" ? "keluar" : "masuk";
+    const utter = new SpeechSynthesisUtterance(
+      `Nama ${name}, berhasil ${statusLabel}`,
     );
     utter.lang = "id-ID";
     utter.rate = 1;
@@ -651,6 +681,8 @@ const stopScanner = async () => {
 
   await disposeReader();
 
+  scanResultModal.value.open = false;
+  actionModal.value.open = false;
   scannerState.value = "idle";
 };
 
@@ -796,6 +828,7 @@ const processDetectedQr = async (decodedText) => {
 
     if (res.success) {
       scannedTicket.value = res.ticket;
+      scanResultModal.value.open = true;
       playScanBeep();
       announceParticipant(
         res.ticket?.registrantName || "",
@@ -835,6 +868,8 @@ const startScanner = async () => {
   cameraPermissionHelp.value = "";
   isScanning.value = true;
   scannedTicket.value = null;
+  scanResultModal.value.open = false;
+  actionModal.value.open = false;
   isProcessing.value = false;
   scannerState.value = "preparing";
 
@@ -1023,9 +1058,19 @@ const openActionModal = (action) => {
   };
 };
 
+const closeScanResultModal = () => {
+  if (isProcessing.value) return;
+  resetScan();
+};
+
+const openActionModalFromScanResult = (action) => {
+  scanResultModal.value.open = false;
+  openActionModal(action);
+};
+
 const closeActionModal = () => {
   if (isProcessing.value) return;
-  actionModal.value.open = false;
+  resetScan();
 };
 
 const submitActionFromModal = async () => {
@@ -1046,7 +1091,15 @@ const submitActionFromModal = async () => {
     });
 
     if (res.success) {
-      pushToast("success", res.message || "Status berhasil diperbarui.");
+      const action = actionModal.value.action;
+      const statusLabel = action === "KELUAR" ? "keluar" : "masuk";
+      const participantName = scannedTicket.value.registrantName || "Peserta";
+
+      announceStatusConfirmed(participantName, action);
+      pushToast(
+        "success",
+        `Nama ${participantName}, berhasil ${statusLabel}.`,
+      );
       resetScan();
     }
   } catch (err) {
@@ -1058,6 +1111,7 @@ const submitActionFromModal = async () => {
 const resetScan = () => {
   scannedTicket.value = null;
   isProcessing.value = false;
+  scanResultModal.value.open = false;
   actionModal.value.open = false;
   resumeScannerSafely();
 };
@@ -1154,12 +1208,11 @@ onBeforeUnmount(async () => {
 .scanner-grid {
   margin-top: 1rem;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
-.scanner-panel,
-.result-panel {
+.scanner-panel {
   padding: 1rem;
 }
 
@@ -1178,8 +1231,7 @@ onBeforeUnmount(async () => {
   display: none;
 }
 
-.camera-alert,
-.empty-result {
+.camera-alert {
   margin-top: 0.9rem;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
@@ -1271,22 +1323,6 @@ onBeforeUnmount(async () => {
   align-items: center;
 }
 
-.result-panel h3 {
-  font-size: 1.05rem;
-  margin-bottom: 0.7rem;
-}
-
-.ticket-detail p {
-  margin-bottom: 0.52rem;
-}
-
-.action-row {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.62rem;
-}
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1314,6 +1350,58 @@ onBeforeUnmount(async () => {
   display: flex;
   justify-content: flex-end;
   gap: 0.6rem;
+}
+
+.scan-result-modal {
+  width: min(560px, 100%);
+}
+
+.scan-modal-head h3 {
+  font-size: 1.08rem;
+}
+
+.scan-modal-subtitle {
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.scan-modal-body {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(8, 17, 33, 0.52);
+  padding: 0.78rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.scan-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.24);
+  padding-bottom: 0.55rem;
+}
+
+.scan-info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.scan-info-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.scan-info-value {
+  text-align: right;
+  color: #f1f7ff;
+}
+
+.scan-modal-actions {
+  margin-top: 0.9rem;
 }
 
 .toast-stack {
@@ -1374,6 +1462,22 @@ onBeforeUnmount(async () => {
 
   .camera-select {
     min-width: 0;
+  }
+
+  .scan-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.28rem;
+  }
+
+  .scan-info-value {
+    text-align: left;
+  }
+
+  .scan-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
   }
 }
 </style>

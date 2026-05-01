@@ -18,9 +18,11 @@
     "nuxt": "^3.21.4",
     "nuxt-security": "^2.5.1",
     "qrcode": "^1.5.4",
+    "sweetalert2": "^11.26.24",
     "uuid": "^14.0.0",
     "vue": "^3.5.33",
-    "vue-router": "^5.0.6"
+    "vue-router": "^5.0.6",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

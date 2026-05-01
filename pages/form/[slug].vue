@@ -1,0 +1,1565 @@
+<template>
+  <div
+    :class="['registration-page', textureClass]"
+    :style="registrationBackgroundStyle"
+  >
+    <div v-if="pending" class="text-center py-8">Memuat Event...</div>
+    <div v-else-if="error || !event" class="text-center py-8">
+      <h2>Event tidak ditemukan</h2>
+      <NuxtLink to="/" class="btn-outline mt-4">Kembali ke Beranda</NuxtLink>
+    </div>
+
+    <div v-else class="container pt-8">
+      <div class="glass-panel max-w-3xl mx-auto registration-shell">
+        <div class="event-header mb-8 text-center">
+          <img
+            v-if="headerImageUrl"
+            :src="headerImageUrl"
+            alt="Header Event"
+            class="event-header-image"
+          />
+          <h1 class="gradient-text">{{ event.name }}</h1>
+          <p class="text-muted mt-2">{{ event.description }}</p>
+          <div v-if="event.quota" class="mt-4 badge badge-gray">
+            Kuota Tersisa: {{ availableQuota }}
+          </div>
+        </div>
+
+        <div class="header-divider mb-8"></div>
+
+        <div v-if="event.quota && availableQuota <= 0" class="alert error">
+          Maaf, kuota pendaftaran untuk event ini telah penuh.
+        </div>
+
+        <div v-else-if="isDeadlinePassed" class="alert error">
+          Pendaftaran untuk event ini sudah ditutup pada
+          {{ registrationDeadlineLabel }}.
+        </div>
+
+        <form
+          v-else
+          @submit.prevent="submitRegistration"
+          class="registration-form"
+        >
+          <section class="form-card">
+            <div class="static-grid">
+              <div class="form-group">
+                <label>Nama Lengkap <span class="text-red">*</span></label>
+                <input
+                  v-model="form.registrantName"
+                  type="text"
+                  class="form-input"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Email Aktif <span class="text-red">*</span></label>
+                <input
+                  v-model="form.registrantEmail"
+                  type="email"
+                  class="form-input"
+                  required
+                  placeholder="Tiket akan dikirim ke email ini"
+                />
+              </div>
+            </div>
+
+            <div class="dynamic-wrap">
+              <template
+                v-for="(item, index) in schemaItems"
+                :key="item.id || index"
+              >
+                <div
+                  v-if="item.itemType === 'heading'"
+                  class="content-block heading-block"
+                >
+                  <h3>{{ item.title || "Judul" }}</h3>
+                  <p v-if="item.description" class="text-muted">
+                    {{ item.description }}
+                  </p>
+                </div>
+
+                <div
+                  v-else-if="item.itemType === 'section'"
+                  class="content-block section-block"
+                >
+                  <hr />
+                  <h4>{{ item.title || "Section" }}</h4>
+                  <p v-if="item.description" class="text-muted">
+                    {{ item.description }}
+                  </p>
+                </div>
+
+                <div
+                  v-else-if="item.itemType === 'image'"
+                  class="content-block media-block"
+                >
+                  <img
+                    v-if="item.imageUrl"
+                    :src="item.imageUrl"
+                    :alt="item.description || 'Gambar'"
+                    class="content-image"
+                  />
+                  <div v-else class="media-empty">URL gambar belum diisi.</div>
+                  <p v-if="item.description" class="text-muted">
+                    {{ item.description }}
+                  </p>
+                </div>
+
+                <div
+                  v-else-if="item.itemType === 'video'"
+                  class="content-block media-block"
+                >
+                  <iframe
+                    v-if="toEmbedVideo(item.videoUrl)"
+                    :src="toEmbedVideo(item.videoUrl)"
+                    title="Video"
+                    class="video-embed"
+                    allow="
+                      accelerometer;
+                      autoplay;
+                      clipboard-write;
+                      encrypted-media;
+                      gyroscope;
+                      picture-in-picture;
+                    "
+                    allowfullscreen
+                  ></iframe>
+                  <a
+                    v-else-if="item.videoUrl"
+                    :href="item.videoUrl"
+                    target="_blank"
+                    class="video-link"
+                  >
+                    Buka Video
+                  </a>
+                  <div v-else class="media-empty">URL video belum diisi.</div>
+                  <p v-if="item.description" class="text-muted">
+                    {{ item.description }}
+                  </p>
+                </div>
+
+                <div
+                  v-else-if="item.itemType === 'question'"
+                  class="form-group dynamic-item"
+                >
+                  <label>
+                    {{ item.label || `Pertanyaan ${index + 1}` }}
+                    <span v-if="item.required" class="text-red">*</span>
+                  </label>
+                  <p v-if="item.description" class="field-desc">
+                    {{ item.description }}
+                  </p>
+
+                  <input
+                    v-if="item.questionType === 'short_answer'"
+                    v-model="answers[item.id]"
+                    type="text"
+                    class="form-input"
+                    :required="item.required"
+                  />
+
+                  <textarea
+                    v-else-if="item.questionType === 'paragraph'"
+                    v-model="answers[item.id]"
+                    class="form-input"
+                    rows="4"
+                    :required="item.required"
+                  ></textarea>
+
+                  <div
+                    v-else-if="item.questionType === 'multiple_choice'"
+                    class="radio-group"
+                  >
+                    <label
+                      v-for="opt in item.options"
+                      :key="opt"
+                      class="radio-label"
+                    >
+                      <input
+                        type="radio"
+                        :name="`mc_${item.id}`"
+                        :value="opt"
+                        v-model="answers[item.id]"
+                      />
+                      {{ opt }}
+                    </label>
+                  </div>
+
+                  <div
+                    v-else-if="item.questionType === 'checkboxes'"
+                    class="radio-group"
+                  >
+                    <label
+                      v-for="opt in item.options"
+                      :key="opt"
+                      class="radio-label"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isChecked(item.id, opt)"
+                        @change="
+                          toggleCheckbox(item.id, opt, $event.target.checked)
+                        "
+                      />
+                      {{ opt }}
+                    </label>
+                  </div>
+
+                  <select
+                    v-else-if="item.questionType === 'dropdown'"
+                    v-model="answers[item.id]"
+                    class="form-input"
+                    :required="item.required"
+                  >
+                    <option value="">-- Pilih --</option>
+                    <option v-for="opt in item.options" :key="opt" :value="opt">
+                      {{ opt }}
+                    </option>
+                  </select>
+
+                  <div
+                    v-else-if="item.questionType === 'file_upload'"
+                    class="file-wrap"
+                  >
+                    <input
+                      type="file"
+                      class="form-input"
+                      @change="handleDynamicFileUpload(item.id, $event)"
+                    />
+                    <p v-if="fileAnswers[item.id]" class="file-note">
+                      {{ fileAnswers[item.id].name }}
+                    </p>
+                  </div>
+
+                  <div
+                    v-else-if="item.questionType === 'linear_scale'"
+                    class="scale-wrap"
+                  >
+                    <div class="scale-options">
+                      <label
+                        v-for="num in scaleRange(item.scaleMin, item.scaleMax)"
+                        :key="`scale-${item.id}-${num}`"
+                        class="scale-option"
+                      >
+                        <input
+                          type="radio"
+                          :name="`scale_${item.id}`"
+                          :value="String(num)"
+                          v-model="answers[item.id]"
+                        />
+                        <span>{{ num }}</span>
+                      </label>
+                    </div>
+                    <div class="scale-labels">
+                      <span>{{ item.scaleMinLabel || item.scaleMin }}</span>
+                      <span>{{ item.scaleMaxLabel || item.scaleMax }}</span>
+                    </div>
+                  </div>
+
+                  <div
+                    v-else-if="item.questionType === 'rating'"
+                    class="rating-wrap"
+                  >
+                    <label
+                      v-for="num in ratingRange(item.ratingMax)"
+                      :key="`rating-${item.id}-${num}`"
+                      class="rating-option"
+                    >
+                      <input
+                        type="radio"
+                        :name="`rating_${item.id}`"
+                        :value="String(num)"
+                        v-model="answers[item.id]"
+                      />
+                      <span>{{ num }}</span>
+                    </label>
+                  </div>
+
+                  <div
+                    v-else-if="item.questionType === 'multiple_choice_grid'"
+                    class="grid-wrap"
+                  >
+                    <table class="grid-table">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th
+                            v-for="col in item.gridCols"
+                            :key="`${item.id}-mc-col-${col}`"
+                          >
+                            {{ col }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="row in item.gridRows"
+                          :key="`${item.id}-mc-row-${row}`"
+                        >
+                          <td>{{ row }}</td>
+                          <td
+                            v-for="col in item.gridCols"
+                            :key="`${item.id}-mc-${row}-${col}`"
+                          >
+                            <input
+                              type="radio"
+                              :name="`grid_mc_${item.id}_${row}`"
+                              :checked="getGridChoice(item.id, row) === col"
+                              @change="setGridChoice(item.id, row, col)"
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div
+                    v-else-if="item.questionType === 'checkbox_grid'"
+                    class="grid-wrap"
+                  >
+                    <table class="grid-table">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th
+                            v-for="col in item.gridCols"
+                            :key="`${item.id}-cb-col-${col}`"
+                          >
+                            {{ col }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="row in item.gridRows"
+                          :key="`${item.id}-cb-row-${row}`"
+                        >
+                          <td>{{ row }}</td>
+                          <td
+                            v-for="col in item.gridCols"
+                            :key="`${item.id}-cb-${row}-${col}`"
+                          >
+                            <input
+                              type="checkbox"
+                              :checked="isGridChecked(item.id, row, col)"
+                              @change="
+                                toggleGridCheckbox(
+                                  item.id,
+                                  row,
+                                  col,
+                                  $event.target.checked,
+                                )
+                              "
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <input
+                    v-else-if="item.questionType === 'date'"
+                    v-model="answers[item.id]"
+                    type="date"
+                    class="form-input"
+                    :required="item.required"
+                  />
+
+                  <input
+                    v-else-if="item.questionType === 'time'"
+                    v-model="answers[item.id]"
+                    type="time"
+                    class="form-input"
+                    :required="item.required"
+                  />
+                </div>
+              </template>
+            </div>
+          </section>
+
+          <div
+            v-if="isPaymentEnabled && paymentSettings.length"
+            class="payment-box mt-4"
+          >
+            <h4>Instruksi Pembayaran</h4>
+
+            <div v-if="eventNominal" class="global-nominal-card">
+              <span class="nominal-label">Total yang harus dibayar:</span>
+              <strong class="nominal-value">{{
+                formatPrice(eventNominal)
+              }}</strong>
+            </div>
+
+            <div class="payment-methods">
+              <article
+                v-for="(method, methodIndex) in paymentSettings"
+                :key="method.id || methodIndex"
+                class="payment-method"
+              >
+                <div class="payment-method-head">
+                  <strong>{{ method.label }}</strong>
+                  <span class="payment-type">{{
+                    paymentTypeLabel(method.type)
+                  }}</span>
+                </div>
+
+                <p
+                  v-if="method.type === 'qris' && method.qrisImageUrl"
+                  class="text-muted"
+                >
+                  Scan QRIS berikut untuk melakukan pembayaran.
+                </p>
+                <div
+                  v-if="method.type === 'qris' && method.qrisImageUrl"
+                  class="qris-container mt-2"
+                >
+                  <img
+                    :src="method.qrisImageUrl"
+                    :alt="`QRIS ${method.label}`"
+                    class="qris-image"
+                  />
+                </div>
+
+                <div v-else class="payment-details mt-2">
+                  <div class="detail-row">
+                    <span class="detail-label">Atas Nama</span>
+                    <strong class="detail-value">{{
+                      method.accountName
+                    }}</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">No. Rekening / Akun</span>
+                    <strong class="detail-value highlight">{{
+                      method.accountNumber
+                    }}</strong>
+                  </div>
+                </div>
+
+                <p v-if="method.note" class="text-muted text-sm">
+                  {{ method.note }}
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <div
+            v-if="
+              isPaymentEnabled && event.requireProof && !paymentSettings.length
+            "
+            class="alert error mt-4"
+          >
+            Bukti transfer diwajibkan, tetapi konfigurasi metode pembayaran
+            belum lengkap.
+          </div>
+
+          <div
+            v-if="isPaymentEnabled && event.requireProof"
+            class="form-group mt-4 p-4 border-dashed rounded proof-box"
+          >
+            <label
+              >Bukti Pembayaran / Transfer (Gambar)
+              <span class="text-red">*</span></label
+            >
+            <p class="text-muted text-sm mb-2">
+              Unggah bukti transfer (JPG/PNG). Maks 2MB.
+            </p>
+            <input
+              @change="handleProofUpload"
+              type="file"
+              accept="image/jpeg, image/png, image/webp"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-actions mt-8">
+            <button
+              type="submit"
+              class="btn-primary w-full"
+              :disabled="isSubmitting"
+            >
+              {{ isSubmitting ? "Mendaftar..." : "Kirim Pendaftaran" }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <footer class="form-footer">
+        <NuxtLink to="/" class="brand">
+          <img
+            v-if="appLogoUrl"
+            :src="appLogoUrl"
+            :alt="appName"
+            class="landing-logo"
+          />
+          <span v-else class="gradient-text brand-name">{{ appName }}</span>
+        </NuxtLink>
+        <p class="copyright">
+          Copyright &copy; 2026 TY Studio DEV. Allright reserved.
+        </p>
+      </footer>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watchEffect } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+const route = useRoute();
+const router = useRouter();
+const { appName, appLogoUrl } = useBranding();
+const slug = route.params.slug;
+
+useHead({
+  meta: [
+    {
+      name: "robots",
+      content:
+        "noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai",
+    },
+    {
+      name: "googlebot",
+      content: "noindex, nofollow, noarchive, nosnippet, noimageindex",
+    },
+    {
+      name: "bingbot",
+      content: "noindex, nofollow, noarchive, nosnippet, noimageindex",
+    },
+  ],
+});
+
+const {
+  data: response,
+  pending,
+  error,
+} = useFetch(`/api/public/event/${slug}`);
+const event = computed(() => response.value?.event);
+const availableQuota = computed(() => response.value?.availableQuota);
+
+const parseList = (value) => {
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const mapLegacyQuestionType = (legacyType) => {
+  const mapping = {
+    text: "short_answer",
+    textarea: "paragraph",
+    select: "dropdown",
+    radio: "multiple_choice",
+  };
+  return mapping[legacyType] || "short_answer";
+};
+
+const formatPrice = (value) => {
+  if (!value) return "";
+  const num = parseInt(value);
+  if (isNaN(num)) return value;
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(num);
+};
+
+const normalizeItem = (item, index) => {
+  if (!item || typeof item !== "object") return null;
+
+  if (item.itemType) {
+    if (item.itemType === "question") {
+      return {
+        id: item.id || `q_${index}`,
+        itemType: "question",
+        label: String(item.label || ""),
+        description: String(item.description || ""),
+        questionType: String(item.questionType || "short_answer"),
+        required: item.required !== false,
+        options: Array.isArray(item.options)
+          ? item.options
+          : parseList(item.optionsText),
+        scaleMin: Number.isFinite(Number(item.scaleMin))
+          ? Number(item.scaleMin)
+          : 1,
+        scaleMax: Number.isFinite(Number(item.scaleMax))
+          ? Number(item.scaleMax)
+          : 5,
+        scaleMinLabel: String(item.scaleMinLabel || ""),
+        scaleMaxLabel: String(item.scaleMaxLabel || ""),
+        ratingMax: Number.isFinite(Number(item.ratingMax))
+          ? Number(item.ratingMax)
+          : 5,
+        gridRows: Array.isArray(item.gridRows)
+          ? item.gridRows
+          : parseList(item.gridRowsText),
+        gridCols: Array.isArray(item.gridCols)
+          ? item.gridCols
+          : parseList(item.gridColsText),
+      };
+    }
+
+    if (["heading", "section", "image", "video"].includes(item.itemType)) {
+      return {
+        id: item.id || `c_${index}`,
+        itemType: item.itemType,
+        title: String(item.title || ""),
+        description: String(item.description || ""),
+        imageUrl: String(item.imageUrl || ""),
+        videoUrl: String(item.videoUrl || ""),
+      };
+    }
+  }
+
+  return {
+    id: item.id || `legacy_${index}`,
+    itemType: "question",
+    label: String(item.label || ""),
+    description: "",
+    questionType: mapLegacyQuestionType(String(item.type || "text")),
+    required: item.required !== false,
+    options: Array.isArray(item.options)
+      ? item.options
+      : parseList(item.options),
+    scaleMin: 1,
+    scaleMax: 5,
+    scaleMinLabel: "",
+    scaleMaxLabel: "",
+    ratingMax: 5,
+    gridRows: [],
+    gridCols: [],
+  };
+};
+
+const parsedSchema = computed(() => {
+  if (!event.value?.formSchema) return [];
+  try {
+    const parsed = JSON.parse(event.value.formSchema);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+});
+
+const schemaItems = computed(() => {
+  return parsedSchema.value
+    .filter((item) => item?.itemType !== "form_meta")
+    .map((item, index) => normalizeItem(item, index))
+    .filter(Boolean);
+});
+
+const formMeta = computed(() => {
+  return (
+    parsedSchema.value.find((item) => item?.itemType === "form_meta") || {}
+  );
+});
+
+const eventNominal = computed(() => formMeta.value?.nominal || "");
+const isPaymentEnabled = computed(() => !!formMeta.value?.paymentEnabled);
+
+const paymentSettings = computed(() => {
+  const methods = Array.isArray(formMeta.value?.paymentSettings)
+    ? formMeta.value.paymentSettings
+    : [];
+  return methods
+    .map((method, index) => ({
+      id: String(method?.id || `pay_${index}`),
+      type: String(method?.type || "bank_transfer"),
+      label: String(method?.label || "").trim(),
+      accountName: String(method?.accountName || "").trim(),
+      accountNumber: String(method?.accountNumber || "").trim(),
+      qrisImageUrl: String(method?.qrisImageUrl || "").trim(),
+      note: String(method?.note || "").trim(),
+    }))
+    .filter((method) => {
+      if (!method.label) return false;
+      if (method.type === "qris") return !!method.qrisImageUrl;
+      return !!method.accountName && !!method.accountNumber;
+    });
+});
+
+const paymentTypeLabel = (type) => {
+  const map = {
+    bank_transfer: "Bank Transfer",
+    qris: "QRIS",
+    ewallet: "E-Wallet",
+    other: "Lainnya",
+  };
+  return map[type] || "Metode Pembayaran";
+};
+
+const headerImageUrl = computed(() => {
+  return String(formMeta.value?.headerImageUrl || "").trim();
+});
+
+const textureClass = computed(() => {
+  if (String(formMeta.value?.backgroundMode || "") !== "texture") return "";
+  return `texture-${formMeta.value?.backgroundTexture || 'dots'}`;
+});
+
+const registrationBackgroundStyle = computed(() => {
+  const mode = String(formMeta.value?.backgroundMode || "color");
+  const baseColor = String(formMeta.value?.backgroundColor || "#0a1222");
+  const imageUrl = String(formMeta.value?.backgroundImageUrl || "").trim();
+
+  if (mode === "image" && imageUrl) {
+    return {
+      backgroundColor: baseColor,
+      backgroundImage: `linear-gradient(rgba(5, 10, 20, 0.48), rgba(5, 10, 20, 0.58)), url(${imageUrl})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+    };
+  }
+
+  return {
+    backgroundColor: baseColor,
+  };
+});
+
+const registrationDeadlineEnabled = computed(() => {
+  return !!formMeta.value?.registrationDeadlineEnabled;
+});
+
+const registrationDeadlineAt = computed(() => {
+  return String(formMeta.value?.registrationDeadlineAt || "").trim();
+});
+
+const registrationDeadlineLabel = computed(() => {
+  const raw = registrationDeadlineAt.value;
+  if (!raw) return "-";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleString("id-ID");
+});
+
+const isDeadlinePassed = computed(() => {
+  if (!registrationDeadlineEnabled.value) return false;
+  if (!registrationDeadlineAt.value) return false;
+  const deadline = new Date(registrationDeadlineAt.value);
+  if (Number.isNaN(deadline.getTime())) return false;
+  return Date.now() > deadline.getTime();
+});
+
+const questionItems = computed(() =>
+  schemaItems.value.filter((item) => item.itemType === "question"),
+);
+
+const form = ref({
+  registrantName: "",
+  registrantEmail: "",
+});
+const answers = ref({});
+const fileAnswers = ref({});
+const selectedProofFile = ref(null);
+const isSubmitting = ref(false);
+
+watchEffect(() => {
+  for (const question of questionItems.value) {
+    if (answers.value[question.id] !== undefined) continue;
+    if (question.questionType === "checkboxes") {
+      answers.value[question.id] = [];
+    } else if (
+      question.questionType === "multiple_choice_grid" ||
+      question.questionType === "checkbox_grid"
+    ) {
+      answers.value[question.id] = {};
+    } else {
+      answers.value[question.id] = "";
+    }
+  }
+});
+
+const handleProofUpload = (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Ukuran file maksimal 2MB!");
+    e.target.value = "";
+    selectedProofFile.value = null;
+    return;
+  }
+  selectedProofFile.value = file;
+};
+
+const handleDynamicFileUpload = (questionId, e) => {
+  const file = e.target.files?.[0];
+  if (!file) {
+    fileAnswers.value[questionId] = null;
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert("Ukuran file untuk pertanyaan upload maksimal 10MB!");
+    e.target.value = "";
+    fileAnswers.value[questionId] = null;
+    return;
+  }
+  fileAnswers.value[questionId] = file;
+};
+
+const isChecked = (questionId, option) => {
+  const value = answers.value[questionId];
+  return Array.isArray(value) && value.includes(option);
+};
+
+const toggleCheckbox = (questionId, option, checked) => {
+  const current = Array.isArray(answers.value[questionId])
+    ? [...answers.value[questionId]]
+    : [];
+  if (checked) {
+    if (!current.includes(option)) current.push(option);
+  } else {
+    const idx = current.indexOf(option);
+    if (idx >= 0) current.splice(idx, 1);
+  }
+  answers.value[questionId] = current;
+};
+
+const getGridChoice = (questionId, row) => {
+  const matrix = answers.value[questionId] || {};
+  return matrix[row] || "";
+};
+
+const setGridChoice = (questionId, row, col) => {
+  const matrix = { ...(answers.value[questionId] || {}) };
+  matrix[row] = col;
+  answers.value[questionId] = matrix;
+};
+
+const isGridChecked = (questionId, row, col) => {
+  const matrix = answers.value[questionId] || {};
+  const rowValues = Array.isArray(matrix[row]) ? matrix[row] : [];
+  return rowValues.includes(col);
+};
+
+const toggleGridCheckbox = (questionId, row, col, checked) => {
+  const matrix = { ...(answers.value[questionId] || {}) };
+  const rowValues = Array.isArray(matrix[row]) ? [...matrix[row]] : [];
+  if (checked) {
+    if (!rowValues.includes(col)) rowValues.push(col);
+  } else {
+    const idx = rowValues.indexOf(col);
+    if (idx >= 0) rowValues.splice(idx, 1);
+  }
+  matrix[row] = rowValues;
+  answers.value[questionId] = matrix;
+};
+
+const scaleRange = (min, max) => {
+  const start = Number(min || 1);
+  const end = Number(max || 5);
+  const range = [];
+  for (let i = start; i <= end; i += 1) range.push(i);
+  return range;
+};
+
+const ratingRange = (max) => {
+  const end = Math.max(3, Math.min(10, Number(max || 5)));
+  const range = [];
+  for (let i = 1; i <= end; i += 1) range.push(i);
+  return range;
+};
+
+const toEmbedVideo = (url) => {
+  const source = String(url || "").trim();
+  if (!source) return "";
+  try {
+    const parsed = new URL(source);
+    const host = parsed.hostname.replace(/^www\./, "");
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      const id = parsed.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : "";
+    }
+    if (host === "youtu.be") {
+      const id = parsed.pathname.replace("/", "");
+      return id ? `https://www.youtube.com/embed/${id}` : "";
+    }
+    if (host === "vimeo.com") {
+      const id = parsed.pathname.replace("/", "");
+      return id ? `https://player.vimeo.com/video/${id}` : "";
+    }
+  } catch {
+    return "";
+  }
+  return "";
+};
+
+const validateRequired = () => {
+  for (const question of questionItems.value) {
+    if (!question.required) continue;
+    const value = answers.value[question.id];
+
+    if (
+      [
+        "short_answer",
+        "paragraph",
+        "multiple_choice",
+        "dropdown",
+        "date",
+        "time",
+        "linear_scale",
+        "rating",
+      ].includes(question.questionType)
+    ) {
+      if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+      ) {
+        return question.label || "Pertanyaan wajib";
+      }
+    } else if (question.questionType === "checkboxes") {
+      if (!Array.isArray(value) || value.length === 0) {
+        return question.label || "Pertanyaan wajib";
+      }
+    } else if (question.questionType === "file_upload") {
+      if (!fileAnswers.value[question.id]) {
+        return question.label || "Pertanyaan upload wajib";
+      }
+    } else if (question.questionType === "multiple_choice_grid") {
+      const matrix = value || {};
+      const rows = question.gridRows || [];
+      const allAnswered = rows.every(
+        (row) => matrix[row] && String(matrix[row]).trim() !== "",
+      );
+      if (!allAnswered) {
+        return question.label || "Grid wajib diisi";
+      }
+    } else if (question.questionType === "checkbox_grid") {
+      const matrix = value || {};
+      const rows = question.gridRows || [];
+      const allAnswered = rows.every(
+        (row) => Array.isArray(matrix[row]) && matrix[row].length > 0,
+      );
+      if (!allAnswered) {
+        return question.label || "Grid wajib diisi";
+      }
+    }
+  }
+
+  if (event.value?.requireProof && !paymentSettings.value.length) {
+    return "Konfigurasi metode pembayaran belum lengkap";
+  }
+
+  if (event.value?.requireProof && !selectedProofFile.value) {
+    return "Bukti Pembayaran / Transfer";
+  }
+
+  return "";
+};
+
+const submitRegistration = async () => {
+  if (isDeadlinePassed.value) {
+    alert(`Pendaftaran sudah ditutup pada ${registrationDeadlineLabel.value}.`);
+    return;
+  }
+
+  const invalidField = validateRequired();
+  if (invalidField) {
+    alert(`Field wajib belum lengkap: ${invalidField}`);
+    return;
+  }
+
+  isSubmitting.value = true;
+  try {
+    const payloadAnswers = { ...answers.value };
+    for (const question of questionItems.value) {
+      if (question.questionType === "file_upload") {
+        payloadAnswers[question.id] = payloadAnswers[question.id] || null;
+      }
+    }
+
+    const multipart = new FormData();
+    multipart.append("eventId", event.value.id);
+    multipart.append("registrantName", form.value.registrantName);
+    multipart.append("registrantEmail", form.value.registrantEmail);
+    multipart.append("formData", JSON.stringify(payloadAnswers));
+
+    if (event.value.requireProof && selectedProofFile.value) {
+      multipart.append("paymentProof", selectedProofFile.value);
+    }
+
+    for (const [questionId, file] of Object.entries(fileAnswers.value)) {
+      if (file) {
+        multipart.append(`dynamicFile:${questionId}`, file);
+      }
+    }
+
+    const res = await $fetch("/api/ticket/register", {
+      method: "POST",
+      body: multipart,
+    });
+
+    if (res.success) {
+      alert("Pendaftaran berhasil! Silakan tunggu konfirmasi dari panitia.");
+      router.push("/");
+    }
+  } catch (err) {
+    alert(err.data?.statusMessage || "Pendaftaran gagal");
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+</script>
+
+<style scoped lang="scss">
+.registration-page {
+  min-height: 100vh;
+  padding: 0rem 1rem 3rem 1rem;
+  background-repeat: repeat;
+}
+
+.registration-page.texture-dots {
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+.registration-page.texture-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.registration-page.texture-diagonal {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0 2px,
+    transparent 2px 14px
+  );
+}
+
+.registration-page.texture-zigzag {
+  background-image: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%);
+  background-size: 40px 40px;
+  background-position: 20px 0, 20px 0, 0 0, 0 0;
+}
+
+.registration-page.texture-crosshatch {
+  background: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08));
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.registration-page.texture-triangles {
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
+  background-size: 40px 40px;
+  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+}
+
+.registration-page.texture-cubes {
+  background-color: transparent;
+  background-image: 
+    linear-gradient(30deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(30deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1));
+  background-size: 40px 70px;
+  background-position: 0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px;
+}
+
+.registration-page.texture-circles {
+  background-image: 
+    radial-gradient(circle, rgba(255, 255, 255, 0.08) 20%, transparent 20%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.08) 20%, transparent 20%);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
+
+.registration-page.texture-waves {
+  background-image: 
+    radial-gradient(circle at 100% 50%, transparent 20%, rgba(255, 255, 255, 0.06) 21%, rgba(255, 255, 255, 0.06) 34%, transparent 35%, transparent),
+    radial-gradient(circle at 0% 50%, transparent 20%, rgba(255, 255, 255, 0.06) 21%, rgba(255, 255, 255, 0.06) 34%, transparent 35%, transparent);
+  background-size: 40px 40px;
+}
+
+.registration-shell {
+  padding: 1rem;
+}
+
+.gradient-text {
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+  margin: 0.6rem 0;
+  word-wrap: break-word;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.max-w-3xl {
+  max-width: 860px;
+}
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+.text-center {
+  text-align: center;
+}
+.py-8 {
+  padding: 2rem 0;
+}
+.pt-8 {
+  padding-top: 2rem;
+}
+.mb-8 {
+  margin-bottom: 2rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.mt-8 {
+  margin-top: 2rem;
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-red {
+  color: #ef4444;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.w-full {
+  width: 100%;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-gray {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.alert.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.form-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(8, 17, 33, 0.45);
+  padding: 0.95rem;
+}
+
+.static-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+}
+
+.dynamic-wrap {
+  margin-top: 0.95rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.82rem;
+}
+
+.field-desc {
+  margin-top: -0.1rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #d8e4f4;
+}
+
+.content-block {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(8, 16, 30, 0.5);
+  padding: 0.75rem;
+  margin-bottom: 0.78rem;
+}
+
+.heading-block h3,
+.section-block h4 {
+  font-size: 1rem;
+}
+
+.section-block hr {
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  margin-bottom: 0.6rem;
+}
+
+.content-image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.event-header-image {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+  margin-bottom: 0.9rem;
+}
+
+.video-embed {
+  width: 100%;
+  min-height: 280px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+
+.video-link {
+  color: #7ddcff;
+  text-decoration: none;
+}
+
+.video-link:hover {
+  text-decoration: underline;
+}
+
+.media-empty {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.border-dashed {
+  border: 1px dashed var(--glass-border);
+}
+.rounded {
+  border-radius: 8px;
+}
+.p-4 {
+  padding: 1rem;
+}
+
+.proof-box {
+  margin-top: 0.2rem;
+}
+
+.payment-box {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(8, 16, 30, 0.5);
+  padding: 0.9rem;
+}
+
+.payment-box h4 {
+  font-size: 0.95rem;
+}
+
+.payment-methods {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.payment-method {
+  border: 1px dashed var(--line-soft);
+  border-radius: 10px;
+  padding: 0.68rem;
+}
+
+.payment-method-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.payment-type {
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.payment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.detail-value {
+  font-size: 1.05rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.detail-value.highlight {
+  font-size: 1.35rem;
+  color: #fbbf24; /* Amber/Gold color for the account number */
+  font-family: "Courier New", Courier, monospace;
+  letter-spacing: 0.02em;
+}
+
+.qris-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  width: fit-content;
+  margin: 0.5rem auto;
+}
+
+.qris-image {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  display: block;
+}
+
+.radio-group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0.52rem 0.65rem;
+  background: rgba(11, 21, 39, 0.6);
+}
+
+.file-wrap {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.file-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.scale-wrap {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+
+.scale-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+  gap: 0.4rem;
+}
+
+.scale-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+}
+
+.scale-labels {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.rating-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 0.38rem;
+}
+
+.rating-option {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0.42rem 0.2rem;
+  text-align: center;
+  background: rgba(11, 21, 39, 0.55);
+  font-size: 0.8rem;
+}
+
+.rating-option span {
+  margin-left: 0.22rem;
+}
+
+.grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.grid-table th,
+.grid-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 0.48rem;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.grid-table th:first-child,
+.grid-table td:first-child {
+  text-align: left;
+}
+
+.form-footer {
+  margin: 2.5rem auto 1rem;
+  max-width: 860px;
+  padding-top: 1.8rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.form-footer .brand {
+  text-decoration: none;
+  display: inline-flex;
+}
+
+.form-footer .brand-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.form-footer .landing-logo {
+  max-width: 150px;
+  max-height: 34px;
+  object-fit: contain;
+}
+
+.form-footer .copyright {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+.global-nominal-card {
+  margin: 1rem 0;
+  padding: 1.2rem;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.15),
+    rgba(34, 197, 94, 0.05)
+  );
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nominal-label {
+  font-size: 0.85rem;
+  color: #9ee8b2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nominal-value {
+  font-size: 2rem;
+  color: #4ade80;
+  letter-spacing: 0.02em;
+  font-weight: 900;
+  text-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+}
+
+.payment-nominal-box {
+  display: none;
+}
+.header-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.4),
+    transparent
+  );
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>

@@ -15,11 +15,12 @@ await callOnce("load-global-branding", async () => {
 });
 
 useHead(() => ({
-  title: appTagline.value || "Premium Ticketing System",
+  title: appName.value || "NexTicket",
   titleTemplate: (titleChunk) => {
-    const base = appName.value || "NexTicket";
-    if (titleChunk) return `${titleChunk} - ${base}`;
-    return `${base} - ${appTagline.value || "Premium Ticketing System"}`;
+    const name = appName.value || "NexTicket";
+    const tagline = appTagline.value || "Premium Ticketing System";
+    if (titleChunk) return `${name} - ${titleChunk}`;
+    return `${name} - ${tagline}`;
   },
   link: appFaviconUrl.value
     ? [

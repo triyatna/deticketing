@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
 
   let eventId = '', registrantName = '', registrantEmail = '', formDataStr = ''
   let paymentProofFile: any = null
+  const dynamicFiles: Record<string, any> = {}
 
   for (const field of formData) {
     if (field.name === 'eventId') eventId = field.data.toString()
@@ -18,6 +19,12 @@ export default defineEventHandler(async (event) => {
     if (field.name === 'formData') formDataStr = field.data.toString()
     if (field.name === 'paymentProof' && field.filename) {
       paymentProofFile = field
+    }
+    if (field.filename && field.name?.startsWith('dynamicFile:')) {
+      const questionId = field.name.split('dynamicFile:')[1]
+      if (questionId) {
+        dynamicFiles[questionId] = field
+      }
     }
   }
 
@@ -29,6 +36,45 @@ export default defineEventHandler(async (event) => {
     const evt = await prisma.event.findUnique({ where: { id: eventId } })
     if (!evt) throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan' })
 
+    let registrationDeadlineEnabled = false
+    let registrationDeadlineAt = ''
+    let paymentSettings: Array<Record<string, any>> = []
+    try {
+      const parsedSchema = JSON.parse(evt.formSchema || '[]')
+      if (Array.isArray(parsedSchema)) {
+        const meta = parsedSchema.find((item) => item?.itemType === 'form_meta')
+        registrationDeadlineEnabled = !!meta?.registrationDeadlineEnabled
+        registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
+        const methods = Array.isArray(meta?.paymentSettings) ? meta.paymentSettings : []
+        paymentSettings = methods
+          .map((method, index) => ({
+            id: String(method?.id || `pay_${index}`),
+            type: String(method?.type || 'bank_transfer'),
+            label: String(method?.label || '').trim(),
+            accountName: String(method?.accountName || '').trim(),
+            accountNumber: String(method?.accountNumber || '').trim(),
+            qrisImageUrl: String(method?.qrisImageUrl || '').trim(),
+            note: String(method?.note || '').trim()
+          }))
+          .filter((method) => {
+            if (!method.label) return false
+            if (method.type === 'qris') return !!method.qrisImageUrl
+            return !!method.accountName && !!method.accountNumber
+          })
+      }
+    } catch {
+      registrationDeadlineEnabled = false
+      registrationDeadlineAt = ''
+      paymentSettings = []
+    }
+
+    if (registrationDeadlineEnabled && registrationDeadlineAt) {
+      const deadlineDate = new Date(registrationDeadlineAt)
+      if (!Number.isNaN(deadlineDate.getTime()) && Date.now() > deadlineDate.getTime()) {
+        throw createError({ statusCode: 400, statusMessage: 'Pendaftaran sudah ditutup.' })
+      }
+    }
+
     if (evt.quota !== null) {
       const currentRegistrants = await prisma.ticket.count({ where: { eventId } })
       if (currentRegistrants >= evt.quota) {
@@ -38,6 +84,10 @@ export default defineEventHandler(async (event) => {
 
     if (evt.requireProof && !paymentProofFile) {
       throw createError({ statusCode: 400, statusMessage: 'Bukti pembayaran (gambar) wajib dilampirkan' })
+    }
+
+    if (evt.requireProof && !paymentSettings.length) {
+      throw createError({ statusCode: 400, statusMessage: 'Konfigurasi metode pembayaran belum lengkap.' })
     }
 
     let savedFileName = null
@@ -55,12 +105,41 @@ export default defineEventHandler(async (event) => {
       savedFileName = uniqueFileName
     }
 
+    let parsedFormData: Record<string, any> = {}
+    try {
+      const parsed = JSON.parse(formDataStr)
+      if (parsed && typeof parsed === 'object') {
+        parsedFormData = parsed
+      }
+    } catch {
+      parsedFormData = {}
+    }
+
+    for (const [questionId, file] of Object.entries(dynamicFiles)) {
+      if (!file?.data) continue
+      if (file.data.length > 10 * 1024 * 1024) {
+        throw createError({ statusCode: 400, statusMessage: `Ukuran file untuk pertanyaan ${questionId} melebihi 10MB` })
+      }
+
+      const ext = file.filename?.includes('.') ? file.filename.split('.').pop() : 'bin'
+      const safeExt = String(ext || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'bin'
+      const uniqueDynamicName = `form_${questionId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${safeExt}`
+      await saveEncryptedFile(file.data, uniqueDynamicName)
+
+      parsedFormData[questionId] = {
+        fileName: uniqueDynamicName,
+        originalName: file.filename || `upload.${safeExt}`,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.data.length
+      }
+    }
+
     const ticket = await prisma.ticket.create({
       data: {
         eventId,
         registrantName,
         registrantEmail,
-        formData: formDataStr, // Already stringified JSON from frontend
+        formData: JSON.stringify(parsedFormData),
         paymentProofUrl: savedFileName // Reusing this field to store the local filename
       }
     })

@@ -17,9 +17,7 @@
       </button>
     </div>
 
-    <p v-if="notice.message" :class="['notice', notice.type]">
-      {{ notice.message }}
-    </p>
+
 
     <div class="cards-grid">
       <section class="glass-panel setting-card card-branding">
@@ -179,6 +177,43 @@
           </div>
         </div>
       </section>
+      
+      <section class="glass-panel setting-card card-security">
+        <div class="card-head">
+          <h3>Keamanan Akun (Ganti Password)</h3>
+          <p>Perbarui password akun Anda secara berkala demi keamanan.</p>
+        </div>
+
+        <form @submit.prevent="changePassword" class="form-grid">
+          <div class="form-group">
+            <label>Password Lama</label>
+            <input
+              v-model="passwordForm.currentPassword"
+              type="password"
+              class="form-input"
+              required
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Password Baru</label>
+            <input
+              v-model="passwordForm.newPassword"
+              type="password"
+              class="form-input"
+              required
+              placeholder="Minimal 6 karakter"
+            />
+          </div>
+
+          <div class="form-group mt-auto">
+            <button type="submit" class="btn-warning w-full" :disabled="isChangingPass">
+              {{ isChangingPass ? 'Memproses...' : 'Perbarui Password' }}
+            </button>
+          </div>
+        </form>
+      </section>
 
       <section class="glass-panel setting-card card-smtp">
         <div class="card-head">
@@ -271,6 +306,7 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
+import Swal from "sweetalert2";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 
@@ -294,19 +330,32 @@ const settings = ref({
 const testEmail = ref("");
 const isSaving = ref(false);
 const isTesting = ref(false);
-const notice = ref({ type: "", message: "" });
 const logoInputRef = ref(null);
 const faviconInputRef = ref(null);
 const uploading = ref({
   logo: false,
   favicon: false,
 });
+const isChangingPass = ref(false);
+const passwordForm = ref({
+  currentPassword: "",
+  newPassword: "",
+});
 
 const showNotice = (type, message) => {
-  notice.value = { type, message };
-  setTimeout(() => {
-    notice.value = { type: "", message: "" };
-  }, 3500);
+  const isError = type === "error";
+  Swal.fire({
+    title: isError ? "Error" : "Sukses",
+    text: message,
+    icon: type === "error" ? "error" : "success",
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: "#0f172a",
+    color: "#f8fafc",
+  });
 };
 
 const openUpload = (type) => {
@@ -408,6 +457,29 @@ const testSmtp = async () => {
     isTesting.value = false;
   }
 };
+
+const changePassword = async () => {
+  if (passwordForm.value.newPassword.length < 6) {
+    showNotice("error", "Password baru minimal 6 karakter.");
+    return;
+  }
+
+  isChangingPass.value = true;
+  try {
+    const res = await $fetch("/api/auth/change-password", {
+      method: "POST",
+      body: passwordForm.value,
+    });
+    if (res.success) {
+      showNotice("success", "Password Anda berhasil diperbarui.");
+      passwordForm.value = { currentPassword: "", newPassword: "" };
+    }
+  } catch (err) {
+    showNotice("error", err.data?.statusMessage || "Gagal mengubah password.");
+  } finally {
+    isChangingPass.value = false;
+  }
+};
 </script>
 
 <style scoped lang="scss">
@@ -435,24 +507,7 @@ const testSmtp = async () => {
   max-width: 680px;
 }
 
-.notice {
-  margin-top: 1rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid var(--line-soft);
-}
 
-.notice.success {
-  border-color: rgba(34, 197, 94, 0.4);
-  background: rgba(34, 197, 94, 0.1);
-  color: #9ff5b8;
-}
-
-.notice.error {
-  border-color: rgba(251, 113, 133, 0.4);
-  background: rgba(251, 113, 133, 0.1);
-  color: #ffd2db;
-}
 
 .cards-grid {
   margin-top: 1rem;
@@ -471,7 +526,7 @@ const testSmtp = async () => {
   grid-column: span 7;
 }
 
-.card-scanner {
+.card-scanner, .card-security {
   grid-column: span 5;
 }
 

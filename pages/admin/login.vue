@@ -62,6 +62,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+definePageMeta({
+  middleware: 'guest'
+})
+
 const router = useRouter()
 const { appName, appLogoUrl } = useBranding()
 const form = ref({ username: '', password: '' })

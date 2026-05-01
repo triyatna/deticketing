@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: "Ticketing Application",
+      title: "NexTicket - Premium Ticketing System",
       link: [
         {
           rel: "stylesheet",
@@ -95,6 +95,18 @@ export default defineNuxtConfig({
           tokensPerInterval: 3,
           interval: 60000,
         },
+      },
+    },
+    "/form/**": {
+      headers: {
+        "X-Robots-Tag":
+          "noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai",
+      },
+    },
+    "/p/**": {
+      headers: {
+        "X-Robots-Tag":
+          "noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai",
       },
     },
   },

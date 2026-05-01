@@ -6,6 +6,16 @@
     </div>
 
     <div class="glass-panel mt-4">
+      <div class="realtime-bar">
+        <div class="realtime-status">
+          <span class="dot-live"></span>
+          Realtime aktif (auto-refresh 3 detik)
+        </div>
+        <p class="realtime-time">
+          Update terakhir: {{ lastRefreshLabel }}
+        </p>
+      </div>
+
       <div v-if="pending" class="text-center py-8">Loading pendaftar...</div>
       <div v-else-if="error" class="text-center py-8 text-red">Gagal memuat data.</div>
       <div v-else-if="!tickets?.length" class="text-center py-8 text-muted">Belum ada pendaftar untuk event ini.</div>
@@ -61,8 +71,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
+import Swal from 'sweetalert2'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 const route = useRoute()
@@ -74,6 +85,40 @@ const event = computed(() => response.value?.event)
 const tickets = computed(() => response.value?.tickets || [])
 
 const approvingId = ref(null)
+const lastRefreshAt = ref(new Date())
+const realtimeTimer = ref(null)
+const isRealtimeRefreshing = ref(false)
+
+const lastRefreshLabel = computed(() => {
+  const date = lastRefreshAt.value
+  if (!date) return '-'
+  return new Date(date).toLocaleTimeString('id-ID')
+})
+
+const refreshRealtime = async () => {
+  if (isRealtimeRefreshing.value) return
+  if (approvingId.value) return
+  if (typeof document !== 'undefined' && document.hidden) return
+
+  isRealtimeRefreshing.value = true
+  try {
+    await refresh()
+    lastRefreshAt.value = new Date()
+  } catch {
+    // noop
+  } finally {
+    isRealtimeRefreshing.value = false
+  }
+}
+
+const handleWindowFocus = async () => {
+  await refreshRealtime()
+}
+
+const handleVisibilityChange = async () => {
+  if (document.hidden) return
+  await refreshRealtime()
+}
 
 const getScanBadgeClass = (status) => {
   if (status === 'MASUK') return 'badge-green'
@@ -82,7 +127,18 @@ const getScanBadgeClass = (status) => {
 }
 
 const approveTicket = async (ticketId) => {
-  if (!confirm('Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.')) return
+  const result = await Swal.fire({
+    title: 'Konfirmasi',
+    text: 'Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Approve',
+    cancelButtonText: 'Batal',
+    background: '#0f172a',
+    color: '#f8fafc',
+    confirmButtonColor: '#3b82f6'
+  })
+  if (!result.isConfirmed) return
   
   approvingId.value = ticketId
   try {
@@ -92,15 +148,48 @@ const approveTicket = async (ticketId) => {
     })
     
     if (res.success) {
-      alert('Berhasil! QR Code telah dikirim ke email peserta.')
+      Swal.fire({
+        title: 'Sukses!',
+        text: 'Berhasil! QR Code telah dikirim ke email peserta.',
+        icon: 'success',
+        background: '#0f172a',
+        color: '#f8fafc',
+        confirmButtonColor: '#3b82f6'
+      })
       await refresh()
+      lastRefreshAt.value = new Date()
     }
   } catch (err) {
-    alert(err.data?.statusMessage || 'Gagal menyetujui tiket')
+    Swal.fire({
+      title: 'Error',
+      text: err.data?.statusMessage || 'Gagal menyetujui tiket',
+      icon: 'error',
+      background: '#0f172a',
+      color: '#f8fafc'
+    })
   } finally {
     approvingId.value = null
   }
 }
+
+onMounted(() => {
+  lastRefreshAt.value = new Date()
+  realtimeTimer.value = setInterval(() => {
+    refreshRealtime()
+  }, 3000)
+
+  window.addEventListener('focus', handleWindowFocus)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  if (realtimeTimer.value) {
+    clearInterval(realtimeTimer.value)
+    realtimeTimer.value = null
+  }
+  window.removeEventListener('focus', handleWindowFocus)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 </script>
 
 <style scoped lang="scss">
@@ -113,6 +202,38 @@ const approveTicket = async (ticketId) => {
 .text-red { color: #ef4444; }
 .text-blue { color: var(--primary); text-decoration: none; }
 .text-blue:hover { text-decoration: underline; }
+
+.realtime-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--glass-border);
+  padding: 0.75rem 0.95rem;
+}
+
+.realtime-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #9ee8b2;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dot-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.realtime-time {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
 
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); }

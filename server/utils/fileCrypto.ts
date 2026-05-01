@@ -53,3 +53,13 @@ export const getDecryptedFile = async (fileName: string): Promise<Buffer | null>
   const encryptedBuffer = await fs.promises.readFile(filePath)
   return decryptBuffer(encryptedBuffer)
 }
+
+export const deleteEncryptedFile = async (fileName: string): Promise<boolean> => {
+  const filePath = path.resolve(process.cwd(), 'server/private/uploads', fileName)
+  if (!fs.existsSync(filePath)) {
+    return false
+  }
+
+  await fs.promises.unlink(filePath)
+  return true
+}
