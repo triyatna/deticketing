@@ -110,4 +110,3 @@ Karena script npm menjalankan pre-hook untuk memastikan file database SQLite sud
 ### Error Prisma v7 tentang `url` di `schema.prisma`
 
 Project ini memakai Prisma 7. URL datasource dikonfigurasi di `prisma.config.ts`, bukan di `prisma/schema.prisma`.
-
