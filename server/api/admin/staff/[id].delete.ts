@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
 
     await prisma.admin.delete({ where: { id: staffId } })
     return { success: true, message: 'Staff berhasil dihapus' }
-  } catch (error) {
+  } catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || 'Gagal menghapus staff'

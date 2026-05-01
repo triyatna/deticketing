@@ -1,14 +1,25 @@
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.APP_SECRET || 'fallback-secret-for-jwt-secure'
-
-export const generateToken = (payload: any) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' })
+const getJwtSecret = () => {
+  return process.env.APP_SECRET || 'fallback-secret-for-jwt-secure'
 }
 
-export const verifyToken = (token: string) => {
+export type AuthTokenPayload = jwt.JwtPayload & {
+  id: string
+  username?: string
+  name?: string
+  role: string
+}
+
+export const generateToken = (payload: any) => {
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '1d' })
+}
+
+export const verifyToken = (token: string): AuthTokenPayload | null => {
   try {
-    return jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, getJwtSecret())
+    if (!decoded || typeof decoded === 'string') return null
+    return decoded as AuthTokenPayload
   } catch (error) {
     return null
   }

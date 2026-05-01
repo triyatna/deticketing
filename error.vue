@@ -77,6 +77,7 @@ const errorMessage = computed(() => {
   line-height: 1;
   margin-bottom: 1rem;
   background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);

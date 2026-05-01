@@ -92,9 +92,11 @@ export default defineEventHandler(async (event) => {
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
-        const methods = Array.isArray(meta?.paymentSettings) ? meta.paymentSettings : []
+        const methods: Array<Record<string, any>> = Array.isArray(meta?.paymentSettings)
+          ? meta.paymentSettings as Array<Record<string, any>>
+          : []
         paymentSettings = methods
-          .map((method, index) => ({
+          .map((method: Record<string, any>, index: number) => ({
             id: String(method?.id || `pay_${index}`),
             type: String(method?.type || 'bank_transfer'),
             label: String(method?.label || '').trim(),
@@ -103,7 +105,7 @@ export default defineEventHandler(async (event) => {
             qrisImageUrl: String(method?.qrisImageUrl || '').trim(),
             note: String(method?.note || '').trim()
           }))
-          .filter((method) => {
+          .filter((method: Record<string, any>) => {
             if (!method.label) return false
             if (method.type === 'qris') return !!method.qrisImageUrl
             return !!method.accountName && !!method.accountNumber

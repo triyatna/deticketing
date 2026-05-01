@@ -184,6 +184,28 @@
           <p>Perbarui password akun Anda secara berkala demi keamanan.</p>
         </div>
 
+        <div class="form-grid app-secret-grid">
+          <div class="form-group">
+            <label>App Secret (JWT & QR Encryption)</label>
+            <input
+              v-model="settings.APP_SECRET"
+              type="password"
+              class="form-input"
+              placeholder="Kosongkan jika tidak ingin mengubah"
+              autocomplete="new-password"
+            />
+            <p class="field-hint">
+              Disimpan terenkripsi di database. Nilai saat ini tidak pernah ditampilkan.
+            </p>
+            <p class="field-hint secret-status">
+              Status:
+              <strong>
+                {{ settings.APP_SECRET_CONFIGURED === "true" ? "Sudah dikonfigurasi" : "Belum dikonfigurasi" }}
+              </strong>
+            </p>
+          </div>
+        </div>
+
         <form @submit.prevent="changePassword" class="form-grid">
           <div class="form-group">
             <label>Password Lama</label>
@@ -315,6 +337,8 @@ const settings = ref({
   APP_TAGLINE: "",
   APP_LOGO_URL: "",
   APP_FAVICON_URL: "",
+  APP_SECRET: "",
+  APP_SECRET_CONFIGURED: "false",
   SMTP_HOST: "",
   SMTP_PORT: "",
   SMTP_USER: "",
@@ -416,6 +440,10 @@ const saveSettings = async () => {
       body: { settings: settings.value },
     });
     if (res.success) {
+      if (settings.value.APP_SECRET) {
+        settings.value.APP_SECRET = "";
+        settings.value.APP_SECRET_CONFIGURED = "true";
+      }
       showNotice("success", res.message || "Pengaturan berhasil disimpan.");
     }
   } catch (err) {
@@ -563,6 +591,14 @@ const changePassword = async () => {
   font-size: 0.76rem;
 }
 
+.app-secret-grid {
+  margin-top: 0.85rem;
+}
+
+.secret-status strong {
+  color: #cfe8ff;
+}
+
 .inline-actions {
   margin-top: 0.45rem;
 }
@@ -635,6 +671,7 @@ label {
 @media (max-width: 1200px) {
   .card-branding,
   .card-scanner,
+  .card-security,
   .card-smtp {
     grid-column: 1 / -1;
   }
