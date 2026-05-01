@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid form data' })
   }
 
-  let eventId = '', registrantName = '', registrantEmail = '', formDataStr = ''
+  let eventId = '', registrantName = '', registrantEmail = '', formDataStr = '', deviceMetaStr = ''
   let paymentProofFile: any = null
   const dynamicFiles: Record<string, any> = {}
 
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
     if (field.name === 'registrantName') registrantName = field.data.toString()
     if (field.name === 'registrantEmail') registrantEmail = field.data.toString()
     if (field.name === 'formData') formDataStr = field.data.toString()
+    if (field.name === 'deviceMeta') deviceMetaStr = field.data.toString()
     if (field.name === 'paymentProof' && field.filename) {
       paymentProofFile = field
     }
@@ -32,6 +33,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Data tidak lengkap' })
   }
 
+  registrantName = registrantName
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim()
+
   try {
     const evt = await prisma.event.findUnique({ where: { id: eventId } })
     if (!evt) throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan' })
@@ -39,12 +45,16 @@ export default defineEventHandler(async (event) => {
     let registrationDeadlineEnabled = false
     let registrationDeadlineAt = ''
     let paymentSettings: Array<Record<string, any>> = []
+    let allowDuplicateEmail = false
+    let allowDuplicateDevice = true
     try {
       const parsedSchema = JSON.parse(evt.formSchema || '[]')
       if (Array.isArray(parsedSchema)) {
         const meta = parsedSchema.find((item) => item?.itemType === 'form_meta')
         registrationDeadlineEnabled = !!meta?.registrationDeadlineEnabled
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
+        allowDuplicateEmail = !!meta?.allowDuplicateEmail
+        allowDuplicateDevice = meta?.allowDuplicateDevice !== false
         const methods = Array.isArray(meta?.paymentSettings) ? meta.paymentSettings : []
         paymentSettings = methods
           .map((method, index) => ({
@@ -66,6 +76,7 @@ export default defineEventHandler(async (event) => {
       registrationDeadlineEnabled = false
       registrationDeadlineAt = ''
       paymentSettings = []
+      allowDuplicateDevice = true
     }
 
     if (registrationDeadlineEnabled && registrationDeadlineAt) {
@@ -79,6 +90,52 @@ export default defineEventHandler(async (event) => {
       const currentRegistrants = await prisma.ticket.count({ where: { eventId } })
       if (currentRegistrants >= evt.quota) {
         throw createError({ statusCode: 400, statusMessage: 'Kuota pendaftaran telah penuh' })
+      }
+    }
+
+    if (!allowDuplicateEmail) {
+      const existingTicket = await prisma.ticket.findFirst({
+        where: { eventId, registrantEmail }
+      })
+      if (existingTicket) {
+        throw createError({ statusCode: 400, statusMessage: 'Email ini sudah terdaftar pada event ini.' })
+      }
+    }
+
+    let parsedDeviceMeta: Record<string, any> = {}
+    let deviceHash = ''
+    try {
+      const parsed = JSON.parse(deviceMetaStr || '{}')
+      if (parsed && typeof parsed === 'object') {
+        parsedDeviceMeta = parsed
+      }
+      deviceHash = String(parsedDeviceMeta?.hash || '').trim()
+    } catch {
+      parsedDeviceMeta = {}
+      deviceHash = ''
+    }
+
+    if (!allowDuplicateDevice && deviceHash) {
+      const existingByEvent = await prisma.ticket.findMany({
+        where: { eventId },
+        select: { formData: true }
+      })
+
+      const deviceExists = existingByEvent.some((ticket) => {
+        try {
+          const parsed = JSON.parse(ticket.formData || '{}')
+          const existingHash = String(parsed?.__deviceMeta?.hash || '').trim()
+          return existingHash && existingHash === deviceHash
+        } catch {
+          return false
+        }
+      })
+
+      if (deviceExists) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'Perangkat ini sudah pernah mendaftar pada event ini.'
+        })
       }
     }
 
@@ -113,6 +170,10 @@ export default defineEventHandler(async (event) => {
       }
     } catch {
       parsedFormData = {}
+    }
+
+    if (parsedDeviceMeta && Object.keys(parsedDeviceMeta).length > 0) {
+      parsedFormData.__deviceMeta = parsedDeviceMeta
     }
 
     for (const [questionId, file] of Object.entries(dynamicFiles)) {

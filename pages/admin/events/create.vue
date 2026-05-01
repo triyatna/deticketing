@@ -380,6 +380,29 @@
                 class="form-input"
               />
             </div>
+
+            <div class="form-group row-full mt-4">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="form.allowDuplicateEmail" />
+                <span class="checkmark"></span>
+                Izinkan Pendaftaran Email Berulang (Duplikat)
+              </label>
+              <p class="helper-text mt-1 ml-8">
+                Jika dicentang, 1 email yang sama diizinkan mendaftar berkali-kali pada event ini.
+              </p>
+            </div>
+
+            <div class="form-group row-full">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="form.allowDuplicateDevice" />
+                <span class="checkmark"></span>
+                Izinkan Pendaftaran Berulang (Device yang Sama)
+              </label>
+              <p class="helper-text mt-1 ml-8">
+                Default aktif. Jika dimatikan, device yang sudah pernah berhasil daftar tidak bisa mengisi form lagi.
+              </p>
+            </div>
+
           </div>
         </section>
 
@@ -724,6 +747,8 @@ const form = ref({
   backgroundColor: "#0a1222",
   backgroundTexture: "dots",
   backgroundImageUrl: "",
+  allowDuplicateEmail: false,
+  allowDuplicateDevice: true,
   registrationDeadlineEnabled: false,
   registrationDeadlineAt: "",
   quota: "",
@@ -1034,6 +1059,8 @@ const loadEventForEdit = async () => {
     form.value.registrationDeadlineAt = form.value.registrationDeadlineEnabled
       ? String(meta?.registrationDeadlineAt || "")
       : "";
+    form.value.allowDuplicateEmail = !!meta?.allowDuplicateEmail;
+    form.value.allowDuplicateDevice = meta?.allowDuplicateDevice !== false;
 
     form.value.paymentMethods = Array.isArray(meta?.paymentSettings)
       ? meta.paymentSettings.map((method, index) => ({
@@ -1234,6 +1261,8 @@ const submitEvent = async () => {
       registrationDeadlineAt: form.value.registrationDeadlineEnabled
         ? String(form.value.registrationDeadlineAt || "")
         : "",
+      allowDuplicateEmail: !!form.value.allowDuplicateEmail,
+      allowDuplicateDevice: !!form.value.allowDuplicateDevice,
     };
 
     if (form.value.paymentEnabled && !validPaymentMethods.value.length) {

@@ -40,13 +40,13 @@
             Refresh Kamera
           </button>
 
-          <button
+          <!-- <button
             class="btn-outline"
             @click="debugCameraAccess"
             :disabled="cameraLoading"
           >
             Debug Kamera
-          </button>
+          </button> -->
 
           <select
             v-model="selectedDeviceId"
@@ -128,16 +128,26 @@
       </section>
     </div>
 
-    <div v-if="actionModal.open" class="modal-overlay" @click.self="closeActionModal">
+    <div
+      v-if="actionModal.open"
+      class="modal-overlay"
+      @click.self="closeActionModal"
+    >
       <div class="glass-panel modal-card">
         <h3>{{ actionModal.title }}</h3>
         <p class="modal-text">{{ actionModal.description }}</p>
         <div class="modal-actions">
-          <button class="btn-outline" :disabled="isProcessing" @click="closeActionModal">
+          <button
+            class="btn-outline"
+            :disabled="isProcessing"
+            @click="closeActionModal"
+          >
             Batal
           </button>
           <button
-            :class="actionModal.action === 'MASUK' ? 'btn-primary' : 'btn-warning'"
+            :class="
+              actionModal.action === 'MASUK' ? 'btn-primary' : 'btn-warning'
+            "
             :disabled="isProcessing"
             @click="submitActionFromModal"
           >
@@ -155,28 +165,40 @@
       <div class="glass-panel modal-card scan-result-modal">
         <div class="scan-modal-head">
           <h3>Konfirmasi Hasil Scan</h3>
-          <p class="scan-modal-subtitle">QR valid terdeteksi. Lanjutkan dengan aksi kehadiran.</p>
+          <p class="scan-modal-subtitle">
+            QR valid terdeteksi. Lanjutkan dengan aksi kehadiran.
+          </p>
         </div>
 
         <div class="scan-modal-body">
           <div class="scan-info-row">
             <span class="scan-info-label">Nama Peserta</span>
-            <strong class="scan-info-value">{{ scannedTicket.registrantName }}</strong>
+            <strong class="scan-info-value">{{
+              scannedTicket.registrantName
+            }}</strong>
           </div>
           <div class="scan-info-row">
             <span class="scan-info-label">Event</span>
-            <strong class="scan-info-value">{{ scannedTicket.eventName }}</strong>
+            <strong class="scan-info-value">{{
+              scannedTicket.eventName
+            }}</strong>
           </div>
           <div class="scan-info-row">
             <span class="scan-info-label">Status Saat Ini</span>
-            <span :class="['badge', getBadgeClass(scannedTicket.currentStatus)]">
+            <span
+              :class="['badge', getBadgeClass(scannedTicket.currentStatus)]"
+            >
               {{ scannedTicket.currentStatus.replace("_", " ") }}
             </span>
           </div>
         </div>
 
         <div class="modal-actions scan-modal-actions">
-          <button class="btn-outline" :disabled="isProcessing" @click="closeScanResultModal">
+          <button
+            class="btn-outline"
+            :disabled="isProcessing"
+            @click="closeScanResultModal"
+          >
             Tutup
           </button>
           <button
@@ -188,7 +210,9 @@
             Konfirmasi MASUK
           </button>
           <button
-            v-if="getRecommendedAction(scannedTicket.currentStatus) === 'KELUAR'"
+            v-if="
+              getRecommendedAction(scannedTicket.currentStatus) === 'KELUAR'
+            "
             class="btn-warning"
             :disabled="isProcessing"
             @click="openActionModalFromScanResult('KELUAR')"
@@ -834,7 +858,10 @@ const processDetectedQr = async (decodedText) => {
         res.ticket?.registrantName || "",
         res.ticket?.currentStatus || "",
       );
-      pushToast("success", `QR valid: ${res.ticket?.registrantName || "Peserta"}`);
+      pushToast(
+        "success",
+        `QR valid: ${res.ticket?.registrantName || "Peserta"}`,
+      );
     }
   } catch (err) {
     pushToast("error", err?.data?.statusMessage || "QR Code tidak valid");
@@ -1096,10 +1123,7 @@ const submitActionFromModal = async () => {
       const participantName = scannedTicket.value.registrantName || "Peserta";
 
       announceStatusConfirmed(participantName, action);
-      pushToast(
-        "success",
-        `Nama ${participantName}, berhasil ${statusLabel}.`,
-      );
+      pushToast("success", `Nama ${participantName}, berhasil ${statusLabel}.`);
       resetScan();
     }
   } catch (err) {

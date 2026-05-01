@@ -139,6 +139,10 @@ textarea.form-input {
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
 }
 
+.input-capitalize {
+  text-transform: capitalize;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;

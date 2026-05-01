@@ -2,6 +2,7 @@ import prisma from '../../utils/prisma'
 import QRCode from 'qrcode'
 import { encrypt } from '../../utils/crypto'
 import { sendTicketEmail } from '../../utils/mailer'
+import { getRequestHost, getRequestProtocol } from 'h3'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -31,8 +32,12 @@ export default defineEventHandler(async (event) => {
       width: 400
     })
 
+    const host = getRequestHost(event)
+    const protocol = getRequestProtocol(event)
+    const baseUrl = `${protocol}://${host}`
+
     // Send Email FIRST. If this fails, the ticket remains PENDING.
-    await sendTicketEmail(ticket.registrantEmail, ticket.registrantName, ticket.event.name, qrCodeDataUrl)
+    await sendTicketEmail(ticket.registrantEmail, ticket.registrantName, ticket.event.name, qrCodeDataUrl, baseUrl)
 
     // Update ticket in database ONLY IF email succeeds
     await prisma.ticket.update({

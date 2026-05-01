@@ -20,15 +20,20 @@
         <p class="text-muted error-desc">
           Maaf, halaman pendaftaran yang Anda cari tidak tersedia, URL mungkin salah, atau event telah dihapus oleh penyelenggara.
         </p>
-        <div class="error-actions">
-          <NuxtLink to="/" class="btn-primary error-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            Kembali ke Beranda
-          </NuxtLink>
+      </div>
+    </div>
+
+    <div v-else-if="isSuccess" class="container pt-8">
+      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 4rem 2rem; border-radius: 20px;">
+        <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(34, 197, 94, 0.1); color: #22c55e; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.2);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
         </div>
+        <h2 class="gradient-text mb-4" style="font-size: 2.2rem; font-weight: 800;">Pendaftaran Berhasil!</h2>
+        <p class="text-muted" style="font-size: 1.05rem; line-height: 1.7; max-width: 480px; margin: 0 auto;">
+          Terima kasih telah mendaftar. Data Anda telah kami terima dengan baik. Silakan tunggu informasi dan konfirmasi lebih lanjut dari panitia. E-Ticket akan dikirimkan ke email Anda jika pendaftaran telah disetujui.
+        </p>
       </div>
     </div>
 
@@ -71,7 +76,7 @@
                 <input
                   v-model="form.registrantName"
                   type="text"
-                  class="form-input"
+                  class="form-input input-capitalize"
                   required
                 />
               </div>
@@ -488,22 +493,37 @@
             <p class="text-muted text-sm mb-2">
               Unggah bukti transfer (JPG/PNG). Maks 2MB.
             </p>
+
+            <div v-if="proofFileCache" class="proof-preview mb-3">
+              <img :src="proofFileCache.dataUrl" alt="Bukti Transfer" class="proof-thumb" />
+              <div class="proof-info">
+                <span class="proof-name">{{ proofFileCache.name }}</span>
+                <button type="button" class="proof-remove" @click="removeProofCache">&times; Hapus</button>
+              </div>
+            </div>
+
             <input
               @change="handleProofUpload"
               type="file"
               accept="image/jpeg, image/png, image/webp"
               class="form-input"
-              required
+              :required="!proofFileCache"
             />
           </div>
 
           <div class="form-actions mt-8">
             <button
               type="submit"
-              class="btn-primary w-full"
+              class="btn-primary w-full submit-btn"
               :disabled="isSubmitting"
             >
-              {{ isSubmitting ? "Mendaftar..." : "Kirim Pendaftaran" }}
+              <span v-if="isSubmitting" class="btn-spinner-wrap">
+                <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12" />
+                </svg>
+                Memproses...
+              </span>
+              <span v-else>Kirim Pendaftaran</span>
             </button>
           </div>
         </form>
@@ -528,13 +548,87 @@
 </template>
 
 <script setup>
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref, watchEffect, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
 const router = useRouter();
 const { appName, appLogoUrl } = useBranding();
 const slug = route.params.slug;
+
+const DEVICE_CACHE_KEY = `form_device_meta_${slug}`;
+
+const toBase64Url = (bytes) => {
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const buildRawDeviceMeta = () => {
+  if (!import.meta.client) return {};
+
+  const nav = window.navigator;
+  const scr = window.screen;
+  const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+
+  return {
+    userAgent: nav.userAgent || "",
+    platform: nav.platform || "",
+    vendor: nav.vendor || "",
+    language: nav.language || "",
+    languages: Array.isArray(nav.languages) ? nav.languages : [],
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    screen: {
+      width: scr?.width || 0,
+      height: scr?.height || 0,
+      availWidth: scr?.availWidth || 0,
+      availHeight: scr?.availHeight || 0,
+      colorDepth: scr?.colorDepth || 0,
+      pixelDepth: scr?.pixelDepth || 0,
+      pixelRatio: window.devicePixelRatio || 1,
+    },
+    viewport: {
+      width: window.innerWidth || 0,
+      height: window.innerHeight || 0,
+    },
+    hardwareConcurrency: nav.hardwareConcurrency || 0,
+    deviceMemory: nav.deviceMemory || 0,
+    maxTouchPoints: nav.maxTouchPoints || 0,
+    cookieEnabled: !!nav.cookieEnabled,
+    doNotTrack: nav.doNotTrack || "",
+    online: !!nav.onLine,
+    connection: conn
+      ? {
+          effectiveType: conn.effectiveType || "",
+          downlink: conn.downlink || 0,
+          rtt: conn.rtt || 0,
+          saveData: !!conn.saveData,
+        }
+      : null,
+  };
+};
+
+const buildStableFingerprintSource = (meta) => {
+  const source = {
+    userAgent: meta.userAgent || "",
+    platform: meta.platform || "",
+    vendor: meta.vendor || "",
+    language: meta.language || "",
+    timezone: meta.timezone || "",
+    screen: meta.screen || {},
+    hardwareConcurrency: meta.hardwareConcurrency || 0,
+    deviceMemory: meta.deviceMemory || 0,
+    maxTouchPoints: meta.maxTouchPoints || 0,
+  };
+  return JSON.stringify(source);
+};
+
+const hashFingerprint = async (fingerprintSource) => {
+  if (!import.meta.client) return "";
+  const encoded = new TextEncoder().encode(String(fingerprintSource || ""));
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  const bytes = new Uint8Array(digest);
+  return toBase64Url(bytes);
+};
 
 useHead({
   meta: [
@@ -753,6 +847,10 @@ const registrationDeadlineAt = computed(() => {
   return String(formMeta.value?.registrationDeadlineAt || "").trim();
 });
 
+const allowDuplicateDevice = computed(() => {
+  return formMeta.value?.allowDuplicateDevice !== false;
+});
+
 const registrationDeadlineLabel = computed(() => {
   const raw = registrationDeadlineAt.value;
   if (!raw) return "-";
@@ -773,14 +871,155 @@ const questionItems = computed(() =>
   schemaItems.value.filter((item) => item.itemType === "question"),
 );
 
+const CACHE_KEY = computed(() => `form_cache_${slug}`);
+
 const form = ref({
   registrantName: "",
   registrantEmail: "",
 });
 const answers = ref({});
 const fileAnswers = ref({});
-const selectedProofFile = ref(null);
 const isSubmitting = ref(false);
+const selectedProofFile = ref(null);
+const isSuccess = ref(false);
+const proofFileCache = ref(null);
+const deviceMeta = ref(null);
+const deviceStatusChecked = ref(false);
+
+const PROOF_CACHE_KEY = computed(() => `proof_cache_${slug}`);
+
+watch(
+  [form, answers],
+  ([newForm, newAnswers]) => {
+    if (!process.client) return;
+    localStorage.setItem(CACHE_KEY.value, JSON.stringify({ form: newForm, answers: newAnswers }));
+  },
+  { deep: true }
+);
+
+watch(proofFileCache, (val) => {
+  if (!process.client) return;
+  if (val) {
+    localStorage.setItem(PROOF_CACHE_KEY.value, JSON.stringify(val));
+  } else {
+    localStorage.removeItem(PROOF_CACHE_KEY.value);
+  }
+});
+
+onMounted(() => {
+  if (process.client) {
+    const cached = localStorage.getItem(CACHE_KEY.value);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.form) {
+          form.value.registrantName = parsed.form.registrantName || "";
+          form.value.registrantEmail = parsed.form.registrantEmail || "";
+        }
+        if (parsed.answers) {
+          answers.value = { ...answers.value, ...parsed.answers };
+        }
+      } catch (e) {
+        console.error("Cache parsing error", e);
+      }
+    }
+
+    const proofCached = localStorage.getItem(PROOF_CACHE_KEY.value);
+    if (proofCached) {
+      try {
+        const parsed = JSON.parse(proofCached);
+        if (parsed?.dataUrl && parsed?.name) {
+          proofFileCache.value = parsed;
+          const arr = parsed.dataUrl.split(',');
+          const mime = arr[0].match(/:(.*?);/)?.[1] || parsed.type;
+          const bstr = atob(arr[1]);
+          const u8arr = new Uint8Array(bstr.length);
+          for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+          selectedProofFile.value = new File([u8arr], parsed.name, { type: mime });
+        }
+      } catch (e) {
+        console.error('Proof cache error', e);
+      }
+    }
+  }
+
+  loadOrCreateDeviceMeta().then(() => {
+    checkDeviceDuplicateStatus();
+  });
+});
+
+const clearCache = () => {
+  if (process.client) {
+    localStorage.removeItem(CACHE_KEY.value);
+    localStorage.removeItem(PROOF_CACHE_KEY.value);
+  }
+};
+
+const loadOrCreateDeviceMeta = async () => {
+  if (!import.meta.client) return;
+
+  try {
+    const cachedRaw = localStorage.getItem(DEVICE_CACHE_KEY);
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      if (cached?.hash) {
+        deviceMeta.value = cached;
+        return;
+      }
+    }
+  } catch {
+    // ignore cache parsing errors
+  }
+
+  const rawMeta = buildRawDeviceMeta();
+  const fingerprintSource = buildStableFingerprintSource(rawMeta);
+  const hash = await hashFingerprint(fingerprintSource);
+
+  const resolvedMeta = {
+    ...rawMeta,
+    hash,
+    generatedAt: new Date().toISOString(),
+  };
+
+  deviceMeta.value = resolvedMeta;
+
+  try {
+    localStorage.setItem(DEVICE_CACHE_KEY, JSON.stringify(resolvedMeta));
+  } catch {
+    // ignore storage limits
+  }
+};
+
+const checkDeviceDuplicateStatus = async () => {
+  if (!import.meta.client) return;
+  if (!event.value?.slug) return;
+  if (allowDuplicateDevice.value) return;
+  if (!deviceMeta.value?.hash) return;
+  if (deviceStatusChecked.value) return;
+
+  try {
+    const res = await $fetch(`/api/public/event/${event.value.slug}/device-status`, {
+      method: "POST",
+      body: {
+        deviceHash: String(deviceMeta.value.hash || ""),
+      },
+    });
+
+    if (res?.success && res?.blocked) {
+      isSuccess.value = true;
+      clearCache();
+    }
+  } catch {
+    // no-op, keep form accessible if check fails
+  } finally {
+    deviceStatusChecked.value = true;
+  }
+};
+
+const removeProofCache = () => {
+  proofFileCache.value = null;
+  selectedProofFile.value = null;
+};
 
 watchEffect(() => {
   for (const question of questionItems.value) {
@@ -798,6 +1037,15 @@ watchEffect(() => {
   }
 });
 
+watch(
+  [() => event.value?.slug, allowDuplicateDevice, () => deviceMeta.value?.hash],
+  async () => {
+    deviceStatusChecked.value = false;
+    await checkDeviceDuplicateStatus();
+  },
+  { immediate: true },
+);
+
 const handleProofUpload = (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -808,6 +1056,16 @@ const handleProofUpload = (e) => {
     return;
   }
   selectedProofFile.value = file;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    proofFileCache.value = {
+      dataUrl: ev.target.result || '',
+      name: file.name,
+      type: file.type,
+    };
+  };
+  reader.readAsDataURL(file);
 };
 
 const handleDynamicFileUpload = (questionId, e) => {
@@ -1003,6 +1261,9 @@ const submitRegistration = async () => {
     multipart.append("registrantName", form.value.registrantName);
     multipart.append("registrantEmail", form.value.registrantEmail);
     multipart.append("formData", JSON.stringify(payloadAnswers));
+    if (deviceMeta.value) {
+      multipart.append("deviceMeta", JSON.stringify(deviceMeta.value));
+    }
 
     if (event.value.requireProof && selectedProofFile.value) {
       multipart.append("paymentProof", selectedProofFile.value);
@@ -1020,11 +1281,18 @@ const submitRegistration = async () => {
     });
 
     if (res.success) {
-      alert("Pendaftaran berhasil! Silakan tunggu konfirmasi dari panitia.");
-      router.push("/");
+      isSuccess.value = true;
+      clearCache();
+      window.scrollTo(0, 0);
     }
   } catch (err) {
-    alert(err.data?.statusMessage || "Pendaftaran gagal");
+    const statusMessage = err?.data?.statusMessage || "Pendaftaran gagal";
+    if (/perangkat ini sudah pernah mendaftar/i.test(statusMessage)) {
+      isSuccess.value = true;
+      clearCache();
+      return;
+    }
+    alert(statusMessage);
   } finally {
     isSubmitting.value = false;
   }
@@ -1121,11 +1389,94 @@ const submitRegistration = async () => {
   padding: 1rem;
 }
 
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.proof-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.proof-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.proof-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.proof-name {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proof-remove {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  width: fit-content;
+  transition: background 0.2s;
+}
+
+.proof-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
 .gradient-text {
   font-size: clamp(1.6rem, 5vw, 2.5rem);
   font-weight: 800;
   background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.2;
   margin: 0.6rem 0;
