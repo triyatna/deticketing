@@ -194,6 +194,23 @@
               placeholder="Kosongkan jika tidak ingin mengubah"
               autocomplete="new-password"
             />
+            <div class="inline-actions secret-actions">
+              <button
+                type="button"
+                class="btn-outline small-btn"
+                @click="generateAppSecret"
+              >
+                Generate Secret
+              </button>
+              <button
+                type="button"
+                class="btn-outline small-btn"
+                :disabled="!settings.APP_SECRET"
+                @click="copyAppSecret"
+              >
+                Copy Secret
+              </button>
+            </div>
             <p class="field-hint">
               Disimpan terenkripsi di database. Nilai saat ini tidak pernah ditampilkan.
             </p>
@@ -421,6 +438,40 @@ const onUploadFile = async (event, type) => {
   }
 };
 
+const generateAppSecret = () => {
+  try {
+    if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+      const bytes = new Uint8Array(48);
+      window.crypto.getRandomValues(bytes);
+      settings.value.APP_SECRET = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    } else {
+      settings.value.APP_SECRET = `${Date.now().toString(16)}${Math.random()
+        .toString(36)
+        .slice(2)}${Math.random().toString(36).slice(2)}`;
+    }
+    showNotice("success", "App secret baru berhasil dibuat.");
+  } catch {
+    showNotice("error", "Gagal membuat app secret.");
+  }
+};
+
+const copyAppSecret = async () => {
+  const value = String(settings.value.APP_SECRET || "").trim();
+  if (!value) {
+    showNotice("error", "App secret masih kosong.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(value);
+    showNotice("success", "App secret berhasil disalin.");
+  } catch {
+    showNotice("error", "Gagal menyalin app secret.");
+  }
+};
+
 onMounted(async () => {
   try {
     const res = await $fetch("/api/admin/settings");
@@ -601,6 +652,12 @@ const changePassword = async () => {
 
 .inline-actions {
   margin-top: 0.45rem;
+}
+
+.secret-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .small-btn {
