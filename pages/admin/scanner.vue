@@ -237,6 +237,7 @@
 </template>
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import Swal from "sweetalert2";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 
@@ -864,7 +865,16 @@ const processDetectedQr = async (decodedText) => {
       );
     }
   } catch (err) {
-    pushToast("error", err?.data?.statusMessage || "QR Code tidak valid");
+    const message = err?.data?.statusMessage || "QR Code tidak valid";
+    await Swal.fire({
+      title: "Gagal!",
+      text: message,
+      icon: "error",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#f43f5e",
+      background: "#0f172a",
+      color: "#f1f7ff",
+    });
     resumeScannerSafely();
   } finally {
     isProcessing.value = false;
@@ -1061,10 +1071,15 @@ const onCaptureFileChange = async (event) => {
     await processDetectedQr(result.decodedText);
   } catch (error) {
     console.error("Gagal scan dari foto:", error);
-    pushToast(
-      "error",
-      "QR tidak terdeteksi dari foto. Coba foto lebih dekat, terang, dan tidak blur.",
-    );
+    await Swal.fire({
+      title: "Scan Gagal",
+      text: "QR tidak terdeteksi dari foto. Coba foto lebih dekat, terang, dan tidak blur.",
+      icon: "warning",
+      confirmButtonText: "Coba Lagi",
+      confirmButtonColor: "#f43f5e",
+      background: "#0f172a",
+      color: "#f1f7ff",
+    });
   } finally {
     manualCaptureBusy.value = false;
   }

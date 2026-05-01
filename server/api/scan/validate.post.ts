@@ -90,8 +90,9 @@ export default defineEventHandler(async (event) => {
         currentStatus: ticket.scanStatus, // BELUM_HADIR, MASUK, KELUAR
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Scan Validate Error:', error)
+    if (error.statusMessage) throw error
     throw createError({ statusCode: 400, statusMessage: 'QR Code tidak valid atau rusak.' })
   }
 })
