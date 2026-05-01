@@ -24,7 +24,10 @@ export const ensureDatabaseFile = () => {
   }
 
   if (!fs.existsSync(sqlitePath)) {
+    console.log(`Database belum ada, membuat file baru: ${sqlitePath}`);
     fs.closeSync(fs.openSync(sqlitePath, "a"));
+  } else {
+    console.log(`Database ditemukan di: ${sqlitePath}. Melewati inisialisasi file.`);
   }
 
   if (!dbUrlRaw) {
