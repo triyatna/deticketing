@@ -22,3 +22,14 @@ logs
 .env
 .env.*
 !.env.example
+
+# Database
+prisma/*.db
+prisma/*.db-journal
+
+# Uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Scratch/temp files
+scratch/
