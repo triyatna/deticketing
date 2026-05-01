@@ -1,5 +1,7 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import fs from "node:fs";
+import path from "node:path";
 
 const execAsync = promisify(exec);
 
@@ -26,7 +28,18 @@ export default defineEventHandler(async (event) => {
     );
     console.log("Git Reset Output:", resetStdout);
 
-    // 2. Lanjutkan proses sisanya
+    // 2. Pembersihan (Cleaning) folder build lama
+    console.log("Cleaning old build artifacts...");
+    const foldersToClean = [".output", ".nuxt"];
+    for (const folder of foldersToClean) {
+      const folderPath = path.resolve(process.cwd(), folder);
+      if (fs.existsSync(folderPath)) {
+        console.log(`Removing ${folder}...`);
+        fs.rmSync(folderPath, { recursive: true, force: true });
+      }
+    }
+
+    // 3. Lanjutkan proses sisanya
     console.log("Running full sync chain...");
     const fullCommand =
       "npm install && npm run prisma:generate && npm run build";
