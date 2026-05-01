@@ -1,75 +1,113 @@
-# Nuxt Minimal Starter
+# DeTicketing
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Sistem ticketing event berbasis Nuxt 3 + Prisma + SQLite, dengan panel admin, form builder, approval tiket, dan QR scanner.
 
-## Setup
+## Stack
 
-Make sure to install dependencies:
+- Nuxt 3
+- Prisma ORM 7
+- SQLite (default)
+- SweetAlert2
+- PM2 (opsional untuk production)
+
+## Persiapan
+
+Pastikan tersedia:
+
+- Node.js 20+
+- npm 10+
+
+## Instalasi
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+## Konfigurasi Environment
 
-Start the development server on `http://localhost:3000`:
+Project ini tetap bisa jalan meskipun `DATABASE_URL` tidak diisi:
+
+- Jika `DATABASE_URL` kosong, sistem otomatis fallback ke `file:./prisma/dev.db`.
+- Folder/file database SQLite akan dibuat otomatis saat `build` / `prisma:generate` / `prisma:push`.
+
+Contoh `.env` minimal:
+
+```env
+NODE_ENV=production
+PORT=1933
+```
+
+## Prisma (Penting)
+
+Gunakan script npm berikut (jangan langsung `npx prisma ...`) agar pre-hook auto create database berjalan:
 
 ```bash
-# npm
+npm run prisma:generate
+npm run prisma:push
+```
+
+## Development
+
+```bash
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
-
-Build the application for production:
+## Build & Run Production
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+npm run start
 ```
 
-Locally preview production build:
+`start.mjs` default menggunakan port `1933` jika `PORT` tidak di-set.
+
+## Menjalankan dengan PM2
+
+File konfigurasi sudah disediakan:
+
+- [`ecosystem.config.cjs`](/e:/DEV/laragon/www/htdocs/project/ticketing/ecosystem.config.cjs)
+
+Perintah:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+pm2 start ecosystem.config.cjs --env production
+pm2 logs ticketing
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## First Setup Owner
+
+Saat pertama kali dijalankan dan akun owner belum ada:
+
+- buka `/admin/login`
+- sistem akan arahkan ke `/admin/setup-owner`
+- setelah owner dibuat, halaman setup owner tidak dipakai lagi
+
+## Catatan Keamanan
+
+- `APP_SECRET` dikelola server (auto-generate saat kosong).
+- Secret disimpan terenkripsi.
+- Secret per-event untuk QR dibuat otomatis saat event baru dibuat.
+- Endpoint form publik diberi header no-index.
+
+## Troubleshooting
+
+### Error `Cannot resolve environment variable: DATABASE_URL`
+
+Gunakan:
+
+```bash
+npm run prisma:generate
+```
+
+bukan:
+
+```bash
+npx prisma generate
+```
+
+Karena script npm menjalankan pre-hook untuk memastikan file database SQLite sudah dibuat.
+
+### Error Prisma v7 tentang `url` di `schema.prisma`
+
+Project ini memakai Prisma 7. URL datasource dikonfigurasi di `prisma.config.ts`, bukan di `prisma/schema.prisma`.
+

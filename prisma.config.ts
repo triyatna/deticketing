@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
-import { defineConfig } from "@prisma/config";
+import { defineConfig } from "prisma/config";
 
 const toPosixPath = (value: string) => value.replace(/\\/g, "/");
 
