@@ -1,8 +1,8 @@
 <template>
-  <div class="login-page">
-    <div class="login-shell glass-panel">
-      <div class="login-brand">
-        <p class="kicker">Admin Access</p>
+  <div class="setup-page">
+    <div class="setup-shell glass-panel">
+      <div class="setup-brand">
+        <p class="kicker">First Setup</p>
         <img
           v-if="appLogoUrl"
           :src="appLogoUrl"
@@ -11,15 +11,27 @@
         />
         <h1 v-else class="gradient-text">{{ appName }} Console</h1>
         <p class="muted">
-          Masuk untuk kelola event, verifikasi tiket, dan operasional check-in
-          peserta.
+          Buat akun owner pertama untuk mengaktifkan panel admin.
         </p>
       </div>
 
-      <form class="login-form" @submit.prevent="handleLogin">
+      <form class="setup-form" @submit.prevent="handleSetup">
         <div class="form-head">
-          <h2>Sign In</h2>
-          <p>Gunakan akun staf atau owner untuk lanjut ke dashboard.</p>
+          <h2>Setup Owner</h2>
+          <p>Akun owner hanya bisa dibuat sekali saat belum ada admin utama.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="name">Nama Owner</label>
+          <input
+            id="name"
+            v-model="form.name"
+            type="text"
+            class="form-input"
+            required
+            autocomplete="name"
+            placeholder="Masukkan nama owner"
+          />
         </div>
 
         <div class="form-group">
@@ -31,7 +43,7 @@
             class="form-input"
             required
             autocomplete="username"
-            placeholder="Masukkan username"
+            placeholder="Masukkan username owner"
           />
         </div>
 
@@ -43,15 +55,28 @@
             type="password"
             class="form-input"
             required
-            autocomplete="current-password"
-            placeholder="Masukkan password"
+            autocomplete="new-password"
+            placeholder="Minimal 8 karakter"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Konfirmasi Password</label>
+          <input
+            id="confirmPassword"
+            v-model="form.confirmPassword"
+            type="password"
+            class="form-input"
+            required
+            autocomplete="new-password"
+            placeholder="Ulangi password"
           />
         </div>
 
         <div v-if="errorMessage" class="error-alert">{{ errorMessage }}</div>
 
-        <button type="submit" class="btn-primary submit-btn" :disabled="isLoading || checkingSetup">
-          {{ checkingSetup ? 'Memeriksa Setup...' : (isLoading ? 'Memproses...' : 'Masuk') }}
+        <button type="submit" class="btn-primary submit-btn" :disabled="isLoading || checkingStatus">
+          {{ isLoading ? "Memproses..." : "Buat Owner & Masuk Dashboard" }}
         </button>
       </form>
     </div>
@@ -68,55 +93,69 @@ definePageMeta({
 
 const router = useRouter()
 const { appName, appLogoUrl } = useBranding()
-const form = ref({ username: '', password: '' })
+
+const checkingStatus = ref(true)
 const isLoading = ref(false)
-const checkingSetup = ref(true)
 const errorMessage = ref('')
 
-const handleLogin = async () => {
-  if (checkingSetup.value) return
+const form = ref({
+  name: '',
+  username: '',
+  password: '',
+  confirmPassword: ''
+})
+
+const checkSetupStatus = async () => {
+  checkingStatus.value = true
+  try {
+    const res = await $fetch('/api/auth/setup-status')
+    if (res?.ownerExists) {
+      router.replace('/admin/login')
+    }
+  } catch {
+    router.replace('/admin/login')
+  } finally {
+    checkingStatus.value = false
+  }
+}
+
+const handleSetup = async () => {
+  if (form.value.password.length < 8) {
+    errorMessage.value = 'Password minimal 8 karakter.'
+    return
+  }
+
+  if (form.value.password !== form.value.confirmPassword) {
+    errorMessage.value = 'Konfirmasi password tidak cocok.'
+    return
+  }
 
   isLoading.value = true
   errorMessage.value = ''
 
   try {
-    const response = await $fetch('/api/auth/login', {
+    const res = await $fetch('/api/auth/setup-owner', {
       method: 'POST',
       body: form.value
     })
 
-    if (response.success) {
+    if (res?.success) {
       router.push('/admin/dashboard')
     }
   } catch (error) {
-    errorMessage.value = error.data?.statusMessage || 'Login gagal. Periksa kembali kredensial Anda.'
+    errorMessage.value = error?.data?.statusMessage || 'Gagal membuat owner.'
   } finally {
     isLoading.value = false
   }
 }
 
-const checkOwnerSetup = async () => {
-  checkingSetup.value = true
-  try {
-    const res = await $fetch('/api/auth/setup-status')
-    if (res?.success && !res.ownerExists) {
-      router.replace('/admin/setup-owner')
-      return
-    }
-  } catch {
-    // keep login available on transient errors
-  } finally {
-    checkingSetup.value = false
-  }
-}
-
 onMounted(async () => {
-  await checkOwnerSetup()
+  await checkSetupStatus()
 })
 </script>
 
 <style scoped lang="scss">
-.login-page {
+.setup-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -124,7 +163,7 @@ onMounted(async () => {
   padding: clamp(1rem, 3vw, 2rem);
 }
 
-.login-shell {
+.setup-shell {
   width: 100%;
   max-width: 980px;
   padding: clamp(1rem, 2.5vw, 1.45rem);
@@ -133,7 +172,7 @@ onMounted(async () => {
   gap: clamp(1rem, 2vw, 1.5rem);
 }
 
-.login-brand {
+.setup-brand {
   border: 1px solid var(--line-soft);
   border-radius: 16px;
   padding: clamp(1rem, 2vw, 1.3rem);
@@ -171,7 +210,7 @@ h1 {
   font-size: 0.92rem;
 }
 
-.login-form {
+.setup-form {
   display: grid;
   gap: 0.9rem;
   border: 1px solid var(--line-soft);
@@ -216,8 +255,9 @@ label {
 }
 
 @media (max-width: 900px) {
-  .login-shell {
+  .setup-shell {
     grid-template-columns: 1fr;
   }
 }
 </style>
+

@@ -1,12 +1,14 @@
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
+import { getOrCreateRuntimeSecret } from './runtimeSecrets'
 
 const algorithm = 'aes-256-cbc'
 
 // Generate standard 32 bytes key from the APP_SECRET
 const getSecret = () => {
-  const secret = process.env.APP_SECRET || 'default-secret-key-must-be-32-chars!'
+  const secret =
+    String(process.env.APP_SECRET || '').trim() || getOrCreateRuntimeSecret('APP_SECRET')
   return crypto.createHash('sha256').update(String(secret)).digest('base64').substring(0, 32)
 }
 

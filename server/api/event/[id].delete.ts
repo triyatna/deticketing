@@ -1,6 +1,7 @@
 import prisma from '../../utils/prisma'
 import { verifyToken } from '../../utils/jwt'
 import { deleteEncryptedFile } from '../../utils/fileCrypto'
+import { getEventQrSecretSettingKey } from '../../utils/eventQrSecret'
 
 export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'auth_token')
@@ -46,6 +47,7 @@ export default defineEventHandler(async (event) => {
       }
 
       await tx.ticket.deleteMany({ where: { eventId } })
+      await tx.setting.deleteMany({ where: { key: getEventQrSecretSettingKey(eventId) } })
       await tx.event.delete({ where: { id: eventId } })
     })
 

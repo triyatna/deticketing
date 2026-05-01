@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">Pengaturan Sistem</h1>
         <p class="subtitle">
-          Atur branding, email, dan preferensi operasional panel.
+          Atur email, keamanan, dan preferensi operasional panel.
         </p>
       </div>
       <button
@@ -20,119 +20,6 @@
 
 
     <div class="cards-grid">
-      <section class="glass-panel setting-card card-branding">
-        <div class="card-head">
-          <h3>Branding & Identitas</h3>
-          <p>
-            Tampilan branding admin/public seperti logo, favicon, dan nama
-            aplikasi.
-          </p>
-        </div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Nama Aplikasi</label>
-            <input
-              v-model="settings.APP_NAME"
-              type="text"
-              class="form-input"
-              placeholder="Contoh: NexTicket"
-            />
-            <p class="field-hint">Nama utama yang tampil pada halaman admin dan publik.</p>
-          </div>
-
-          <div class="form-group">
-            <label>Tagline Aplikasi</label>
-            <input
-              v-model="settings.APP_TAGLINE"
-              type="text"
-              class="form-input"
-              placeholder="Contoh: Premium Ticketing System"
-            />
-            <p class="field-hint">Teks pendukung singkat di halaman login/public.</p>
-          </div>
-
-          <div class="form-group">
-            <label>URL Logo</label>
-            <input
-              v-model="settings.APP_LOGO_URL"
-              type="url"
-              class="form-input"
-              placeholder="https://domain.com/logo.png"
-            />
-            <div class="inline-actions">
-              <button
-                type="button"
-                class="btn-outline small-btn"
-                :disabled="uploading.logo"
-                @click="openUpload('logo')"
-              >
-                {{ uploading.logo ? "Uploading..." : "Upload Logo" }}
-              </button>
-            </div>
-            <p class="field-hint">Disarankan file PNG/SVG rasio landscape.</p>
-          </div>
-
-          <div class="form-group">
-            <label>URL Favicon</label>
-            <input
-              v-model="settings.APP_FAVICON_URL"
-              type="url"
-              class="form-input"
-              placeholder="https://domain.com/favicon.ico"
-            />
-            <div class="inline-actions">
-              <button
-                type="button"
-                class="btn-outline small-btn"
-                :disabled="uploading.favicon"
-                @click="openUpload('favicon')"
-              >
-                {{ uploading.favicon ? "Uploading..." : "Upload Favicon" }}
-              </button>
-            </div>
-            <p class="field-hint">Gunakan 32x32 atau 64x64 agar tajam di browser.</p>
-          </div>
-        </div>
-
-        <input
-          ref="logoInputRef"
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          class="hidden-input"
-          @change="onUploadFile($event, 'logo')"
-        />
-        <input
-          ref="faviconInputRef"
-          type="file"
-          accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
-          class="hidden-input"
-          @change="onUploadFile($event, 'favicon')"
-        />
-
-        <div class="preview-grid">
-          <div class="preview-box">
-            <p class="preview-title">Preview Logo</p>
-            <img
-              v-if="settings.APP_LOGO_URL"
-              :src="settings.APP_LOGO_URL"
-              alt="Logo preview"
-              class="preview-image"
-            />
-            <p v-else class="empty-preview">Belum ada URL logo.</p>
-          </div>
-          <div class="preview-box">
-            <p class="preview-title">Preview Favicon</p>
-            <img
-              v-if="settings.APP_FAVICON_URL"
-              :src="settings.APP_FAVICON_URL"
-              alt="Favicon preview"
-              class="preview-favicon"
-            />
-            <p v-else class="empty-preview">Belum ada URL favicon.</p>
-          </div>
-        </div>
-      </section>
       <section class="glass-panel setting-card card-scanner">
         <div class="card-head">
           <h3>Operasional Scanner</h3>
@@ -177,42 +64,31 @@
           </div>
         </div>
       </section>
-      
-      <section class="glass-panel setting-card card-security">
+
+      <section class="glass-panel setting-card card-app-secret">
         <div class="card-head">
-          <h3>Keamanan Akun (Ganti Password)</h3>
-          <p>Perbarui password akun Anda secara berkala demi keamanan.</p>
+          <h3>App Secret</h3>
+          <p>Kunci utama untuk JWT dan enkripsi data sensitif.</p>
         </div>
 
         <div class="form-grid app-secret-grid">
           <div class="form-group">
-            <label>App Secret (JWT & QR Encryption)</label>
-            <input
-              v-model="settings.APP_SECRET"
-              type="password"
-              class="form-input"
-              placeholder="Kosongkan jika tidak ingin mengubah"
-              autocomplete="new-password"
-            />
+            <label>App Secret (Dikelola Server)</label>
             <div class="inline-actions secret-actions">
               <button
                 type="button"
                 class="btn-outline small-btn"
-                @click="generateAppSecret"
-              >
-                Generate Secret
-              </button>
-              <button
-                type="button"
-                class="btn-outline small-btn"
-                :disabled="!settings.APP_SECRET"
+                :disabled="settings.APP_SECRET_CONFIGURED !== 'true'"
                 @click="copyAppSecret"
               >
                 Copy Secret
               </button>
             </div>
             <p class="field-hint">
-              Disimpan terenkripsi di database. Nilai saat ini tidak pernah ditampilkan.
+              Secret dibuat otomatis oleh server saat kosong, disimpan terenkripsi, dan tidak bisa diedit manual.
+            </p>
+            <p class="field-hint">
+              Anda hanya bisa menyalin secret aktif bila sudah terkonfigurasi.
             </p>
             <p class="field-hint secret-status">
               Status:
@@ -221,6 +97,13 @@
               </strong>
             </p>
           </div>
+        </div>
+      </section>
+      
+      <section class="glass-panel setting-card card-security">
+        <div class="card-head">
+          <h3>Keamanan Akun (Ganti Password)</h3>
+          <p>Perbarui password akun Anda secara berkala demi keamanan.</p>
         </div>
 
         <form @submit.prevent="changePassword" class="form-grid">
@@ -350,11 +233,6 @@ import Swal from "sweetalert2";
 definePageMeta({ layout: "admin", middleware: "auth" });
 
 const settings = ref({
-  APP_NAME: "",
-  APP_TAGLINE: "",
-  APP_LOGO_URL: "",
-  APP_FAVICON_URL: "",
-  APP_SECRET: "",
   APP_SECRET_CONFIGURED: "false",
   SMTP_HOST: "",
   SMTP_PORT: "",
@@ -371,12 +249,6 @@ const settings = ref({
 const testEmail = ref("");
 const isSaving = ref(false);
 const isTesting = ref(false);
-const logoInputRef = ref(null);
-const faviconInputRef = ref(null);
-const uploading = ref({
-  logo: false,
-  favicon: false,
-});
 const isChangingPass = ref(false);
 const passwordForm = ref({
   currentPassword: "",
@@ -399,72 +271,19 @@ const showNotice = (type, message) => {
   });
 };
 
-const openUpload = (type) => {
-  if (type === "logo") {
-    logoInputRef.value?.click();
-    return;
-  }
-  faviconInputRef.value?.click();
-};
-
-const onUploadFile = async (event, type) => {
-  const input = event?.target;
-  const file = input?.files?.[0];
-  if (input) input.value = "";
-  if (!file) return;
-
-  uploading.value[type] = true;
-  try {
-    const form = new FormData();
-    form.append("type", type);
-    form.append("file", file);
-
-    const res = await $fetch("/api/admin/settings/upload", {
-      method: "POST",
-      body: form,
-    });
-
-    if (res.success) {
-      settings.value[res.key] = res.url;
-      showNotice(
-        "success",
-        `${type === "logo" ? "Logo" : "Favicon"} berhasil diupload.`,
-      );
-    }
-  } catch (err) {
-    showNotice("error", err.data?.statusMessage || "Upload gagal.");
-  } finally {
-    uploading.value[type] = false;
-  }
-};
-
-const generateAppSecret = () => {
-  try {
-    if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-      const bytes = new Uint8Array(48);
-      window.crypto.getRandomValues(bytes);
-      settings.value.APP_SECRET = Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    } else {
-      settings.value.APP_SECRET = `${Date.now().toString(16)}${Math.random()
-        .toString(36)
-        .slice(2)}${Math.random().toString(36).slice(2)}`;
-    }
-    showNotice("success", "App secret baru berhasil dibuat.");
-  } catch {
-    showNotice("error", "Gagal membuat app secret.");
-  }
-};
-
 const copyAppSecret = async () => {
-  const value = String(settings.value.APP_SECRET || "").trim();
-  if (!value) {
+  if (settings.value.APP_SECRET_CONFIGURED !== "true") {
     showNotice("error", "App secret masih kosong.");
     return;
   }
 
   try {
+    const res = await $fetch("/api/admin/settings/app-secret");
+    const value = String(res?.secret || "").trim();
+    if (!value) {
+      showNotice("error", "App secret belum tersedia.");
+      return;
+    }
     await navigator.clipboard.writeText(value);
     showNotice("success", "App secret berhasil disalin.");
   } catch {
@@ -491,10 +310,7 @@ const saveSettings = async () => {
       body: { settings: settings.value },
     });
     if (res.success) {
-      if (settings.value.APP_SECRET) {
-        settings.value.APP_SECRET = "";
-        settings.value.APP_SECRET_CONFIGURED = "true";
-      }
+      settings.value.APP_SECRET_CONFIGURED = "true";
       showNotice("success", res.message || "Pengaturan berhasil disimpan.");
     }
   } catch (err) {
@@ -601,12 +417,10 @@ const changePassword = async () => {
   border-radius: 14px;
 }
 
-.card-branding {
-  grid-column: span 7;
-}
-
-.card-scanner, .card-security {
-  grid-column: span 5;
+.card-scanner,
+.card-app-secret,
+.card-security {
+  grid-column: span 6;
 }
 
 .card-smtp {
@@ -650,10 +464,6 @@ const changePassword = async () => {
   color: #cfe8ff;
 }
 
-.inline-actions {
-  margin-top: 0.45rem;
-}
-
 .secret-actions {
   display: flex;
   gap: 0.5rem;
@@ -665,53 +475,10 @@ const changePassword = async () => {
   font-size: 0.8rem;
 }
 
-.hidden-input {
-  display: none;
-}
-
 label {
   font-size: 0.82rem;
   color: #d8e4f4;
   font-weight: 600;
-}
-
-.preview-grid {
-  margin-top: 0.9rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.8rem;
-}
-
-.preview-box {
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  padding: 0.7rem;
-  background: rgba(8, 17, 33, 0.58);
-}
-
-.preview-title {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.preview-image {
-  margin-top: 0.5rem;
-  width: 100%;
-  max-height: 70px;
-  object-fit: contain;
-}
-
-.preview-favicon {
-  margin-top: 0.5rem;
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-}
-
-.empty-preview {
-  margin-top: 0.55rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
 }
 
 .test-row {
@@ -726,8 +493,8 @@ label {
 }
 
 @media (max-width: 1200px) {
-  .card-branding,
   .card-scanner,
+  .card-app-secret,
   .card-security,
   .card-smtp {
     grid-column: 1 / -1;

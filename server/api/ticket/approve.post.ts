@@ -1,8 +1,9 @@
 import prisma from '../../utils/prisma'
 import QRCode from 'qrcode'
-import { encrypt } from '../../utils/crypto'
+import { encryptWithSecret } from '../../utils/crypto'
 import { sendTicketEmail } from '../../utils/mailer'
 import { resolveRequestBaseUrl } from '../../utils/requestBaseUrl'
+import { getOrCreateEventQrSecret } from '../../utils/eventQrSecret'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -21,9 +22,11 @@ export default defineEventHandler(async (event) => {
     if (!ticket) throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
     if (ticket.status === 'APPROVED') throw createError({ statusCode: 400, statusMessage: 'Tiket sudah diapprove' })
 
-    // Generate Encrypted Token: eventId_ticketId
+    // Generate event-scoped encrypted token: v1.{eventId}.{encryptedPayload}
+    const eventQrSecret = await getOrCreateEventQrSecret(ticket.eventId)
     const rawToken = `${ticket.eventId}_${ticket.id}`
-    const encryptedToken = encrypt(rawToken)
+    const encryptedPayload = encryptWithSecret(rawToken, eventQrSecret)
+    const encryptedToken = `v1.${ticket.eventId}.${encryptedPayload}`
 
     // Generate QR Code as Data URI
     const qrCodeDataUrl = await QRCode.toDataURL(encryptedToken, {

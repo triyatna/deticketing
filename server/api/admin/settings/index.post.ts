@@ -1,5 +1,4 @@
 import prisma from '../../../utils/prisma'
-import { encryptSettingValue } from '../../../utils/settingsCrypto'
 import { verifyToken } from '../../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
@@ -19,11 +18,13 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const isInternalSecretKey = (key: string) => {
+      return key === 'APP_SECRET' || key.startsWith('EVENT_QR_SECRET:')
+    }
     const plainEntries = Object.entries(settings).filter(([key]) => key !== 'APP_SECRET_CONFIGURED')
-    const appSecretRaw = String(settings.APP_SECRET || '').trim()
 
     const transaction = plainEntries
-      .filter(([key]) => key !== 'APP_SECRET')
+      .filter(([key]) => !isInternalSecretKey(String(key || '')))
       .map(([key, value]) => {
         // @ts-ignore: Prisma client needs regeneration
         return prisma.setting.upsert({
@@ -32,17 +33,6 @@ export default defineEventHandler(async (event) => {
           create: { key, value: String(value) }
         })
       })
-
-    if (appSecretRaw) {
-      const encryptedSecret = encryptSettingValue(appSecretRaw)
-      // @ts-ignore: Prisma client needs regeneration
-      transaction.push(prisma.setting.upsert({
-        where: { key: 'APP_SECRET' },
-        update: { value: encryptedSecret },
-        create: { key: 'APP_SECRET', value: encryptedSecret }
-      }))
-      process.env.APP_SECRET = appSecretRaw
-    }
 
     await prisma.$transaction(transaction)
 

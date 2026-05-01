@@ -33,12 +33,20 @@ export default defineNitroPlugin(async () => {
     }
 
     if (dbSetting?.value) {
-      const resolved = isEncryptedSettingValue(dbSetting.value)
-        ? decryptSettingValue(dbSetting.value)
-        : String(dbSetting.value || '')
+      let resolved = ''
+      try {
+        resolved = isEncryptedSettingValue(dbSetting.value)
+          ? decryptSettingValue(dbSetting.value)
+          : String(dbSetting.value || '')
+      } catch {
+        resolved = ''
+      }
 
       process.env.APP_SECRET = String(resolved || '').trim()
-      if (process.env.APP_SECRET) return
+      if (process.env.APP_SECRET) {
+        setRuntimeSecret('APP_SECRET', process.env.APP_SECRET)
+        return
+      }
     }
 
     const generated = crypto.randomBytes(48).toString('hex')

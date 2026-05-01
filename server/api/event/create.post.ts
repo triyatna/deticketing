@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { getOrCreateEventQrSecret } from '../../utils/eventQrSecret'
 
 const randomChars = (length = 10) => {
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -82,6 +83,7 @@ export default defineEventHandler(async (event) => {
         requireProof: !!requireProof
       }
     })
+    await getOrCreateEventQrSecret(newEvent.id)
 
     return {
       success: true,

@@ -19,39 +19,106 @@
       </div>
 
       <nav class="sidebar-nav" @click="isMobileMenuOpen = false">
-        <NuxtLink to="/admin/dashboard" class="nav-item">
-          <span class="nav-icon">DB</span>
-          <span>Dashboard</span>
-        </NuxtLink>
-        <NuxtLink to="/admin/events" class="nav-item">
-          <span class="nav-icon">EV</span>
-          <span>Kelola Event</span>
-        </NuxtLink>
-        <NuxtLink to="/admin/scanner" class="nav-item">
-          <span class="nav-icon">QR</span>
-          <span>Scanner QR</span>
-        </NuxtLink>
-        <div class="nav-divider"></div>
         <NuxtLink
-          v-if="user?.role === 'ADMIN'"
-          to="/admin/settings"
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
           class="nav-item"
         >
-          <span class="nav-icon">ST</span>
-          <span>Pengaturan</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg
+              v-if="item.icon === 'dashboard'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.2" />
+              <rect x="14" y="3" width="7" height="4" rx="1.2" />
+              <rect x="14" y="10" width="7" height="11" rx="1.2" />
+              <rect x="3" y="13" width="7" height="8" rx="1.2" />
+            </svg>
+            <svg
+              v-else-if="item.icon === 'event'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M16 3v4M8 3v4M3 10h18" />
+              <path d="M8.5 14h7M8.5 17h4.5" />
+            </svg>
+            <svg
+              v-else-if="item.icon === 'scanner'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M19 7V5a2 2 0 0 0-2-2h-2" />
+              <path d="M5 17v2a2 2 0 0 0 2 2h2" />
+              <path d="M19 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M4 12h16" />
+            </svg>
+            <svg
+              v-else-if="item.icon === 'settings'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3.2" />
+              <path
+                d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.08 1.64V21a2 2 0 0 1-4 0v-.09A1.8 1.8 0 0 0 8.84 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.64-1.08H2.9a2 2 0 0 1 0-4H3a1.8 1.8 0 0 0 1.64-1.08 1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.84 4.6 1.8 1.8 0 0 0 9.92 3V2.9a2 2 0 1 1 4 0V3A1.8 1.8 0 0 0 15 4.6a1.8 1.8 0 0 0 1.98-.36l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 9a1.8 1.8 0 0 0 1.64 1.08h.09a2 2 0 0 1 0 4h-.09A1.8 1.8 0 0 0 19.4 15Z"
+              />
+            </svg>
+            <svg
+              v-else-if="item.icon === 'staff'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </span>
+          <span class="nav-label">{{ item.label }}</span>
         </NuxtLink>
-        <NuxtLink
-          v-if="user?.role === 'ADMIN'"
-          to="/admin/staff"
-          class="nav-item"
-        >
-          <span class="nav-icon">SF</span>
-          <span>Manajemen Staff</span>
-        </NuxtLink>
+        <div v-if="user?.role === 'ADMIN'" class="nav-divider"></div>
       </nav>
 
       <div class="sidebar-footer">
-        <button @click="logout" class="btn-outline w-full">Logout</button>
+        <button @click="logout" class="btn-outline w-full logout-btn">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
 
@@ -88,7 +155,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -96,6 +163,22 @@ const route = useRoute();
 const { appName, appLogoUrl } = useBranding();
 const user = ref(null);
 const isMobileMenuOpen = ref(false);
+const navItems = computed(() => {
+  const baseItems = [
+    { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
+    { to: "/admin/events", label: "Kelola Event", icon: "event" },
+    { to: "/admin/scanner", label: "Scanner QR", icon: "scanner" },
+  ];
+
+  if (user.value?.role === "ADMIN") {
+    baseItems.push(
+      { to: "/admin/settings", label: "Pengaturan", icon: "settings" },
+      { to: "/admin/staff", label: "Manajemen Staff", icon: "staff" },
+    );
+  }
+
+  return baseItems;
+});
 
 onMounted(async () => {
   try {
@@ -203,18 +286,27 @@ const logout = async () => {
 }
 
 .nav-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 9px;
-  background: rgba(18, 36, 66, 0.9);
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: 10px;
+  background: rgba(18, 36, 66, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #bcd3ef;
+  color: #c7daef;
+  flex-shrink: 0;
+}
+
+.nav-icon svg {
+  width: 1.08rem;
+  height: 1.08rem;
+}
+
+.nav-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .nav-item:hover,
@@ -227,6 +319,13 @@ const logout = async () => {
 .nav-item.router-link-active {
   border-color: rgba(56, 189, 248, 0.4);
   box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.35);
+}
+
+.nav-item:hover .nav-icon,
+.nav-item.router-link-active .nav-icon {
+  background: rgba(30, 64, 112, 0.85);
+  color: #e5f2ff;
+  border-color: rgba(125, 211, 252, 0.35);
 }
 
 .nav-divider {
@@ -305,6 +404,18 @@ const logout = async () => {
 
 .w-full {
   width: 100%;
+}
+
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.logout-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 @media (max-width: 768px) {

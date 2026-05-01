@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: "NexTicket - Premium Ticketing System",
+      title: "DeTicketing - Premium Ticketing System by TY Studio DEV",
       link: [
         {
           rel: "stylesheet",
@@ -84,6 +84,14 @@ export default defineNuxtConfig({
       security: {
         rateLimiter: {
           tokensPerInterval: 5,
+          interval: 300000,
+        },
+      },
+    },
+    "/api/auth/setup-owner": {
+      security: {
+        rateLimiter: {
+          tokensPerInterval: 3,
           interval: 300000,
         },
       },

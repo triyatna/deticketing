@@ -13,8 +13,11 @@ export default defineEventHandler(async (event) => {
   try {
     // @ts-ignore: Prisma client needs regeneration
     const settings = await prisma.setting.findMany()
+    const isInternalSecretKey = (key: string) => {
+      return key === 'APP_SECRET' || key.startsWith('EVENT_QR_SECRET:')
+    }
     const settingsMap = settings.reduce((acc: Record<string, string>, s: any) => {
-      if (s.key === 'APP_SECRET') return acc
+      if (isInternalSecretKey(String(s.key || ''))) return acc
       acc[s.key] = s.value
       return acc
     }, {} as Record<string, string>)

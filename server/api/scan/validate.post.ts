@@ -1,5 +1,6 @@
 import prisma from '../../utils/prisma'
-import { decrypt } from '../../utils/crypto'
+import { decrypt, decryptWithSecret } from '../../utils/crypto'
+import { getEventQrSecret } from '../../utils/eventQrSecret'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -10,19 +11,53 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const decrypted = decrypt(qrToken)
-    // decrypted format: eventId_ticketId
-    const parts = decrypted.split('_')
-    if (parts.length !== 2) {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
-    }
+    let eventIdFromToken = ''
+    let ticketId = ''
 
-    const ticketId = parts[1]
+    if (String(qrToken).startsWith('v1.')) {
+      const chunks = String(qrToken).split('.')
+      if (chunks.length < 3) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
+      }
+
+      eventIdFromToken = String(chunks[1] || '').trim()
+      const encryptedPayload = chunks.slice(2).join('.')
+      if (!eventIdFromToken || !encryptedPayload) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
+      }
+
+      const eventSecret = await getEventQrSecret(eventIdFromToken)
+      if (!eventSecret) {
+        throw createError({ statusCode: 400, statusMessage: 'QR secret event tidak ditemukan.' })
+      }
+
+      const decrypted = decryptWithSecret(encryptedPayload, eventSecret)
+      const parts = decrypted.split('_')
+      if (parts.length !== 2) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
+      }
+
+      if (parts[0] !== eventIdFromToken) {
+        throw createError({ statusCode: 400, statusMessage: 'QR event mismatch.' })
+      }
+
+      ticketId = parts[1]
+    } else {
+      // Backward compatibility for legacy QR token (global APP_SECRET)
+      const decrypted = decrypt(qrToken)
+      const parts = decrypted.split('_')
+      if (parts.length !== 2) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
+      }
+      eventIdFromToken = parts[0]
+      ticketId = parts[1]
+    }
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       select: {
         id: true,
+        eventId: true,
         status: true,
         scanStatus: true,
         registrantName: true,
@@ -36,6 +71,9 @@ export default defineEventHandler(async (event) => {
 
     if (!ticket) {
       throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
+    }
+    if (ticket.eventId !== eventIdFromToken) {
+      throw createError({ statusCode: 400, statusMessage: 'QR Code tidak cocok dengan event tiket.' })
     }
 
     if (ticket.status !== 'APPROVED') {

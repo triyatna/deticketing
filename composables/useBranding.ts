@@ -1,10 +1,10 @@
 import { computed } from "vue";
 
 const DEFAULT_BRANDING = {
-  APP_NAME: "NexTicket",
-  APP_TAGLINE: "Premium Ticketing System",
-  APP_LOGO_URL: "",
-  APP_FAVICON_URL: "",
+  APP_NAME: "DeTicketing",
+  APP_TAGLINE: "Premium Ticketing System by TY Studio DEV",
+  APP_LOGO_URL: "/logo.png",
+  APP_FAVICON_URL: "/favicon.png",
 };
 
 export const useBranding = () => {

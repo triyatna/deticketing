@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken'
+import { getOrCreateRuntimeSecret } from './runtimeSecrets'
 
 const getJwtSecret = () => {
-  return process.env.APP_SECRET || 'fallback-secret-for-jwt-secure'
+  const fromEnv = String(process.env.APP_SECRET || '').trim()
+  if (fromEnv) return fromEnv
+  const generated = getOrCreateRuntimeSecret('APP_SECRET')
+  process.env.APP_SECRET = generated
+  return generated
 }
 
 export type AuthTokenPayload = jwt.JwtPayload & {
