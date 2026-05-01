@@ -27,17 +27,31 @@ const ensureSqliteFileFromUrl = (url: string) => {
 
 const resolveDatabaseUrl = () => {
   const fromEnv = String(process.env.DATABASE_URL || "").trim();
-  const fallback = "file:./prisma/dev.db";
-  const url = fromEnv || fallback;
-
-  ensureSqliteFileFromUrl(url);
-
-  if (!fromEnv) {
-    process.env.DATABASE_URL = url;
+  if (fromEnv) {
+    ensureSqliteFileFromUrl(fromEnv);
+    return fromEnv.startsWith("file:") 
+      ? `file:${toPosixPath(fromEnv.slice("file:".length))}`
+      : fromEnv;
   }
 
-  if (!url.startsWith("file:")) return url;
-  return `file:${toPosixPath(url.slice("file:".length))}`;
+  // Logika pencarian cerdas (Smart Search)
+  const baseDirs = [process.cwd()];
+  if (process.platform !== 'win32') baseDirs.push('/var/www/project/ticketing/deticketing');
+
+  const candidates = baseDirs.flatMap(base => [
+    path.resolve(base, "prisma", "dev.db"),
+    path.resolve(base, "dev.db"),
+    path.resolve(base, "data", "dev.db")
+  ]);
+
+  const foundPath = candidates.find(p => fs.existsSync(p));
+  const targetPath = foundPath || path.resolve(process.cwd(), "prisma", "dev.db");
+  
+  const url = `file:${targetPath}`;
+  ensureSqliteFileFromUrl(url);
+  
+  process.env.DATABASE_URL = url;
+  return `file:${toPosixPath(targetPath)}`;
 };
 
 export default defineConfig({
