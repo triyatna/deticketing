@@ -3,16 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/ensure-database.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "start": "node start.mjs",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "preprisma:generate": "node scripts/ensure-database.mjs",
     "prisma:generate": "prisma generate",
+    "preprisma:push": "node scripts/ensure-database.mjs",
     "prisma:push": "prisma db push",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@prisma/config": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcrypt": "^6.0.0",
     "html5-qrcode": "^2.3.8",
