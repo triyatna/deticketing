@@ -47,9 +47,25 @@ export default defineEventHandler(async (event) => {
 
     console.log("Sync Result:", syncStdout);
 
+    // 4. Trigger Restart (Berikan jeda 2 detik agar response sempat terkirim)
+    console.log("Update finished. Triggering restart in 2 seconds...");
+    if (process.platform !== "win32") {
+      // Untuk Linux (PM2)
+      exec("(sleep 2 && pm2 reload all) &", (err) => {
+        if (err) console.error("Gagal reload PM2:", err);
+      });
+    } else {
+      // Untuk Windows/Local
+      setTimeout(() => {
+        console.log("Exiting for restart...");
+        process.exit(0);
+      }, 2000);
+    }
+
     return {
       success: true,
-      message: "Update berhasil! ",
+      message:
+        "Update berhasil! Sistem sedang melakukan restart otomatis untuk menerapkan perubahan.",
       details: syncStdout,
     };
   } catch (error: any) {
