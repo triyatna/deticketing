@@ -21,7 +21,17 @@ export default defineEventHandler(async (event) => {
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { event: true }
+      select: {
+        id: true,
+        status: true,
+        scanStatus: true,
+        registrantName: true,
+        event: {
+          select: {
+            name: true
+          }
+        }
+      }
     })
 
     if (!ticket) {

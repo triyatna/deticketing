@@ -9,7 +9,13 @@ export default defineEventHandler(async (event) => {
 
   try {
     const ev = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
+      select: {
+        id: true,
+        name: true,
+        quota: true,
+        requireProof: true,
+      }
     })
 
     if (!ev) {
@@ -18,6 +24,15 @@ export default defineEventHandler(async (event) => {
 
     const tickets = await prisma.ticket.findMany({
       where: { eventId },
+      select: {
+        id: true,
+        registrantName: true,
+        registrantEmail: true,
+        status: true,
+        scanStatus: true,
+        paymentProofUrl: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' }
     })
 
@@ -26,7 +41,10 @@ export default defineEventHandler(async (event) => {
       event: ev,
       tickets
     }
-  } catch (error) {
-    throw createError({ statusCode: 500, statusMessage: 'Server error' })
+  } catch (error: any) {
+    throw createError({
+      statusCode: error.statusCode || 500,
+      statusMessage: error.statusMessage || 'Server error'
+    })
   }
 })

@@ -1,5 +1,13 @@
 import prisma from '../../../../utils/prisma'
 
+type DeviceStatusCacheEntry = {
+  blocked: boolean
+  expiresAt: number
+}
+
+const DEVICE_STATUS_CACHE_TTL_MS = 30 * 1000
+const deviceStatusCache = new Map<string, DeviceStatusCacheEntry>()
+
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
@@ -37,19 +45,30 @@ export default defineEventHandler(async (event) => {
       return { success: true, blocked: false }
     }
 
-    const tickets = await prisma.ticket.findMany({
-      where: { eventId: ev.id },
-      select: { formData: true }
-    })
-
-    const blocked = tickets.some((ticket) => {
-      try {
-        const parsed = JSON.parse(ticket.formData || '{}')
-        const existingHash = String(parsed?.__deviceMeta?.hash || '').trim()
-        return existingHash && existingHash === deviceHash
-      } catch {
-        return false
+    const cacheKey = `${ev.id}:${deviceHash}`
+    const now = Date.now()
+    const cached = deviceStatusCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) {
+      return {
+        success: true,
+        blocked: cached.blocked
       }
+    }
+
+    const deviceHashNeedle = `"hash":"${deviceHash}"`
+    const existingTicket = await prisma.ticket.findFirst({
+      where: {
+        eventId: ev.id,
+        formData: {
+          contains: deviceHashNeedle
+        }
+      },
+      select: { id: true }
+    })
+    const blocked = !!existingTicket
+    deviceStatusCache.set(cacheKey, {
+      blocked,
+      expiresAt: now + DEVICE_STATUS_CACHE_TTL_MS
     })
 
     return {

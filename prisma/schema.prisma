@@ -44,6 +44,11 @@ model Ticket {
   updatedAt       DateTime @updatedAt
 
   scanLogs        ScanLog[]
+
+  @@index([eventId, createdAt])
+  @@index([eventId, registrantEmail])
+  @@index([eventId, status])
+  @@index([eventId, scanStatus])
 }
 
 model ScanLog {
@@ -54,6 +59,8 @@ model ScanLog {
   action      String   // MASUK, KELUAR
   scannedAt   DateTime @default(now())
   scannedBy   String   // Admin identifier or name
+
+  @@index([ticketId, scannedAt])
 }
 
 model Admin {

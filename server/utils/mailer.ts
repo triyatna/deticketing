@@ -1,14 +1,20 @@
 import nodemailer from "nodemailer";
 import prisma from "./prisma";
 
-export const sendTicketEmail = async (
-  to: string,
-  registrantName: string,
-  eventName: string,
-  qrCodeDataUrl: string,
-  baseUrl: string = "",
-) => {
-  // Fetch settings from DB
+const MAIL_SETTINGS_CACHE_TTL_MS = 30 * 1000;
+let mailSettingsCache: { value: Record<string, string>; expiresAt: number } | null =
+  null;
+let transporterCache: {
+  key: string;
+  transporter: nodemailer.Transporter;
+} | null = null;
+
+const getMailSettings = async () => {
+  const now = Date.now();
+  if (mailSettingsCache && mailSettingsCache.expiresAt > now) {
+    return mailSettingsCache.value;
+  }
+
   // @ts-ignore: Prisma client needs regeneration
   const settingsDb = await prisma.setting.findMany();
   const settingsMap = settingsDb.reduce(
@@ -18,6 +24,52 @@ export const sendTicketEmail = async (
     },
     {} as Record<string, string>,
   );
+
+  mailSettingsCache = {
+    value: settingsMap,
+    expiresAt: now + MAIL_SETTINGS_CACHE_TTL_MS,
+  };
+
+  return settingsMap;
+};
+
+const getTransporter = (
+  smtpHost: string,
+  smtpPort: string,
+  smtpUser: string,
+  smtpPass: string,
+) => {
+  const cacheKey = `${smtpHost}|${smtpPort}|${smtpUser}|${smtpPass}`;
+  if (transporterCache && transporterCache.key === cacheKey) {
+    return transporterCache.transporter;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: parseInt(smtpPort),
+    secure: smtpPort === "465",
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  transporterCache = {
+    key: cacheKey,
+    transporter,
+  };
+
+  return transporter;
+};
+
+export const sendTicketEmail = async (
+  to: string,
+  registrantName: string,
+  eventName: string,
+  qrCodeDataUrl: string,
+  requestBaseUrl: string = "",
+) => {
+  const settingsMap = await getMailSettings();
 
   // Use STRICT DB settings
   const smtpHost = settingsMap["SMTP_HOST"];
@@ -29,9 +81,9 @@ export const sendTicketEmail = async (
   const appName = settingsMap["APP_NAME"] || "NexTicket";
   let appLogoUrl = settingsMap["APP_LOGO_URL"] || "";
 
-  if (appLogoUrl && !/^https?:\/\//i.test(appLogoUrl) && baseUrl) {
+  if (appLogoUrl && !/^https?:\/\//i.test(appLogoUrl) && requestBaseUrl) {
     const prefix = appLogoUrl.startsWith("/") ? "" : "/";
-    appLogoUrl = `${baseUrl.replace(/\/$/, "")}${prefix}${appLogoUrl}`;
+    appLogoUrl = `${requestBaseUrl.replace(/\/$/, "")}${prefix}${appLogoUrl}`;
   }
 
   if (
@@ -47,15 +99,7 @@ export const sendTicketEmail = async (
     );
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: parseInt(smtpPort),
-    secure: smtpPort === "465",
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
+  const transporter = getTransporter(smtpHost, smtpPort, smtpUser, smtpPass);
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">

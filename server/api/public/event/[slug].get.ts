@@ -1,5 +1,13 @@
 import prisma from '../../../utils/prisma'
 
+type PublicEventCacheEntry = {
+  data: any
+  expiresAt: number
+}
+
+const PUBLIC_EVENT_CACHE_TTL_MS = 5 * 1000
+const publicEventCache = new Map<string, PublicEventCacheEntry>()
+
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
 
@@ -8,6 +16,12 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const now = Date.now()
+    const cached = publicEventCache.get(slug)
+    if (cached && cached.expiresAt > now) {
+      return cached.data
+    }
+
     const ev = await prisma.event.findUnique({
       where: { slug }
     })
@@ -22,7 +36,7 @@ export default defineEventHandler(async (event) => {
       availableQuota = ev.quota - ticketsCount
     }
 
-    return {
+    const response = {
       success: true,
       event: {
         id: ev.id,
@@ -34,7 +48,17 @@ export default defineEventHandler(async (event) => {
       },
       availableQuota
     }
-  } catch (error) {
-    throw createError({ statusCode: 500, statusMessage: 'Server error' })
+
+    publicEventCache.set(slug, {
+      data: response,
+      expiresAt: now + PUBLIC_EVENT_CACHE_TTL_MS
+    })
+
+    return response
+  } catch (error: any) {
+    throw createError({
+      statusCode: error.statusCode || 500,
+      statusMessage: error.statusMessage || 'Server error'
+    })
   }
 })

@@ -9,7 +9,7 @@
       <div class="realtime-bar">
         <div class="realtime-status">
           <span class="dot-live"></span>
-          Realtime aktif (auto-refresh 3 detik)
+          Realtime aktif (auto-refresh adaptif)
         </div>
         <p class="realtime-time">
           Update terakhir: {{ lastRefreshLabel }}
@@ -80,7 +80,11 @@ const route = useRoute()
 const eventId = route.params.id
 
 // We fetch the event and its tickets
-const { data: response, pending, error, refresh } = useFetch(`/api/event/${eventId}/tickets`)
+const { data: response, pending, error, refresh } = useFetch(`/api/event/${eventId}/tickets`, {
+  key: `admin-event-tickets-${eventId}`,
+  retry: 0,
+  timeout: 7000,
+})
 const event = computed(() => response.value?.event)
 const tickets = computed(() => response.value?.tickets || [])
 
@@ -88,6 +92,10 @@ const approvingId = ref(null)
 const lastRefreshAt = ref(new Date())
 const realtimeTimer = ref(null)
 const isRealtimeRefreshing = ref(false)
+const realtimeErrorStreak = ref(0)
+const realtimeIntervalMs = ref(5000)
+const BASE_REALTIME_INTERVAL_MS = 5000
+const MAX_REALTIME_INTERVAL_MS = 20000
 
 const lastRefreshLabel = computed(() => {
   const date = lastRefreshAt.value
@@ -95,29 +103,58 @@ const lastRefreshLabel = computed(() => {
   return new Date(date).toLocaleTimeString('id-ID')
 })
 
-const refreshRealtime = async () => {
+const scheduleNextRefresh = (overrideDelay = null) => {
+  if (realtimeTimer.value) {
+    clearTimeout(realtimeTimer.value)
+    realtimeTimer.value = null
+  }
+
+  const delay = Number(overrideDelay || realtimeIntervalMs.value || BASE_REALTIME_INTERVAL_MS)
+  realtimeTimer.value = setTimeout(() => {
+    refreshRealtime(true)
+  }, delay)
+}
+
+const refreshRealtime = async (fromTimer = false) => {
   if (isRealtimeRefreshing.value) return
   if (approvingId.value) return
-  if (typeof document !== 'undefined' && document.hidden) return
+  if (typeof document !== 'undefined' && document.hidden) {
+    if (fromTimer) scheduleNextRefresh(MAX_REALTIME_INTERVAL_MS)
+    return
+  }
 
   isRealtimeRefreshing.value = true
   try {
     await refresh()
     lastRefreshAt.value = new Date()
+    realtimeErrorStreak.value = 0
+    realtimeIntervalMs.value = BASE_REALTIME_INTERVAL_MS
   } catch {
-    // noop
+    realtimeErrorStreak.value += 1
+    realtimeIntervalMs.value = Math.min(
+      MAX_REALTIME_INTERVAL_MS,
+      BASE_REALTIME_INTERVAL_MS * Math.max(1, realtimeErrorStreak.value),
+    )
   } finally {
     isRealtimeRefreshing.value = false
+    if (fromTimer) {
+      scheduleNextRefresh()
+    }
   }
 }
 
 const handleWindowFocus = async () => {
   await refreshRealtime()
+  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS)
 }
 
 const handleVisibilityChange = async () => {
-  if (document.hidden) return
+  if (document.hidden) {
+    scheduleNextRefresh(MAX_REALTIME_INTERVAL_MS)
+    return
+  }
   await refreshRealtime()
+  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS)
 }
 
 const getScanBadgeClass = (status) => {
@@ -174,9 +211,7 @@ const approveTicket = async (ticketId) => {
 
 onMounted(() => {
   lastRefreshAt.value = new Date()
-  realtimeTimer.value = setInterval(() => {
-    refreshRealtime()
-  }, 3000)
+  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS)
 
   window.addEventListener('focus', handleWindowFocus)
   document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -184,7 +219,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (realtimeTimer.value) {
-    clearInterval(realtimeTimer.value)
+    clearTimeout(realtimeTimer.value)
     realtimeTimer.value = null
   }
   window.removeEventListener('focus', handleWindowFocus)

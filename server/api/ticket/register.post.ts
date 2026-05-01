@@ -154,22 +154,18 @@ export default defineEventHandler(async (event) => {
     }
 
     if (!allowDuplicateDevice && deviceHash) {
-      const existingByEvent = await prisma.ticket.findMany({
-        where: { eventId },
-        select: { formData: true }
+      const deviceHashNeedle = `"hash":"${deviceHash}"`
+      const existingTicket = await prisma.ticket.findFirst({
+        where: {
+          eventId,
+          formData: {
+            contains: deviceHashNeedle
+          }
+        },
+        select: { id: true }
       })
 
-      const deviceExists = existingByEvent.some((ticket) => {
-        try {
-          const parsed = JSON.parse(ticket.formData || '{}')
-          const existingHash = String(parsed?.__deviceMeta?.hash || '').trim()
-          return existingHash && existingHash === deviceHash
-        } catch {
-          return false
-        }
-      })
-
-      if (deviceExists) {
+      if (existingTicket) {
         throw createError({
           statusCode: 409,
           statusMessage: 'Perangkat ini sudah pernah mendaftar pada event ini.'

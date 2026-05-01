@@ -568,6 +568,8 @@ const { appName, appLogoUrl } = useBranding();
 const slug = route.params.slug;
 
 const DEVICE_CACHE_KEY = `form_device_meta_${slug}`;
+const DEVICE_STATUS_CACHE_KEY = `form_device_status_${slug}`;
+const DEVICE_STATUS_CACHE_TTL_MS = 20 * 1000;
 
 const showAlert = (title, text, icon = "info") => {
   return Swal.fire({
@@ -707,7 +709,11 @@ const {
   data: response,
   pending,
   error,
-} = useFetch(`/api/public/event/${slug}`);
+} = useFetch(`/api/public/event/${slug}`, {
+  key: `public-event-${slug}`,
+  retry: 0,
+  timeout: 7000,
+});
 const event = computed(() => response.value?.event);
 const availableQuota = computed(() => response.value?.availableQuota);
 
@@ -1005,9 +1011,7 @@ onMounted(() => {
     }
   }
 
-  loadOrCreateDeviceMeta().then(() => {
-    checkDeviceDuplicateStatus();
-  });
+  loadOrCreateDeviceMeta();
 });
 
 const clearCache = () => {
@@ -1080,13 +1084,48 @@ const checkDeviceDuplicateStatus = async () => {
   if (!deviceMeta.value?.hash) return;
   if (deviceStatusChecked.value) return;
 
+  const normalizedHash = String(deviceMeta.value.hash || "").trim();
+  try {
+    const cachedRaw = localStorage.getItem(DEVICE_STATUS_CACHE_KEY);
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      const isFresh =
+        cached &&
+        cached.deviceHash === normalizedHash &&
+        Number(cached.expiresAt || 0) > Date.now();
+      if (isFresh) {
+        if (cached.blocked) {
+          isSuccess.value = true;
+          clearAllRegistrationState();
+        }
+        deviceStatusChecked.value = true;
+        return;
+      }
+    }
+  } catch {
+    // ignore cache parsing errors
+  }
+
   try {
     const res = await $fetch(`/api/public/event/${slug}/device-status`, {
       method: "POST",
       body: {
-        deviceHash: String(deviceMeta.value.hash || ""),
+        deviceHash: normalizedHash,
       },
     });
+
+    try {
+      localStorage.setItem(
+        DEVICE_STATUS_CACHE_KEY,
+        JSON.stringify({
+          deviceHash: normalizedHash,
+          blocked: !!res?.blocked,
+          expiresAt: Date.now() + DEVICE_STATUS_CACHE_TTL_MS,
+        }),
+      );
+    } catch {
+      // ignore storage limits
+    }
 
     if (res?.success && res?.blocked) {
       isSuccess.value = true;

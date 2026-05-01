@@ -74,7 +74,11 @@ import Swal from 'sweetalert2'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 
-const { data: response, pending, error, refresh } = useFetch('/api/event')
+const { data: response, pending, error, refresh } = useFetch('/api/event', {
+  key: 'admin-events-index',
+  retry: 0,
+  timeout: 7000,
+})
 const events = computed(() => response.value?.events || [])
 
 const showNotice = (type, message) => {
