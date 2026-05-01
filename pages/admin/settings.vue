@@ -109,18 +109,31 @@
         </div>
 
         <div class="update-content">
-          <div class="mt-3">
+          <div class="update-action-box">
+            <div class="update-info">
+              <div class="i-heroicons-cloud-arrow-down-solid icon-main"></div>
+              <div
+                v-if="isUpdating"
+                class="status-indicator"
+                :class="{ 'is-loading': isUpdating }"
+              >
+                <span class="dot"></span>
+                Sinkronisasi sedang berjalan...
+              </div>
+            </div>
+
             <button
               type="button"
-              class="btn-primary w-full"
+              class="btn-update-action"
+              :class="{ 'is-busy': isUpdating }"
               :disabled="isUpdating"
               @click="runUpdate"
             >
-              {{
-                isUpdating
-                  ? "Sedang Memproses Update..."
-                  : "Jalankan Update (Full Sync)"
-              }}
+              <template v-if="isUpdating">
+                <span class="spinner"></span>
+                Memproses...
+              </template>
+              <template v-else> Jalankan Update </template>
             </button>
           </div>
         </div>
@@ -549,14 +562,101 @@ label {
 }
 
 .update-content {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
-.repo-link {
-  color: #38bdf8;
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
+.update-action-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.update-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  }
+
+  &.is-loading .dot {
+    background: #f59e0b;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+.btn-update-action {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #475569;
+  }
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -582,6 +682,7 @@ label {
   .card-scanner,
   .card-app-secret,
   .card-security,
+  .card-update,
   .card-smtp {
     grid-column: 1 / -1;
   }
@@ -608,6 +709,11 @@ label {
 @media (max-width: 640px) {
   .setting-card {
     padding: 0.85rem;
+  }
+  
+  .update-action-box {
+    padding: 0.85rem;
+    gap: 1rem;
   }
 
   .notice {
