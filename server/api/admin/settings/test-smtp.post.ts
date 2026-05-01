@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer'
-import prisma from '../../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -14,16 +13,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // @ts-ignore: Prisma client needs regeneration
-    const settingsDb = await prisma.setting.findMany({
-      where: { key: { in: ['APP_NAME'] } }
-    })
-    const settingsMap = settingsDb.reduce((acc: Record<string, string>, s: any) => {
-      acc[s.key] = s.value
-      return acc
-    }, {} as Record<string, string>)
-
-    const appName = settingsMap.APP_NAME || 'DeTicketing'
+    const appName = 'DeTicketing'
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
@@ -33,8 +23,11 @@ export default defineEventHandler(async (event) => {
         user: smtpUser,
         pass: smtpPass,
       },
+      // Timeout lebih lama untuk test
+      connectionTimeout: 10000,
     })
 
+    // Verifikasi koneksi
     await transporter.verify()
 
     const formattedFrom = `"${smtpFromName}" <${smtpFromEmail}>`
@@ -51,9 +44,7 @@ export default defineEventHandler(async (event) => {
       message: 'Koneksi berhasil dan email test telah terkirim!'
     }
   } catch (error: any) {
-    console.error('SMTP Test Error Detail:', error)
-    
-    // Berikan pesan yang lebih deskriptif
+    console.error('SMTP Test Error:', error)
     const errorMessage = error.response || error.message || 'Gagal terhubung ke server SMTP'
     throw createError({ 
       statusCode: 400, 

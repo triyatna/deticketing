@@ -18,14 +18,17 @@ const getMailSettings = async () => {
   }
 
   // @ts-ignore: Prisma client needs regeneration
-  const settingsDb = await prisma.setting.findMany();
-  const settingsMap = settingsDb.reduce(
-    (acc: Record<string, string>, s: any) => {
+  let settingsMap: Record<string, string> = {};
+  try {
+    const settingsDb = await prisma.setting.findMany();
+    settingsMap = settingsDb.reduce((acc: Record<string, string>, s: any) => {
       acc[s.key] = s.value;
       return acc;
-    },
-    {} as Record<string, string>,
-  );
+    }, {} as Record<string, string>);
+  } catch (error) {
+    console.error("Gagal mengambil pengaturan dari database (Mailer):", error);
+    // Return empty map to use fallbacks/check logic below
+  }
 
   mailSettingsCache = {
     value: settingsMap,

@@ -10,13 +10,19 @@ export const getEventQrSecret = async (eventId: string): Promise<string> => {
   const normalizedEventId = String(eventId || '').trim()
   if (!normalizedEventId) return ''
 
-  // @ts-ignore: Prisma client typing can be stale in editor cache
-  const record = await prisma.setting.findUnique({
-    where: { key: buildEventQrSecretKey(normalizedEventId) },
-    select: { value: true }
-  })
+  let rawValue = ''
+  try {
+    // @ts-ignore: Prisma client typing can be stale in editor cache
+    const record = await prisma.setting.findUnique({
+      where: { key: buildEventQrSecretKey(normalizedEventId) },
+      select: { value: true }
+    })
+    rawValue = String(record?.value || '').trim()
+  } catch (error) {
+    console.error(`Gagal mengambil QR secret untuk event ${normalizedEventId}:`, error)
+    return ''
+  }
 
-  const rawValue = String(record?.value || '').trim()
   if (!rawValue) return ''
 
   try {
