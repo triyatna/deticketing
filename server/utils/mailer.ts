@@ -2,8 +2,10 @@ import nodemailer from "nodemailer";
 import prisma from "./prisma";
 
 const MAIL_SETTINGS_CACHE_TTL_MS = 30 * 1000;
-let mailSettingsCache: { value: Record<string, string>; expiresAt: number } | null =
-  null;
+let mailSettingsCache: {
+  value: Record<string, string>;
+  expiresAt: number;
+} | null = null;
 let transporterCache: {
   key: string;
   transporter: nodemailer.Transporter;
@@ -79,11 +81,16 @@ export const sendTicketEmail = async (
   const smtpFromName = settingsMap["SMTP_FROM_NAME"];
   const smtpFromEmail = settingsMap["SMTP_FROM_EMAIL"];
   const appName = settingsMap["APP_NAME"] || "NexTicket";
-  let appLogoUrl = settingsMap["APP_LOGO_URL"] || "";
+  let appFooterLogoUrl =
+    settingsMap["APP_FAVICON_URL"] || settingsMap["APP_LOGO_URL"] || "";
 
-  if (appLogoUrl && !/^https?:\/\//i.test(appLogoUrl) && requestBaseUrl) {
-    const prefix = appLogoUrl.startsWith("/") ? "" : "/";
-    appLogoUrl = `${requestBaseUrl.replace(/\/$/, "")}${prefix}${appLogoUrl}`;
+  if (
+    appFooterLogoUrl &&
+    !/^https?:\/\//i.test(appFooterLogoUrl) &&
+    requestBaseUrl
+  ) {
+    const prefix = appFooterLogoUrl.startsWith("/") ? "" : "/";
+    appFooterLogoUrl = `${requestBaseUrl.replace(/\/$/, "")}${prefix}${appFooterLogoUrl}`;
   }
 
   if (
@@ -107,15 +114,22 @@ export const sendTicketEmail = async (
         <h1 style="margin: 0; font-size: 24px;">E-Ticket: ${eventName}</h1>
       </div>
       <div style="padding: 30px; text-align: center;">
-        <p style="font-size: 16px; color: #333;">Halo, kak <strong>${registrantName}</strong>!</p>
-        <p style="font-size: 16px; color: #333;">Pembayaran tiket Anda telah dikonfirmasi. Berikut adalah QR Code untuk akses masuk Anda:</p>
+        <p style="font-size: 16px; color: #333;">Halo Kak <strong>${registrantName}</strong>!</p>
+        <p style="font-size: 16px; color: #333; line-height: 1.6;">
+          Terima kasih sudah mendaftar di <strong>${eventName}</strong>. Pembayaran Anda sudah kami konfirmasi.
+        </p>
+        <p style="font-size: 16px; color: #333; line-height: 1.6;">
+          Berikut QR Code e-ticket Anda. Silakan simpan email ini dan tunjukkan QR Code saat proses check-in.
+        </p>
         <div style="margin: 30px 0;">
           <img src="cid:qrcode" alt="QR Code" style="width: 250px; height: 250px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px;" />
         </div>
-        <p style="font-size: 14px; color: #64748b;">Harap tunjukkan QR Code ini kepada panitia saat acara berlangsung.</p>
+        <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
+          Jika ada kendala saat masuk acara, silakan hubungi panitia di lokasi.
+        </p>
       </div>
       <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-        ${appLogoUrl ? `<img src="${appLogoUrl}" alt="${appName}" style="max-height: 30px; margin: 0 auto 12px; display: block;" />` : ""}
+        ${appFooterLogoUrl ? `<img src="${appFooterLogoUrl}" alt="${appName}" style="max-height: 30px; margin: 0 auto 12px; display: block;" />` : ""}
         <p style="margin: 0; font-size: 13px; color: #475569; font-weight: 600;">${appName} by TY Studio DEV</p>
         <p style="margin: 6px 0 0; font-size: 12px; color: #64748b; line-height: 1.5;">
           Jln. Selang Ciwaringin, Kec. Lemahabang, Karawang, Jawa Barat 41383

@@ -35,6 +35,21 @@
           Terima kasih telah mendaftar. Data Anda telah kami terima dengan baik. Silakan tunggu informasi dan konfirmasi lebih lanjut dari panitia. E-Ticket akan dikirimkan ke email Anda jika pendaftaran telah disetujui.
         </p>
       </div>
+
+      <footer class="form-footer">
+        <NuxtLink to="/" class="brand">
+          <img
+            v-if="appLogoUrl"
+            :src="appLogoUrl"
+            :alt="appName"
+            class="landing-logo"
+          />
+          <span v-else class="gradient-text brand-name">{{ appName }}</span>
+        </NuxtLink>
+        <p class="copyright">
+          Copyright &copy; 2026 TY Studio DEV. Allright reserved.
+        </p>
+      </footer>
     </div>
 
     <div v-else-if="deviceGatePending" class="container pt-8">
