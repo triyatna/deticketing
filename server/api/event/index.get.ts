@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { verifyToken } from '../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,9 +15,13 @@ export default defineEventHandler(async (event) => {
       orderBy: { createdAt: 'desc' }
     })
 
+    const token = getCookie(event, 'auth_token')
+    const decoded = token ? verifyToken(token) : null
+
     return {
       success: true,
-      events
+      events,
+      user: decoded ? { id: decoded.id, role: decoded.role } : null
     }
   } catch (error: any) {
     throw createError({

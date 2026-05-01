@@ -53,7 +53,12 @@
                   <NuxtLink :to="`/admin/events/${event.id}/tickets`" class="btn-outline action-btn">
                     Lihat Pendaftar
                   </NuxtLink>
-                   <button type="button" class="btn-danger action-btn" @click="handleDeleteEvent(event)">
+                   <button 
+                     v-if="userRole === 'ADMIN'"
+                     type="button" 
+                     class="btn-danger action-btn" 
+                     @click="handleDeleteEvent(event)"
+                   >
                      Hapus
                    </button>
                 </div>
@@ -80,6 +85,7 @@ const { data: response, pending, error, refresh } = useFetch('/api/event', {
   timeout: 7000,
 })
 const events = computed(() => response.value?.events || [])
+const userRole = computed(() => String(response.value?.user?.role || 'PANITIA'))
 
 const showNotice = (type, message) => {
   const isError = type === "error";
