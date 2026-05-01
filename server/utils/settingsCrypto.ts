@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { getOrCreateRuntimeSecret } from './runtimeSecrets'
 
 const SETTINGS_ENCRYPT_PREFIX = 'enc:v1:'
 
@@ -6,7 +7,7 @@ const getSettingsMasterKey = () => {
   const seed =
     process.env.SETTINGS_ENCRYPTION_KEY ||
     process.env.APP_SECRET_MASTER ||
-    'ticketing-settings-master-key-change-me'
+    getOrCreateRuntimeSecret('SETTINGS_ENCRYPTION_KEY')
 
   return crypto.createHash('sha256').update(String(seed)).digest()
 }
@@ -41,4 +42,3 @@ export const decryptSettingValue = (storedValue: string): string => {
 export const isEncryptedSettingValue = (value: string) => {
   return String(value || '').startsWith(SETTINGS_ENCRYPT_PREFIX)
 }
-

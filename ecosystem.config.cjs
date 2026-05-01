@@ -5,7 +5,7 @@ module.exports = {
     {
       name: "ticketing",
       cwd: path.resolve(__dirname),
-      script: ".output/server/index.mjs",
+      script: "./start.mjs",
       interpreter: "node",
 
       instances: 1,

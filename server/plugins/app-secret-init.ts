@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import prisma from '../utils/prisma'
+import { getOrCreateRuntimeSecret, setRuntimeSecret } from '../utils/runtimeSecrets'
 import {
   decryptSettingValue,
   encryptSettingValue,
@@ -19,6 +20,7 @@ export default defineNitroPlugin(async () => {
     })
 
     if (existingEnvSecret) {
+      setRuntimeSecret('APP_SECRET', existingEnvSecret)
       if (!dbSetting?.value) {
         // @ts-ignore: Prisma client typing can be stale in editor cache
         await prisma.setting.upsert({
@@ -41,6 +43,7 @@ export default defineNitroPlugin(async () => {
 
     const generated = crypto.randomBytes(48).toString('hex')
     process.env.APP_SECRET = generated
+    setRuntimeSecret('APP_SECRET', generated)
 
     // @ts-ignore: Prisma client typing can be stale in editor cache
     await prisma.setting.upsert({
@@ -49,7 +52,9 @@ export default defineNitroPlugin(async () => {
       create: { key: APP_SECRET_SETTING_KEY, value: encryptSettingValue(generated) },
     })
   } catch (error) {
-    console.error('APP_SECRET init failed:', error)
+    if (!process.env.APP_SECRET) {
+      process.env.APP_SECRET = getOrCreateRuntimeSecret('APP_SECRET')
+    }
+    console.warn('APP_SECRET init fallback:', (error as any)?.message || error)
   }
 })
-
