@@ -486,12 +486,12 @@
 
                     <div class="form-group">
                       <label>Deskripsi (Opsional)</label>
-                      <input
+                      <textarea
                         v-model="item.description"
-                        type="text"
                         class="form-input"
+                        rows="2"
                         placeholder="Jelaskan maksud pertanyaan ini..."
-                      />
+                      ></textarea>
                     </div>
 
                     <div class="form-group">
@@ -736,9 +736,13 @@ definePageMeta({ layout: "admin", middleware: "auth" });
 const route = useRoute();
 const router = useRouter();
 
+const editId = computed(() => String(route.query.editId || "").trim());
+const isEditMode = computed(() => !!editId.value);
+
 const isLoading = ref(false);
 const isPrefilling = ref(false);
 const uploadBusy = ref({});
+
 const form = ref({
   name: "",
   description: "",
@@ -759,8 +763,11 @@ const form = ref({
   formSchema: [],
 });
 
-const editId = computed(() => String(route.query.editId || "").trim());
-const isEditMode = computed(() => !!editId.value);
+useHead(() => ({
+  title: isEditMode.value
+    ? `Edit Event: ${form.value.name || "..."}`
+    : "Buat Event Baru",
+}));
 
 const generateId = () => {
   return `item_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

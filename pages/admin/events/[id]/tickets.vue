@@ -113,6 +113,10 @@ const {
 const event = computed(() => response.value?.event);
 const tickets = computed(() => response.value?.tickets || []);
 
+useHead(() => ({
+  title: event.value ? `Pendaftar: ${event.value.name}` : "Memuat Pendaftar...",
+}));
+
 const approvingId = ref(null);
 const lastRefreshAt = ref(new Date());
 const realtimeTimer = ref(null);

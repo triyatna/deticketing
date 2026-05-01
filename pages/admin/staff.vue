@@ -110,6 +110,7 @@ import { ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
+useHead({ title: "Manajemen Staff" })
 
 const { data: response, pending, error, refresh } = useFetch('/api/admin/staff')
 const staffList = computed(() => response.value?.staff || [])

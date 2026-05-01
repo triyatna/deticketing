@@ -163,6 +163,10 @@ const { data: response, pending, error } = useFetch('/api/admin/dashboard', {
   timeout: 7000,
 })
 
+useHead({
+  title: "Dashboard Operasional",
+});
+
 const summary = computed(() => response.value?.summary || {
   totalEvents: 0,
   totalRegistrations: 0,

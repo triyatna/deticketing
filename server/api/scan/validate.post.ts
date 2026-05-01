@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'QR event mismatch.' })
       }
 
-      ticketId = parts[1]
+      ticketId = parts[1] || ''
     } else {
       // Backward compatibility for legacy QR token (global APP_SECRET)
       const decrypted = decrypt(qrToken)
@@ -49,8 +49,8 @@ export default defineEventHandler(async (event) => {
       if (parts.length !== 2) {
         throw createError({ statusCode: 400, statusMessage: 'Invalid QR Code format' })
       }
-      eventIdFromToken = parts[0]
-      ticketId = parts[1]
+      eventIdFromToken = parts[0] || ''
+      ticketId = parts[1] || ''
     }
 
     const ticket = await prisma.ticket.findUnique({

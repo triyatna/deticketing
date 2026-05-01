@@ -71,7 +71,7 @@
             class="event-header-image"
           />
           <h1 class="gradient-text">{{ event.name }}</h1>
-          <p class="text-muted mt-2">{{ event.description }}</p>
+          <p class="text-muted mt-2 pre-wrap">{{ event.description }}</p>
           <div v-if="event.quota" class="mt-4 badge badge-gray">
             Kuota Tersisa: {{ availableQuota }}
           </div>
@@ -127,7 +127,7 @@
                   class="content-block heading-block"
                 >
                   <h3>{{ item.title || "Judul" }}</h3>
-                  <p v-if="item.description" class="text-muted">
+                  <p v-if="item.description" class="text-muted pre-wrap">
                     {{ item.description }}
                   </p>
                 </div>
@@ -138,7 +138,7 @@
                 >
                   <hr />
                   <h4>{{ item.title || "Section" }}</h4>
-                  <p v-if="item.description" class="text-muted">
+                  <p v-if="item.description" class="text-muted pre-wrap">
                     {{ item.description }}
                   </p>
                 </div>
@@ -154,7 +154,7 @@
                     class="content-image"
                   />
                   <div v-else class="media-empty">URL gambar belum diisi.</div>
-                  <p v-if="item.description" class="text-muted">
+                  <p v-if="item.description" class="text-muted pre-wrap">
                     {{ item.description }}
                   </p>
                 </div>
@@ -187,7 +187,7 @@
                     Buka Video
                   </a>
                   <div v-else class="media-empty">URL video belum diisi.</div>
-                  <p v-if="item.description" class="text-muted">
+                  <p v-if="item.description" class="text-muted pre-wrap">
                     {{ item.description }}
                   </p>
                 </div>
@@ -702,7 +702,21 @@ const hashFingerprint = async (fingerprintSource) => {
   return toBase64Url(bytes);
 };
 
-useHead({
+
+const {
+  data: response,
+  pending,
+  error,
+} = useFetch(`/api/public/event/${slug}`, {
+  key: `public-event-${slug}`,
+  retry: 0,
+  timeout: 7000,
+});
+const event = computed(() => response.value?.event);
+const availableQuota = computed(() => response.value?.availableQuota);
+
+useHead(() => ({
+  title: event.value ? `Pendaftaran ${event.value.name}` : "Memuat Pendaftaran...",
   meta: [
     {
       name: "robots",
@@ -718,19 +732,7 @@ useHead({
       content: "noindex, nofollow, noarchive, nosnippet, noimageindex",
     },
   ],
-});
-
-const {
-  data: response,
-  pending,
-  error,
-} = useFetch(`/api/public/event/${slug}`, {
-  key: `public-event-${slug}`,
-  retry: 0,
-  timeout: 7000,
-});
-const event = computed(() => response.value?.event);
-const availableQuota = computed(() => response.value?.availableQuota);
+}));
 
 const parseList = (value) => {
   return String(value || "")
@@ -2153,4 +2155,15 @@ label {
   border-radius: 12px;
 }
 
+
+.pre-wrap {
+  white-space: pre-wrap;
+}
+
+.field-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  white-space: pre-wrap;
+}
 </style>

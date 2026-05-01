@@ -275,6 +275,10 @@ import Swal from "sweetalert2";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 
+useHead({
+  title: "Pengaturan Sistem",
+});
+
 const settings = ref({
   APP_SECRET_CONFIGURED: "false",
   SMTP_HOST: "",
