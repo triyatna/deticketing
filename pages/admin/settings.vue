@@ -118,8 +118,8 @@
             >
               {{
                 isUpdating
-                  ? "Sedang Memproses Smart Update..."
-                  : "Jalankan Smart Update (Full Sync)"
+                  ? "Sedang Memproses Update..."
+                  : "Jalankan Update (Full Sync)"
               }}
             </button>
           </div>
@@ -409,13 +409,13 @@ const changePassword = async () => {
 
 const runUpdate = async () => {
   const result = await Swal.fire({
-    title: "Konfirmasi Smart Update",
+    title: "Konfirmasi Update",
     text: "Sistem akan menarik kode, menginstal dependensi, dan membangun ulang aplikasi (build). Proses ini memerlukan waktu beberapa saat.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#22c55e",
     cancelButtonColor: "#64748b",
-    confirmButtonText: "Mulai Smart Update",
+    confirmButtonText: "Mulai Update",
     cancelButtonText: "Batal",
     background: "#0f172a",
     color: "#f8fafc",
