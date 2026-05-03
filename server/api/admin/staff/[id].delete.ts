@@ -6,8 +6,8 @@ export default defineEventHandler(async (event) => {
   // Role verification
   const token = getCookie(event, 'auth_token')
   if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  const decoded = verifyToken(token)
-  if (!decoded || decoded.role !== 'ADMIN') {
+  const decoded: any = verifyToken(token)
+  if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'OWNER')) {
     throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
   }
 
@@ -15,23 +15,27 @@ export default defineEventHandler(async (event) => {
   if (!staffId) throw createError({ statusCode: 400, statusMessage: 'ID dibutuhkan' })
 
   // Prevent self-deletion
-  if (staffId === decoded.id) {
-    throw createError({ statusCode: 400, statusMessage: 'Tidak bisa menghapus akun Anda sendiri' })
+  if (String(staffId) === String(decoded.id)) {
+    throw createError({ statusCode: 400, statusMessage: 'Tidak bisa menghapus akun Anda sendiri.' })
   }
 
   try {
-    const owner = await prisma.admin.findFirst({
-      where: { role: 'ADMIN' },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true }
-    })
+    const target = await prisma.admin.findUnique({ where: { id: staffId } })
+    if (!target) throw createError({ statusCode: 404, statusMessage: 'Staff tidak ditemukan' })
 
-    if (owner && staffId === owner.id) {
-      throw createError({ statusCode: 400, statusMessage: 'Akun Owner tidak dapat dihapus.' })
+    const roleHierarchy: any = { OWNER: 4, ADMIN: 3, PANITIA: 2, PETUGAS: 1 }
+
+    if (target.role === 'OWNER') {
+       throw createError({ statusCode: 400, statusMessage: 'Akun Owner tidak dapat dihapus.' })
+    }
+
+    if (decoded.role === 'ADMIN' && roleHierarchy[target.role] >= 3) {
+      throw createError({ statusCode: 403, statusMessage: 'Admin tidak bisa menghapus Admin lain atau Owner.' })
     }
 
     await prisma.admin.delete({ where: { id: staffId } })
     return { success: true, message: 'Staff berhasil dihapus' }
+
   } catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,

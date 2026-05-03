@@ -9,10 +9,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const decoded = verifyToken(token)
-  if (!decoded || decoded.role !== 'ADMIN') {
+  const decoded: any = verifyToken(token)
+  if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'OWNER')) {
     throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
   }
+
 
   const eventId = getRouterParam(event, 'id')
   if (!eventId) {

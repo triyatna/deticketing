@@ -39,13 +39,30 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 3. Lanjutkan proses sisanya
+    // 3. Lanjutkan proses sisanya (Include DB Sync & Data Migration)
     console.log("Running full sync chain...");
     const fullCommand =
-      "npm install && npm run prisma:generate && npm run build";
+      "npm install && npm run prisma:push && npm run prisma:generate && npm run build";
     const { stdout: syncStdout } = await execAsync(fullCommand);
 
     console.log("Sync Result:", syncStdout);
+
+    // 3.1 Data Migration: Ensure the very first admin is always OWNER
+    try {
+      console.log("Running data migration for Owner role...");
+      const prismaUtils = await import("../../../utils/prisma");
+      const db = prismaUtils.default;
+      const firstUser = await db.admin.findFirst({ orderBy: { createdAt: "asc" } });
+      if (firstUser && firstUser.role !== "OWNER") {
+        await db.admin.update({
+          where: { id: firstUser.id },
+          data: { role: "OWNER" },
+        });
+        console.log(`Promoted first user (${firstUser.username}) to OWNER.`);
+      }
+    } catch (migErr) {
+      console.error("Data migration error:", migErr);
+    }
 
     // 4. Trigger Restart (Berikan jeda 2 detik agar response sempat terkirim)
     console.log("Update finished. Triggering restart in 2 seconds...");

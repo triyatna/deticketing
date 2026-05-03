@@ -20,8 +20,18 @@ const slugifyEventName = (value: string) => {
     .replace(/^-+|-+$/g, '')
 }
 
+import { verifyToken } from '../../utils/jwt'
+
 export default defineEventHandler(async (event) => {
+  const token = getCookie(event, 'auth_token')
+  if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  const decoded: any = verifyToken(token)
+  if (!decoded || decoded.role === 'PETUGAS') {
+    throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
+  }
+
   const body = await readBody(event)
+
   const { name, description, quota, formSchema, requireProof } = body
 
   if (!name || !formSchema) {

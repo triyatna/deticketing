@@ -27,9 +27,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const decoded: any = verifyToken(token)
-  if (!decoded || decoded.role !== 'ADMIN') {
+  if (!decoded || decoded.role === 'PETUGAS') {
     throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
   }
+
 
   const parts = await readMultipartFormData(event)
   if (!parts) {

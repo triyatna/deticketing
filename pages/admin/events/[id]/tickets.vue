@@ -70,7 +70,7 @@
               </td>
               <td>
                 <button
-                  v-if="ticket.status === 'PENDING'"
+                  v-if="ticket.status === 'PENDING' && userRole !== 'PETUGAS'"
                   @click="approveTicket(ticket.id)"
                   class="btn-primary small"
                   :disabled="approvingId === ticket.id"
@@ -82,6 +82,7 @@
                   }}
                 </button>
               </td>
+
             </tr>
           </tbody>
         </table>
@@ -112,6 +113,15 @@ const {
 });
 const event = computed(() => response.value?.event);
 const tickets = computed(() => response.value?.tickets || []);
+
+const userRole = ref('PETUGAS')
+onMounted(async () => {
+  try {
+    const res = await $fetch('/api/auth/me')
+    if (res.success) userRole.value = res.user.role
+  } catch {}
+})
+
 
 useHead(() => ({
   title: event.value ? `Pendaftar: ${event.value.name}` : "Memuat Pendaftar...",

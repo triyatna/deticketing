@@ -275,7 +275,19 @@ import Swal from "sweetalert2";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 
+onMounted(async () => {
+  try {
+    const meRes = await $fetch("/api/auth/me");
+    if (meRes.success && meRes.user.role !== "OWNER") {
+      return navigateTo("/admin/dashboard");
+    }
+  } catch (err) {
+    // ignore
+  }
+});
+
 useHead({
+
   title: "Pengaturan Sistem",
 });
 

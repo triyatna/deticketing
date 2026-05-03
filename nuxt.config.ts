@@ -67,7 +67,7 @@ export default defineNuxtConfig({
     },
 
     rateLimiter: {
-      tokensPerInterval: 30,
+      tokensPerInterval: 1500,
       interval: 60000,
     },
 
@@ -91,7 +91,7 @@ export default defineNuxtConfig({
     "/api/auth/setup-owner": {
       security: {
         rateLimiter: {
-          tokensPerInterval: 3,
+          tokensPerInterval: 5,
           interval: 300000,
         },
       },
@@ -100,7 +100,7 @@ export default defineNuxtConfig({
     "/api/ticket/register": {
       security: {
         rateLimiter: {
-          tokensPerInterval: 3,
+          tokensPerInterval: 5,
           interval: 60000,
         },
       },

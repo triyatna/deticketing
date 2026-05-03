@@ -66,12 +66,15 @@ model ScanLog {
 model Admin {
   id        String   @id @default(uuid())
   username  String   @unique
+  email     String?  @unique
   password  String   // bcrypt hashed
   name      String
-  role      String   @default("PANITIA") // ADMIN, PANITIA
+  role      String   @default("PETUGAS") // OWNER, ADMIN, PANITIA, PETUGAS
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 
 model Setting {
   key       String   @id

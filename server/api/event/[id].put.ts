@@ -32,9 +32,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const decoded = verifyToken(token) as any
-  if (!decoded || decoded.role !== 'ADMIN') {
+  if (!decoded || decoded.role === 'PETUGAS') {
     throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
   }
+
 
   const eventId = getRouterParam(event, 'id')
   if (!eventId) {

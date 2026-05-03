@@ -5,12 +5,10 @@
         <h1 class="page-title">Kelola Event</h1>
         <p class="subtitle">Daftar event aktif, kuota, dan akses cepat ke data pendaftar.</p>
       </div>
-      <NuxtLink to="/admin/events/create" class="btn-primary">Buat Event Baru</NuxtLink>
+      <NuxtLink v-if="userRole !== 'PETUGAS'" to="/admin/events/create" class="btn-primary">Buat Event Baru</NuxtLink>
     </div>
 
     <div class="glass-panel table-shell">
-
-
       <div v-if="pending" class="state-box">Memuat daftar event...</div>
       <div v-else-if="error" class="state-box error">Gagal memuat data event.</div>
       <div v-else-if="!events?.length" class="state-box">Belum ada event. Mulai dari membuat event pertama.</div>
@@ -47,14 +45,18 @@
               </td>
               <td>
                 <div class="action-group">
-                  <NuxtLink :to="`/admin/events/${event.id}/edit`" class="btn-outline action-btn">
+                  <NuxtLink 
+                    v-if="userRole !== 'PETUGAS'"
+                    :to="`/admin/events/${event.id}/edit`" 
+                    class="btn-outline action-btn"
+                  >
                     Edit Event
                   </NuxtLink>
                   <NuxtLink :to="`/admin/events/${event.id}/tickets`" class="btn-outline action-btn">
                     Lihat Pendaftar
                   </NuxtLink>
                    <button 
-                     v-if="userRole === 'ADMIN'"
+                     v-if="userRole === 'ADMIN' || userRole === 'OWNER'"
                      type="button" 
                      class="btn-danger action-btn" 
                      @click="handleDeleteEvent(event)"
@@ -68,6 +70,7 @@
         </table>
       </div>
     </div>
+
 
 
   </div>

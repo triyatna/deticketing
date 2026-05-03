@@ -24,7 +24,9 @@
           :key="item.to"
           :to="item.to"
           class="nav-item"
+          :class="{ 'router-link-active': $route.path.startsWith(item.to) }"
         >
+
           <span class="nav-icon" aria-hidden="true">
             <svg
               v-if="item.icon === 'dashboard'"
@@ -99,7 +101,8 @@
           </span>
           <span class="nav-label">{{ item.label }}</span>
         </NuxtLink>
-        <div v-if="user?.role === 'ADMIN'" class="nav-divider"></div>
+        <div v-if="user?.role === 'ADMIN' || user?.role === 'OWNER'" class="nav-divider"></div>
+
       </nav>
 
       <div class="sidebar-footer">
@@ -164,21 +167,34 @@ const { appName, appLogoUrl } = useBranding();
 const user = ref(null);
 const isMobileMenuOpen = ref(false);
 const navItems = computed(() => {
-  const baseItems = [
-    { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
-    { to: "/admin/events", label: "Kelola Event", icon: "event" },
-    { to: "/admin/scanner", label: "Scanner QR", icon: "scanner" },
-  ];
+  const role = user.value?.role;
+  const items = [];
 
-  if (user.value?.role === "ADMIN") {
-    baseItems.push(
-      { to: "/admin/settings", label: "Pengaturan", icon: "settings" },
-      { to: "/admin/staff", label: "Manajemen Staff", icon: "staff" },
-    );
+  // Dashboard: ADMIN, OWNER
+  if (role === 'ADMIN' || role === 'OWNER') {
+    items.push({ to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" });
   }
 
-  return baseItems;
+  // Kelola Event & Scanner: All roles
+  items.push(
+    { to: "/admin/events", label: "Kelola Event", icon: "event" },
+    { to: "/admin/scanner", label: "Scanner QR", icon: "scanner" }
+  );
+
+  // Staff: ADMIN, OWNER
+  if (role === 'ADMIN' || role === 'OWNER') {
+    items.push({ to: "/admin/staff", label: "Manajemen Staff", icon: "staff" });
+  }
+
+  // Settings: OWNER
+  if (role === 'OWNER') {
+    items.push({ to: "/admin/settings", label: "Pengaturan", icon: "settings" });
+  }
+
+
+  return items;
 });
+
 
 onMounted(async () => {
   try {

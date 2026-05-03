@@ -5,13 +5,15 @@ import { generateToken } from '../../utils/jwt'
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const username = String(body?.username || '').trim()
+  const email = String(body?.email || '').trim()
   const name = String(body?.name || '').trim()
   const password = String(body?.password || '')
   const confirmPassword = String(body?.confirmPassword || '')
 
-  if (!username || !name || !password || !confirmPassword) {
-    throw createError({ statusCode: 400, statusMessage: 'Semua field wajib diisi.' })
+  if (!username || !name || !email || !password || !confirmPassword) {
+    throw createError({ statusCode: 400, statusMessage: 'Semua field wajib diisi (Nama, Email, Username, Password).' })
   }
+
 
   if (password.length < 8) {
     throw createError({ statusCode: 400, statusMessage: 'Password minimal 8 karakter.' })
@@ -23,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const owner = await prisma.admin.findFirst({
-      where: { role: 'ADMIN' },
+      where: { role: 'OWNER' },
       select: { id: true }
     })
 
@@ -42,17 +44,21 @@ export default defineEventHandler(async (event) => {
     const created = await prisma.admin.create({
       data: {
         username,
+        email,
         name,
         password: hashedPassword,
-        role: 'ADMIN'
+        role: 'OWNER'
+
       },
       select: {
         id: true,
         username: true,
+        email: true,
         name: true,
         role: true
       }
     })
+
 
     const token = generateToken({
       id: created.id,

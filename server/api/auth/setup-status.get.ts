@@ -3,7 +3,7 @@ import prisma from '../../utils/prisma'
 export default defineEventHandler(async () => {
   try {
     const owner = await prisma.admin.findFirst({
-      where: { role: 'ADMIN' },
+      where: { role: 'OWNER' },
       select: { id: true }
     })
 

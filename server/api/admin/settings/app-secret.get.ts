@@ -7,9 +7,10 @@ export default defineEventHandler(async (event) => {
   if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const decoded = verifyToken(token)
-  if (!decoded || decoded.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
+  if (!decoded || decoded.role !== 'OWNER') {
+    throw createError({ statusCode: 403, statusMessage: 'Akses ditolak. Hanya Owner.' })
   }
+
 
   try {
     // @ts-ignore: Prisma client needs regeneration

@@ -6,9 +6,15 @@ export default defineEventHandler(async (event) => {
   if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const decoded = verifyToken(token)
-  if (!decoded || decoded.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
+  if (!decoded) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
+
+  const user = await prisma.admin.findUnique({ where: { id: decoded.id } })
+  if (!user || user.role !== 'OWNER') {
+    throw createError({ statusCode: 403, statusMessage: 'Akses ditolak. Hanya Owner.' })
+  }
+
 
   const body = await readBody(event)
   const settings = body.settings // Expecting Record<string, string>
