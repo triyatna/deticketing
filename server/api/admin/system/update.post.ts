@@ -60,6 +60,16 @@ export default defineEventHandler(async (event) => {
         });
         console.log(`Promoted first user (${firstUser.username}) to OWNER.`);
       }
+
+      if (firstUser) {
+        const ownerName = firstUser.name || firstUser.username;
+        await db.event.updateMany({
+          where: { createdByName: null },
+          data: { createdByName: ownerName },
+        });
+        console.log(`Backfilled createdByName for old events with owner: ${ownerName}`);
+      }
+
     } catch (migErr) {
       console.error("Data migration error:", migErr);
     }

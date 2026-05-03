@@ -11,18 +11,20 @@ datasource db {
 }
 
 model Event {
-  id           String   @id @default(uuid())
-  name         String
-  slug         String   @unique
-  description  String?
-  quota        Int?     // null means unlimited
-  formSchema   String   // JSON string representing the dynamic form fields
-  requireProof Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  quota          Int?
+  formSchema     String
+  requireProof   Boolean  @default(false)
+  createdByName  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   tickets      Ticket[]
 }
+
 
 model Ticket {
   id              String   @id @default(uuid())

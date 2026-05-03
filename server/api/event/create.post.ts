@@ -83,16 +83,23 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const creator = await prisma.admin.findUnique({ where: { id: decoded.id }, select: { name: true } })
+    const createdByName = creator?.name || decoded.username || 'Unknown'
+
     const newEvent = await prisma.event.create({
+      // @ts-ignore: createdByName added after prisma:generate
       data: {
         name,
         slug,
         description,
         quota: quota ? parseInt(quota) : null,
         formSchema: JSON.stringify(formSchema),
-        requireProof: !!requireProof
+        requireProof: !!requireProof,
+        createdByName
       }
     })
+
+
     await getOrCreateEventQrSecret(newEvent.id)
 
     return {

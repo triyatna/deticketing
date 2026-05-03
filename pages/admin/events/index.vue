@@ -21,6 +21,7 @@
               <th>URL</th>
               <th>Kuota</th>
               <th>Status Bukti</th>
+              <th>Dibuat Oleh</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -42,6 +43,9 @@
                 <span :class="['badge', event.requireProof ? 'badge-green' : 'badge-gray']">
                   {{ event.requireProof ? 'Wajib' : 'Opsional' }}
                 </span>
+              </td>
+              <td>
+                <span class="creator-name">{{ event.createdByName || '-' }}</span>
               </td>
               <td>
                 <div class="action-group">
@@ -251,7 +255,10 @@ const handleDeleteEvent = async (eventItem) => {
   background: rgba(153, 27, 27, 0.45);
 }
 
-
+.creator-name {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
 
 @media (max-width: 760px) {
   .modal-actions button {
