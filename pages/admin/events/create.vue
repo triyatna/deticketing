@@ -716,6 +716,50 @@
           </div>
         </section>
 
+        <section class="form-card">
+          <div class="notify-head">
+            <div>
+              <h3 class="card-title">Notifikasi Pendaftaran</h3>
+              <p class="card-desc">Kirim email otomatis ke staff saat ada pendaftar baru masuk.</p>
+            </div>
+            <div class="toggle-flex">
+              <span class="toggle-status">{{ form.notifyEnabled ? 'Aktif' : 'Nonaktif' }}</span>
+              <label class="switch">
+                <input type="checkbox" v-model="form.notifyEnabled" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.notifyEnabled" class="notify-body">
+            <p class="notify-label">Pilih penerima notifikasi (staff dengan email terdaftar):</p>
+            <div v-if="!staffEmailList.length" class="notify-empty">
+              Tidak ada staff dengan email terdaftar. Tambahkan email ke akun staff terlebih dahulu.
+            </div>
+            <div v-else class="notify-checklist">
+              <label
+                v-for="staff in staffEmailList"
+                :key="staff.id"
+                class="notify-item"
+                :class="{ 'notify-selected': form.notifyEmails.includes(staff.email) }"
+                @click="toggleNotifyEmail(staff.email)"
+              >
+                <span class="notify-check">
+                  <svg v-if="form.notifyEmails.includes(staff.email)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span class="notify-info">
+                  <span class="notify-name">{{ staff.name }}</span>
+                  <span class="notify-email">{{ staff.email }}</span>
+                </span>
+                <span class="notify-role-badge">{{ staff.role }}</span>
+              </label>
+            </div>
+            <p v-if="form.notifyEnabled && !form.notifyEmails.length" class="notify-warn">
+              Pilih minimal 1 penerima agar notifikasi dapat terkirim.
+            </p>
+          </div>
+        </section>
+
         <div class="form-actions mt-8">
           <button type="submit" class="btn-primary" :disabled="isLoading || isPrefilling">
             {{ isLoading ? "Menyimpan..." : (isEditMode ? "Simpan Perubahan Event" : "Simpan & Generate Link") }}
@@ -761,7 +805,20 @@ const form = ref({
   nominal: "",
   paymentMethods: [],
   formSchema: [],
+  notifyEnabled: false,
+  notifyEmails: [],
 });
+
+const staffEmailList = ref([]);
+
+const toggleNotifyEmail = (email) => {
+  const idx = form.value.notifyEmails.indexOf(email);
+  if (idx === -1) {
+    form.value.notifyEmails.push(email);
+  } else {
+    form.value.notifyEmails.splice(idx, 1);
+  }
+};
 
 useHead(() => ({
   title: isEditMode.value
@@ -1068,6 +1125,8 @@ const loadEventForEdit = async () => {
       : "";
     form.value.allowDuplicateEmail = !!meta?.allowDuplicateEmail;
     form.value.allowDuplicateDevice = meta?.allowDuplicateDevice !== false;
+    form.value.notifyEnabled = !!meta?.notifyEnabled;
+    form.value.notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : [];
 
     form.value.paymentMethods = Array.isArray(meta?.paymentSettings)
       ? meta.paymentSettings.map((method, index) => ({
@@ -1268,6 +1327,8 @@ const submitEvent = async () => {
       registrationDeadlineAt: form.value.registrationDeadlineEnabled
         ? String(form.value.registrationDeadlineAt || "")
         : "",
+      notifyEnabled: !!form.value.notifyEnabled,
+      notifyEmails: form.value.notifyEmails,
       allowDuplicateEmail: !!form.value.allowDuplicateEmail,
       allowDuplicateDevice: !!form.value.allowDuplicateDevice,
     };
@@ -1316,7 +1377,14 @@ const submitEvent = async () => {
 
 onMounted(async () => {
   await loadEventForEdit();
+  try {
+    const res = await $fetch('/api/admin/staff/emails');
+    staffEmailList.value = res?.staff || [];
+  } catch {
+    staffEmailList.value = [];
+  }
 });
+
 </script>
 
 <style scoped lang="scss">
@@ -1365,6 +1433,130 @@ onMounted(async () => {
 .mt-4 {
   margin-top: 1rem;
 }
+
+.notify-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.notify-body {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notify-label {
+  font-size: 0.87rem;
+  color: var(--text-muted);
+}
+
+.notify-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.75rem;
+  border: 1px dashed var(--line-soft);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.notify-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notify-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.18s ease;
+  background: rgba(8, 18, 33, 0.4);
+}
+
+.notify-item:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(15, 31, 57, 0.6);
+}
+
+.notify-item.notify-selected {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(15, 40, 80, 0.55);
+}
+
+.notify-check {
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1.5px solid rgba(148, 163, 184, 0.4);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(8, 18, 33, 0.6);
+  transition: 0.15s ease;
+}
+
+.notify-selected .notify-check {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.7);
+}
+
+.notify-check svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: #38bdf8;
+}
+
+.notify-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.notify-name {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: #e2eeff;
+}
+
+.notify-email {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notify-role-badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(30, 64, 112, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #94caef;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notify-warn {
+  font-size: 0.82rem;
+  color: #fbbf24;
+  padding: 0.5rem 0.75rem;
+  background: rgba(120, 80, 0, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+}
+
 .mt-8 {
   margin-top: 2rem;
 }

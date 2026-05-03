@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
         name: true,
         quota: true,
         requireProof: true,
+        formSchema: true,
       }
     })
 
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
         scanStatus: true,
         paymentProofUrl: true,
         createdAt: true,
+        formData: true,
       },
       orderBy: { createdAt: 'desc' }
     })

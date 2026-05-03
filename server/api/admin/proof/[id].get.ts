@@ -15,6 +15,9 @@ export default defineEventHandler(async (event) => {
 
   // Get ticket ID
   const ticketId = getRouterParam(event, 'id')
+  const query = getQuery(event)
+  const requestedFile = query.file ? String(query.file) : null
+
   if (!ticketId) {
     throw createError({ statusCode: 400, statusMessage: 'Ticket ID required' })
   }
@@ -24,13 +27,37 @@ export default defineEventHandler(async (event) => {
       where: { id: ticketId }
     })
 
-    if (!ticket || !ticket.paymentProofUrl) {
-      throw createError({ statusCode: 404, statusMessage: 'Bukti pembayaran tidak ditemukan' })
+    if (!ticket) {
+      throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
     }
 
-    // In this context, paymentProofUrl stores the local encrypted file name
-    const fileName = ticket.paymentProofUrl
-    
+    let fileName = ticket.paymentProofUrl
+    let downloadFileName = 'bukti_bayar'
+
+    if (requestedFile && ticket.formData) {
+      try {
+        const formData = JSON.parse(ticket.formData)
+        let fileFound = false
+        for (const key in formData) {
+          if (formData[key]?.fileName === requestedFile) {
+            fileFound = true
+            fileName = requestedFile
+            downloadFileName = formData[key].originalName || requestedFile
+            break
+          }
+        }
+        if (!fileFound) {
+           throw createError({ statusCode: 403, statusMessage: 'File tidak valid untuk tiket ini' })
+        }
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (!fileName) {
+      throw createError({ statusCode: 404, statusMessage: 'File tidak ditemukan' })
+    }
+
     // Attempt to decrypt and serve
     const buffer = await getDecryptedFile(fileName)
     
@@ -40,12 +67,15 @@ export default defineEventHandler(async (event) => {
 
     // Determine content type based on extension
     const ext = fileName.split('.').pop()?.toLowerCase()
-    let contentType = 'image/jpeg'
+    let contentType = 'application/octet-stream'
     if (ext === 'png') contentType = 'image/png'
+    if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg'
     if (ext === 'webp') contentType = 'image/webp'
+    if (ext === 'pdf') contentType = 'application/pdf'
 
     // Set headers
     setResponseHeader(event, 'Content-Type', contentType)
+    setResponseHeader(event, 'Content-Disposition', `inline; filename="${downloadFileName}"`)
     setResponseHeader(event, 'Cache-Control', 'private, max-age=3600')
 
     // Return the decrypted raw image buffer

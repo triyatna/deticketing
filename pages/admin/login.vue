@@ -66,13 +66,14 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 definePageMeta({
   middleware: 'guest'
 })
 
 const router = useRouter()
+const route = useRoute()
 const { appName, appLogoUrl } = useBranding()
 const form = ref({ username: '', password: '' })
 const showPassword = ref(false)
@@ -93,7 +94,12 @@ const handleLogin = async () => {
     })
 
     if (response.success) {
-      router.push('/admin/dashboard')
+      const redirect = route.query.redirect
+      if (redirect && typeof redirect === 'string') {
+        router.push(redirect)
+      } else {
+        router.push('/admin/dashboard')
+      }
     }
   } catch (error) {
     errorMessage.value = error.data?.statusMessage || 'Login gagal. Periksa kembali kredensial Anda.'

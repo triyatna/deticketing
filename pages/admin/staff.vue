@@ -85,7 +85,6 @@
                   </button>
                 </div>
 
-                <span v-else-if="staff.isCurrentUser" class="text-muted text-xs">Anda (Protected)</span>
                 <span v-else class="text-muted text-xs">Protected</span>
               </td>
             </tr>

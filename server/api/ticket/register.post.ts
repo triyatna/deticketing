@@ -1,5 +1,7 @@
 import prisma from '../../utils/prisma'
 import { saveEncryptedFile } from '../../utils/fileCrypto'
+import { sendStaffNotificationEmail } from '../../utils/mailer'
+import { resolveRequestBaseUrl } from '../../utils/requestBaseUrl'
 
 const firstCsvValue = (value: string | undefined) => {
   if (!value) return ''
@@ -84,6 +86,8 @@ export default defineEventHandler(async (event) => {
     let paymentSettings: Array<Record<string, any>> = []
     let allowDuplicateEmail = false
     let allowDuplicateDevice = true
+    let notifyEnabled = false
+    let notifyEmails: string[] = []
     try {
       const parsedSchema = JSON.parse(evt.formSchema || '[]')
       if (Array.isArray(parsedSchema)) {
@@ -92,6 +96,8 @@ export default defineEventHandler(async (event) => {
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
+        notifyEnabled = !!meta?.notifyEnabled
+        notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : []
         const methods: Array<Record<string, any>> = Array.isArray(meta?.paymentSettings)
           ? meta.paymentSettings as Array<Record<string, any>>
           : []
@@ -116,6 +122,8 @@ export default defineEventHandler(async (event) => {
       registrationDeadlineAt = ''
       paymentSettings = []
       allowDuplicateDevice = true
+      notifyEnabled = false
+      notifyEmails = []
     }
 
     if (registrationDeadlineEnabled && registrationDeadlineAt) {
@@ -243,6 +251,28 @@ export default defineEventHandler(async (event) => {
         paymentProofUrl: savedFileName // Reusing this field to store the local filename
       }
     })
+
+    if (notifyEnabled && notifyEmails.length > 0) {
+      const baseUrl = resolveRequestBaseUrl(event)
+      const paymentProofArg = paymentProofFile ? {
+        data: paymentProofFile.data,
+        filename: paymentProofFile.filename || 'payment_proof.png',
+        mimeType: paymentProofFile.type || 'application/octet-stream'
+      } : undefined;
+
+      sendStaffNotificationEmail(
+        notifyEmails,
+        evt.name,
+        eventId,
+        ticket.id,
+        registrantName,
+        registrantEmail,
+        baseUrl,
+        paymentProofArg
+      ).catch((err) => {
+        console.error('Failed to send staff notification email:', err)
+      })
+    }
 
     return {
       success: true,

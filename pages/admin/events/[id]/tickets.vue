@@ -68,7 +68,13 @@
                   {{ ticket.scanStatus.replace("_", " ") }}
                 </span>
               </td>
-              <td>
+              <td class="action-cell">
+                <NuxtLink
+                  :to="`/admin/events/${eventId}/ticket/${ticket.id}`"
+                  class="btn-outline small mr-2"
+                >
+                  Detail
+                </NuxtLink>
                 <button
                   v-if="ticket.status === 'PENDING' && userRole !== 'PETUGAS'"
                   @click="approveTicket(ticket.id)"
@@ -370,5 +376,32 @@ onBeforeUnmount(() => {
 .btn-primary.small {
   padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
+}
+
+.action-cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.mr-2 {
+  margin-right: 0.5rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+.pb-2 {
+  padding-bottom: 0.5rem;
+}
+.border-b {
+  border-bottom: 1px solid var(--glass-border);
+}
+.text-lg {
+  font-size: 1.125rem;
+}
+.font-semibold {
+  font-weight: 600;
 }
 </style>

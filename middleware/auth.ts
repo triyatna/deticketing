@@ -7,10 +7,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     // If API returns an error or no data, redirect to login
     if (!data?.success) {
-      return navigateTo('/admin/login')
+      return navigateTo({ path: '/admin/login', query: { redirect: to.fullPath } })
     }
   } catch (e) {
-    return navigateTo('/admin/login')
+    return navigateTo({ path: '/admin/login', query: { redirect: to.fullPath } })
   }
 })
 

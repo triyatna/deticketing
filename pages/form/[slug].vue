@@ -61,6 +61,20 @@
       </div>
     </div>
 
+    <div v-else-if="isSubmitting" class="container pt-8">
+      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 4rem 2rem; border-radius: 20px;">
+        <div style="margin: 0 auto 1.5rem; display: flex; justify-content: center;">
+          <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 60px; height: 60px; color: #3b82f6;">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12" />
+          </svg>
+        </div>
+        <h2 class="gradient-text mb-4" style="font-size: 2.2rem; font-weight: 800;">Mengirim Data...</h2>
+        <p class="text-muted" style="font-size: 1.05rem; line-height: 1.7; max-width: 480px; margin: 0 auto;">
+          Mohon tunggu sebentar, sistem sedang memproses pendaftaran dan mengunggah dokumen Anda dengan aman. <strong>Jangan menutup atau menyegarkan halaman ini.</strong>
+        </p>
+      </div>
+    </div>
+
     <div v-else class="container pt-8">
       <div class="glass-panel max-w-3xl mx-auto registration-shell">
         <div class="event-header mb-8 text-center">
@@ -1399,6 +1413,9 @@ const submitRegistration = async () => {
   }
 
   isSubmitting.value = true;
+  if (process.client) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   try {
     const payloadAnswers = { ...answers.value };
     for (const question of questionItems.value) {
@@ -1426,10 +1443,13 @@ const submitRegistration = async () => {
       }
     }
 
-    const res = await $fetch("/api/ticket/register", {
-      method: "POST",
-      body: multipart,
-    });
+    const [res] = await Promise.all([
+      $fetch("/api/ticket/register", {
+        method: "POST",
+        body: multipart,
+      }),
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
 
     if (res.success) {
       isSuccess.value = true;
