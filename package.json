@@ -1,6 +1,7 @@
 {
   "name": "deticketing",
   "version": "1.0.93",
+  "author": "Tri Yatna",
   "private": true,
   "type": "module",
   "scripts": {

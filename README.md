@@ -5,21 +5,26 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 ## Fitur Utama
 
 ### Manajemen Form Dinamis
+
 Sistem dilengkapi dengan pembangun form yang mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks. Admin dapat mengonfigurasi skema form secara dinamis tanpa perlu melakukan perubahan pada basis data.
 
 ### Keamanan Data dan Privasi
+
 - **Enkripsi File**: Semua dokumen sensitif dan bukti pembayaran disimpan dalam keadaan terenkripsi di sisi server.
 - **Proteksi Anti-Spam**: Menggunakan mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda yang tidak diinginkan.
 - **Validasi Ketat**: Implementasi proteksi terhadap serangan XSS dan SQL Injection melalui penggunaan ORM yang aman dan prosedur sanitisasi input.
 
 ### Kontrol Akses Berbasis Peran (RBAC)
+
 Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terhadap data event dan tiket dibatasi sesuai dengan tanggung jawab masing-masing staff yang telah ditetapkan.
 
 ### Notifikasi dan Automasi
+
 - **E-Ticket Otomatis**: Peserta akan menerima tiket elektronik dengan QR Code unik segera setelah pendaftaran disetujui.
 - **Notifikasi Staff**: Notifikasi otomatis dikirimkan ke email staff operasional saat terdapat pendaftaran baru yang memerlukan peninjauan.
 
 ### Operasional Lapangan
+
 Dilengkapi dengan pemindai QR Code berbasis web yang terintegrasi untuk proses check-in peserta di lokasi event dengan sinkronisasi data real-time.
 
 ## Teknologi Utama
@@ -33,10 +38,12 @@ Dilengkapi dengan pemindai QR Code berbasis web yang terintegrasi untuk proses c
 ## Instalasi
 
 ### Prasyarat
+
 - Node.js versi 20 atau yang lebih baru
 - npm versi 10 atau yang lebih baru
 
 ### Langkah-langkah
+
 1. Clone repositori ini ke direktori lokal.
 2. Jalankan instalasi dependensi:
    ```bash
@@ -53,6 +60,7 @@ Dilengkapi dengan pemindai QR Code berbasis web yang terintegrasi untuk proses c
 Konfigurasi aplikasi dikelola melalui variabel lingkungan (environment variables). Secara default, aplikasi akan menggunakan SQLite lokal jika `DATABASE_URL` tidak didefinisikan.
 
 Contoh konfigurasi pada file `.env`:
+
 ```env
 NODE_ENV=production
 PORT=1933
@@ -61,17 +69,20 @@ PORT=1933
 ## Menjalankan Aplikasi
 
 ### Pengembangan (Development)
+
 ```bash
 npm run dev
 ```
 
 ### Produksi (Production)
+
 ```bash
 npm run build
 npm run start
 ```
 
 Untuk deployment menggunakan PM2, gunakan konfigurasi yang tersedia:
+
 ```bash
 pm2 start ecosystem.config.cjs --env production
 ```
@@ -84,4 +95,4 @@ pm2 start ecosystem.config.cjs --env production
 
 ## Lisensi
 
-Copyright &copy; 2026 **TY Studio DEV**. Seluruh hak cipta dilindungi undang-undang. Pengembangan ditujukan untuk mendukung komunitas dan manajemen event yang efisien.
+MIT License — bebas digunakan, dan dimodifikasi untuk keperluan non-komersial
