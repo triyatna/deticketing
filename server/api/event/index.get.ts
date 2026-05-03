@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
         slug: true,
         quota: true,
         requireProof: true,
+        createdByName: true,
         createdAt: true,
+
       },
       orderBy: { createdAt: 'desc' }
     })
