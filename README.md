@@ -1,112 +1,87 @@
 # DeTicketing
 
-Sistem ticketing event berbasis Nuxt 3 + Prisma + SQLite, dengan panel admin, form builder, approval tiket, dan QR scanner.
+Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite. Dirancang untuk memberikan solusi manajemen pendaftaran yang aman, fleksibel, dan mudah diimplementasikan.
 
-## Stack
+## Fitur Utama
 
-- Nuxt 3
-- Prisma ORM 7
-- SQLite (default)
-- SweetAlert2
-- PM2 (opsional untuk production)
+### Manajemen Form Dinamis
+Sistem dilengkapi dengan pembangun form yang mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks. Admin dapat mengonfigurasi skema form secara dinamis tanpa perlu melakukan perubahan pada basis data.
 
-## Persiapan
+### Keamanan Data dan Privasi
+- **Enkripsi File**: Semua dokumen sensitif dan bukti pembayaran disimpan dalam keadaan terenkripsi di sisi server.
+- **Proteksi Anti-Spam**: Menggunakan mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda yang tidak diinginkan.
+- **Validasi Ketat**: Implementasi proteksi terhadap serangan XSS dan SQL Injection melalui penggunaan ORM yang aman dan prosedur sanitisasi input.
 
-Pastikan tersedia:
+### Kontrol Akses Berbasis Peran (RBAC)
+Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terhadap data event dan tiket dibatasi sesuai dengan tanggung jawab masing-masing staff yang telah ditetapkan.
 
-- Node.js 20+
-- npm 10+
+### Notifikasi dan Automasi
+- **E-Ticket Otomatis**: Peserta akan menerima tiket elektronik dengan QR Code unik segera setelah pendaftaran disetujui.
+- **Notifikasi Staff**: Notifikasi otomatis dikirimkan ke email staff operasional saat terdapat pendaftaran baru yang memerlukan peninjauan.
+
+### Operasional Lapangan
+Dilengkapi dengan pemindai QR Code berbasis web yang terintegrasi untuk proses check-in peserta di lokasi event dengan sinkronisasi data real-time.
+
+## Teknologi Utama
+
+- **Framework**: Nuxt 3 (Vue.js 3 & Nitro)
+- **ORM**: Prisma 7
+- **Database**: SQLite (Default)
+- **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption
+- **Email**: SMTP integration via Nodemailer
 
 ## Instalasi
 
-```bash
-npm install
-```
+### Prasyarat
+- Node.js versi 20 atau yang lebih baru
+- npm versi 10 atau yang lebih baru
 
-## Konfigurasi Environment
+### Langkah-langkah
+1. Clone repositori ini ke direktori lokal.
+2. Jalankan instalasi dependensi:
+   ```bash
+   npm install
+   ```
+3. Lakukan inisialisasi basis data dan generate client Prisma:
+   ```bash
+   npm run prisma:generate
+   npm run prisma:push
+   ```
 
-Project ini tetap bisa jalan meskipun `DATABASE_URL` tidak diisi:
+## Konfigurasi
 
-- Jika `DATABASE_URL` kosong, sistem otomatis fallback ke `file:./prisma/dev.db`.
-- Folder/file database SQLite akan dibuat otomatis saat `build` / `prisma:generate` / `prisma:push`.
+Konfigurasi aplikasi dikelola melalui variabel lingkungan (environment variables). Secara default, aplikasi akan menggunakan SQLite lokal jika `DATABASE_URL` tidak didefinisikan.
 
-Contoh `.env` minimal:
-
+Contoh konfigurasi pada file `.env`:
 ```env
 NODE_ENV=production
 PORT=1933
 ```
 
-## Prisma (Penting)
+## Menjalankan Aplikasi
 
-Gunakan script npm berikut (jangan langsung `npx prisma ...`) agar pre-hook auto create database berjalan:
-
-```bash
-npm run prisma:generate
-npm run prisma:push
-```
-
-## Development
-
+### Pengembangan (Development)
 ```bash
 npm run dev
 ```
 
-## Build & Run Production
-
+### Produksi (Production)
 ```bash
 npm run build
 npm run start
 ```
 
-`start.mjs` default menggunakan port `1933` jika `PORT` tidak di-set.
-
-## Menjalankan dengan PM2
-
-File konfigurasi sudah disediakan:
-
-- [`ecosystem.config.cjs`](/e:/DEV/laragon/www/htdocs/project/ticketing/ecosystem.config.cjs)
-
-Perintah:
-
+Untuk deployment menggunakan PM2, gunakan konfigurasi yang tersedia:
 ```bash
 pm2 start ecosystem.config.cjs --env production
-pm2 logs ticketing
 ```
-
-## First Setup Owner
-
-Saat pertama kali dijalankan dan akun owner belum ada:
-
-- buka `/admin/login`
-- sistem akan arahkan ke `/admin/setup-owner`
-- setelah owner dibuat, halaman setup owner tidak dipakai lagi
 
 ## Catatan Keamanan
 
-- `APP_SECRET` dikelola server (auto-generate saat kosong).
-- Secret disimpan terenkripsi.
-- Secret per-event untuk QR dibuat otomatis saat event baru dibuat.
-- Endpoint form publik diberi header no-index.
+- Kunci rahasia aplikasi (`APP_SECRET`) dikelola secara internal oleh server.
+- Token QR Code bersifat unik per event dan dienkripsi untuk mencegah pemalsuan tiket.
+- Seluruh file pendaftar tersimpan secara privat dan hanya dapat diakses melalui endpoint yang telah terautentikasi.
 
-## Troubleshooting
+## Lisensi
 
-### Error `Cannot resolve environment variable: DATABASE_URL`
-
-Gunakan:
-
-```bash
-npm run prisma:generate
-```
-
-bukan:
-
-```bash
-npx prisma generate
-```
-
-Karena script npm menjalankan pre-hook untuk memastikan file database SQLite sudah dibuat.
-
-### Error Prisma v7 tentang `url` di `schema.prisma`
-
-Project ini memakai Prisma 7. URL datasource dikonfigurasi di `prisma.config.ts`, bukan di `prisma/schema.prisma`.
+Copyright &copy; 2026 **TY Studio DEV**. Seluruh hak cipta dilindungi undang-undang. Pengembangan ditujukan untuk mendukung komunitas dan manajemen event yang efisien.

@@ -1,8 +1,14 @@
 import prisma from '../../../utils/prisma'
+import { verifyToken } from '../../../utils/jwt'
+import { checkEventAccess } from '../../../utils/checkEventAccess'
 
 export default defineEventHandler(async (event) => {
-  const eventId = getRouterParam(event, 'id')
+  const token = getCookie(event, 'auth_token')
+  if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  const decoded: any = verifyToken(token)
+  if (!decoded) throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
 
+  const eventId = getRouterParam(event, 'id')
   if (!eventId) {
     throw createError({ statusCode: 400, statusMessage: 'Event ID required' })
   }
@@ -21,6 +27,11 @@ export default defineEventHandler(async (event) => {
 
     if (!ev) {
       throw createError({ statusCode: 404, statusMessage: 'Event not found' })
+    }
+
+    const hasAccess = await checkEventAccess(eventId, decoded.id, decoded.role)
+    if (!hasAccess) {
+      throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan.' })
     }
 
     const tickets = await prisma.ticket.findMany({
@@ -50,3 +61,4 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+

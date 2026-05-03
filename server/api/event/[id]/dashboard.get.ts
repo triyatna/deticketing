@@ -1,12 +1,13 @@
 import { defineEventHandler, getCookie, createError } from 'h3'
 import prisma from '../../../utils/prisma'
 import { verifyToken } from '../../../utils/jwt'
+import { checkEventAccess } from '../../../utils/checkEventAccess'
 
 export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'auth_token')
   if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
-  const decoded = verifyToken(token)
+  const decoded: any = verifyToken(token)
   if (!decoded) throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
 
   const eventId = event.context.params?.id
@@ -18,6 +19,9 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!eventData) throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan' })
+
+    const hasAccess = await checkEventAccess(eventId, decoded.id, decoded.role)
+    if (!hasAccess) throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan' })
 
     // Aggregate tickets
     const [

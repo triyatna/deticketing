@@ -1,5 +1,6 @@
 import prisma from '../../utils/prisma'
 import { verifyToken } from '../../utils/jwt'
+import { checkEventAccess } from '../../utils/checkEventAccess'
 
 const hasValidPaymentMethods = (formSchema: any[]) => {
   const schemaArray = Array.isArray(formSchema) ? formSchema : []
@@ -66,13 +67,37 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan.' })
     }
 
+    const hasAccess = await checkEventAccess(eventId, decoded.id, decoded.role)
+    if (!hasAccess) {
+      throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan.' })
+    }
+
+    const schemaArr = Array.isArray(formSchema) ? formSchema : []
+    let finalSchema: any[] = schemaArr
+
+    if (decoded.role === 'PANITIA') {
+      const existingRaw = await prisma.event.findUnique({ where: { id: eventId }, select: { formSchema: true } })
+      const existingSchema = JSON.parse(existingRaw?.formSchema || '[]')
+      const existingMeta = existingSchema.find((i: any) => i?.itemType === 'form_meta') || {}
+      finalSchema = schemaArr.map((i: any) => {
+        if (i?.itemType === 'form_meta') {
+          return {
+            ...i,
+            assignmentEnabled: existingMeta.assignmentEnabled,
+            assignedStaffIds: existingMeta.assignedStaffIds,
+          }
+        }
+        return i
+      })
+    }
+
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: {
         name: String(name),
         description: description ? String(description) : '',
         quota: quota ? parseInt(quota) : null,
-        formSchema: JSON.stringify(formSchema),
+        formSchema: JSON.stringify(finalSchema),
         requireProof: !!requireProof
       }
     })

@@ -3,7 +3,10 @@ import { verifyToken } from '../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
   try {
-    const events = await prisma.event.findMany({
+    const token = getCookie(event, 'auth_token')
+    const decoded: any = token ? verifyToken(token) : null
+
+    const allEvents = await prisma.event.findMany({
       select: {
         id: true,
         name: true,
@@ -12,17 +15,32 @@ export default defineEventHandler(async (event) => {
         requireProof: true,
         createdByName: true,
         createdAt: true,
-
+        formSchema: true,
       },
       orderBy: { createdAt: 'desc' }
     })
 
-    const token = getCookie(event, 'auth_token')
-    const decoded = token ? verifyToken(token) : null
+    let events = allEvents
+
+    if (decoded && (decoded.role === 'PANITIA' || decoded.role === 'PETUGAS')) {
+      events = allEvents.filter(ev => {
+        try {
+          const schema = JSON.parse(ev.formSchema || '[]')
+          const meta = schema.find((i: any) => i?.itemType === 'form_meta') || {}
+          if (!meta.assignmentEnabled) return true
+          const ids: string[] = Array.isArray(meta.assignedStaffIds) ? meta.assignedStaffIds : []
+          return ids.includes(decoded.id)
+        } catch {
+          return true
+        }
+      })
+    }
+
+    const safeEvents = events.map(({ formSchema: _, ...rest }) => rest)
 
     return {
       success: true,
-      events,
+      events: safeEvents,
       user: decoded ? { id: decoded.id, role: decoded.role } : null
     }
   } catch (error: any) {
@@ -32,3 +50,4 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+

@@ -1,5 +1,6 @@
 import prisma from '../../utils/prisma'
 import { verifyToken } from '../../utils/jwt'
+import { checkEventAccess } from '../../utils/checkEventAccess'
 
 export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'auth_token')
@@ -7,11 +8,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const decoded = verifyToken(token)
+  const decoded: any = verifyToken(token)
   if (!decoded) {
     throw createError({ statusCode: 403, statusMessage: 'Akses ditolak.' })
   }
-
 
   const eventId = getRouterParam(event, 'id')
   if (!eventId) {
@@ -27,6 +27,11 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan.' })
     }
 
+    const hasAccess = await checkEventAccess(eventId, decoded.id, decoded.role)
+    if (!hasAccess) {
+      throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan.' })
+    }
+
     return {
       success: true,
       event: targetEvent
@@ -38,3 +43,4 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+

@@ -790,6 +790,63 @@
           </div>
         </section>
 
+        <section v-if="currentUserRole !== 'PANITIA'" class="form-card">
+          <div class="notify-head">
+            <div>
+              <h3 class="card-title">Penugasan Staff</h3>
+              <p class="card-desc">Batasi visibilitas event hanya untuk staff yang ditugaskan. Admin & Owner selalu dapat melihat semua event.</p>
+            </div>
+            <div class="toggle-flex">
+              <span class="toggle-status">{{ form.assignmentEnabled ? 'Aktif' : 'Nonaktif' }}</span>
+              <label class="switch">
+                <input type="checkbox" v-model="form.assignmentEnabled" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.assignmentEnabled" class="notify-body">
+            <p class="notify-label">Pilih staff yang dapat mengakses event ini (Panitia & Petugas):</p>
+
+            <div class="assign-search-wrap">
+              <input
+                v-model="assignSearch"
+                type="text"
+                class="form-input"
+                placeholder="Cari nama atau email staff..."
+              />
+            </div>
+
+            <div v-if="!assignableStaffList.length" class="notify-empty">
+              Tidak ada staff dengan role Panitia atau Petugas.
+            </div>
+            <div v-else-if="!filteredAssignableStaff.length" class="notify-empty">
+              Tidak ada staff yang cocok dengan pencarian.
+            </div>
+            <div v-else class="notify-checklist">
+              <label
+                v-for="staff in filteredAssignableStaff"
+                :key="staff.id"
+                class="notify-item"
+                :class="{ 'notify-selected': form.assignedStaffIds.includes(staff.id) }"
+                @click="toggleAssignedStaff(staff.id)"
+              >
+                <span class="notify-check">
+                  <svg v-if="form.assignedStaffIds.includes(staff.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span class="notify-info">
+                  <span class="notify-name">{{ staff.name }}</span>
+                  <span class="notify-email">{{ staff.email || 'Tidak ada email' }}</span>
+                </span>
+                <span class="notify-role-badge" :class="staff.role === 'PANITIA' ? 'role-panitia' : 'role-petugas'">{{ staff.role }}</span>
+              </label>
+            </div>
+            <p v-if="form.assignmentEnabled && !form.assignedStaffIds.length" class="notify-warn">
+              Pilih minimal 1 staff agar event dapat diakses oleh Panitia & Petugas.
+            </p>
+          </div>
+        </section>
+
         <div class="form-actions mt-8">
           <button type="submit" class="btn-primary" :disabled="isLoading || isPrefilling">
             {{ isLoading ? "Menyimpan..." : (isEditMode ? "Simpan Perubahan Event" : "Simpan & Generate Link") }}
@@ -840,7 +897,31 @@ const form = ref({
   eventDate: "",
   eventTime: "",
   eventLocation: "",
+  assignmentEnabled: false,
+  assignedStaffIds: [],
 });
+
+const currentUserRole = ref('PETUGAS');
+const assignableStaffList = ref([]);
+const assignSearch = ref('');
+
+const filteredAssignableStaff = computed(() => {
+  if (!assignSearch.value.trim()) return assignableStaffList.value;
+  const q = assignSearch.value.toLowerCase();
+  return assignableStaffList.value.filter(s =>
+    (s.name && s.name.toLowerCase().includes(q)) ||
+    (s.email && s.email.toLowerCase().includes(q))
+  );
+});
+
+const toggleAssignedStaff = (id) => {
+  const idx = form.value.assignedStaffIds.indexOf(id);
+  if (idx === -1) {
+    form.value.assignedStaffIds.push(id);
+  } else {
+    form.value.assignedStaffIds.splice(idx, 1);
+  }
+};
 
 const staffEmailList = ref([]);
 
@@ -1163,6 +1244,8 @@ const loadEventForEdit = async () => {
     form.value.allowDuplicateDevice = meta?.allowDuplicateDevice !== false;
     form.value.notifyEnabled = !!meta?.notifyEnabled;
     form.value.notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : [];
+    form.value.assignmentEnabled = !!meta?.assignmentEnabled;
+    form.value.assignedStaffIds = Array.isArray(meta?.assignedStaffIds) ? meta.assignedStaffIds : [];
 
     form.value.paymentMethods = Array.isArray(meta?.paymentSettings)
       ? meta.paymentSettings.map((method, index) => ({
@@ -1370,6 +1453,8 @@ const submitEvent = async () => {
       notifyEmails: form.value.notifyEmails,
       allowDuplicateEmail: !!form.value.allowDuplicateEmail,
       allowDuplicateDevice: !!form.value.allowDuplicateDevice,
+      assignmentEnabled: !!form.value.assignmentEnabled,
+      assignedStaffIds: Array.isArray(form.value.assignedStaffIds) ? form.value.assignedStaffIds : [],
     };
 
     if (form.value.paymentEnabled && !validPaymentMethods.value.length) {
@@ -1415,12 +1500,27 @@ const submitEvent = async () => {
 };
 
 onMounted(async () => {
+  try {
+    const meRes = await $fetch('/api/auth/me');
+    if (meRes.success) currentUserRole.value = meRes.user.role;
+  } catch {}
+
   await loadEventForEdit();
+
   try {
     const res = await $fetch('/api/admin/staff/emails');
     staffEmailList.value = res?.staff || [];
   } catch {
     staffEmailList.value = [];
+  }
+
+  if (currentUserRole.value !== 'PANITIA') {
+    try {
+      const res = await $fetch('/api/admin/staff/assignable');
+      assignableStaffList.value = res?.staff || [];
+    } catch {
+      assignableStaffList.value = [];
+    }
   }
 });
 
@@ -1594,6 +1694,22 @@ onMounted(async () => {
   background: rgba(120, 80, 0, 0.2);
   border: 1px solid rgba(251, 191, 36, 0.3);
   border-radius: 8px;
+}
+
+.notify-role-badge.role-panitia {
+  background: rgba(30, 80, 60, 0.7);
+  border-color: rgba(52, 211, 153, 0.25);
+  color: #6ee7b7;
+}
+
+.notify-role-badge.role-petugas {
+  background: rgba(50, 40, 90, 0.7);
+  border-color: rgba(167, 139, 250, 0.25);
+  color: #c4b5fd;
+}
+
+.assign-search-wrap {
+  margin-bottom: 0.75rem;
 }
 
 .mt-8 {
