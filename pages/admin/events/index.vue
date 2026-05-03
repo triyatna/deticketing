@@ -9,9 +9,19 @@
     </div>
 
     <div class="glass-panel table-shell">
+      <div style="margin-bottom: 1rem; display: flex; justify-content: flex-end;">
+        <input 
+          type="text" 
+          v-model="searchQuery" 
+          placeholder="Cari nama event..." 
+          class="form-input" 
+          style="max-width: 300px;" 
+        />
+      </div>
+      
       <div v-if="pending" class="state-box">Memuat daftar event...</div>
       <div v-else-if="error" class="state-box error">Gagal memuat data event.</div>
-      <div v-else-if="!events?.length" class="state-box">Belum ada event. Mulai dari membuat event pertama.</div>
+      <div v-else-if="!filteredEvents?.length" class="state-box">Event tidak ditemukan.</div>
 
       <div v-else class="table-responsive">
         <table class="data-table">
@@ -26,7 +36,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="event in events" :key="event.id">
+            <tr v-for="event in filteredEvents" :key="event.id">
               <td>
                 <p class="event-name">{{ event.name }}</p>
               </td>
@@ -55,6 +65,9 @@
                     class="btn-outline action-btn"
                   >
                     Edit Event
+                  </NuxtLink>
+                  <NuxtLink :to="`/admin/events/${event.id}/dashboard`" class="btn-primary action-btn">
+                    Dashboard
                   </NuxtLink>
                   <NuxtLink :to="`/admin/events/${event.id}/tickets`" class="btn-outline action-btn">
                     Lihat Pendaftar
@@ -93,6 +106,16 @@ const { data: response, pending, error, refresh } = useFetch('/api/event', {
 })
 const events = computed(() => response.value?.events || [])
 const userRole = computed(() => String(response.value?.user?.role || 'PANITIA'))
+
+const searchQuery = ref('')
+const filteredEvents = computed(() => {
+  if (!searchQuery.value.trim()) return events.value;
+  const q = searchQuery.value.toLowerCase();
+  return events.value.filter(e => 
+    (e.name && e.name.toLowerCase().includes(q)) || 
+    (e.slug && e.slug.toLowerCase().includes(q))
+  );
+})
 
 const showNotice = (type, message) => {
   const isError = type === "error";

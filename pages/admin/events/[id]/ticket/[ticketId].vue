@@ -75,15 +75,37 @@
               <p v-else class="text-muted">- Tidak ada bukti pembayaran -</p>
             </div>
 
-            <div v-if="ticket.status === 'PENDING' && userRole !== 'PETUGAS'" class="action-box mt-6">
-              <p class="text-sm text-muted mb-3">Periksa bukti pembayaran sebelum menyetujui pendaftar. Jika disetujui, QR Code akan otomatis dikirim ke email pendaftar.</p>
-              <button
-                @click="approveTicket(ticket.id)"
-                class="btn-primary full-width"
-                :disabled="isApproving"
-              >
-                {{ isApproving ? "Memproses & Mengirim Email..." : "Approve & Kirim E-Ticket" }}
-              </button>
+            <div v-if="userRole !== 'PETUGAS'" class="action-box mt-6">
+              <p v-if="ticket.status === 'PENDING'" class="text-sm text-muted mb-3">Periksa bukti pembayaran sebelum menyetujui pendaftar. Jika disetujui, QR Code akan otomatis dikirim ke email pendaftar.</p>
+              
+              <div class="action-buttons" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button
+                  v-if="ticket.status === 'PENDING'"
+                  @click="approveTicket(ticket.id)"
+                  class="btn-primary full-width"
+                  :disabled="isApproving || isUpdatingStatus"
+                >
+                  {{ isApproving ? "Memproses & Mengirim Email..." : "Approve & Kirim E-Ticket" }}
+                </button>
+                
+                <button
+                  v-if="ticket.status !== 'REJECTED'"
+                  @click="updateTicketStatus(ticket.id, 'REJECTED')"
+                  class="btn-outline full-width border-red text-red hover-red"
+                  :disabled="isApproving || isUpdatingStatus"
+                >
+                  Batalkan Tiket
+                </button>
+                
+                <button
+                  v-if="ticket.status === 'REJECTED'"
+                  @click="updateTicketStatus(ticket.id, 'PENDING')"
+                  class="btn-outline full-width"
+                  :disabled="isApproving || isUpdatingStatus"
+                >
+                  Cabut Batal (Jadikan Pending)
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -213,6 +235,56 @@ const approveTicket = async (id) => {
     isApproving.value = false;
   }
 };
+
+const isUpdatingStatus = ref(false);
+
+const updateTicketStatus = async (id, newStatus) => {
+  const isCancel = newStatus === 'REJECTED';
+  const actionText = isCancel ? "membatalkan (menolak)" : "mencabut pembatalan";
+  
+  const result = await Swal.fire({
+    title: "Konfirmasi",
+    text: `Apakah Anda yakin ingin ${actionText} tiket ini?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Ya, Lanjutkan",
+    cancelButtonText: "Batal",
+    background: "#0f172a",
+    color: "#f8fafc",
+    confirmButtonColor: isCancel ? "#ef4444" : "#3b82f6",
+  });
+  if (!result.isConfirmed) return;
+
+  isUpdatingStatus.value = true;
+  try {
+    const res = await $fetch("/api/ticket/update-status", {
+      method: "POST",
+      body: { ticketId: id, status: newStatus },
+    });
+
+    if (res.success) {
+      Swal.fire({
+        title: "Sukses!",
+        text: `Tiket berhasil ${isCancel ? 'dibatalkan' : 'dikembalikan ke Pending'}.`,
+        icon: "success",
+        background: "#0f172a",
+        color: "#f8fafc",
+        confirmButtonColor: "#3b82f6",
+      });
+      await refresh();
+    }
+  } catch (err) {
+    Swal.fire({
+      title: "Error",
+      text: err.data?.statusMessage || "Gagal mengubah status",
+      icon: "error",
+      background: "#0f172a",
+      color: "#f8fafc",
+    });
+  } finally {
+    isUpdatingStatus.value = false;
+  }
+};
 </script>
 
 <style scoped lang="scss">
@@ -236,6 +308,10 @@ const approveTicket = async (id) => {
 .text-blue:hover { text-decoration: underline; }
 .font-semibold { font-weight: 600; }
 .full-width { width: 100%; text-align: center; justify-content: center; }
+
+.border-red { border-color: #ef4444; }
+.text-red { color: #ef4444 !important; }
+.hover-red:hover { background-color: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; }
 
 .detail-container {
   padding: 1.5rem;

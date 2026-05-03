@@ -19,11 +19,26 @@
       <div v-else-if="error" class="text-center py-8 text-red">
         Gagal memuat data.
       </div>
-      <div v-else-if="!tickets?.length" class="text-center py-8 text-muted">
+
+      <div v-else-if="tickets && tickets.length">
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Cari nama atau email..." 
+            class="form-input" 
+            style="max-width: 300px;" 
+          />
+        </div>
+        <div v-if="!filteredTickets.length" class="text-center py-8 text-muted">
+          Tidak ada pendaftar yang cocok dengan pencarian Anda.
+        </div>
+      </div>
+      <div v-else class="text-center py-8 text-muted">
         Belum ada pendaftar untuk event ini.
       </div>
 
-      <div v-else class="table-responsive">
+      <div v-if="filteredTickets.length > 0" class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
@@ -37,7 +52,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="ticket in tickets" :key="ticket.id">
+            <tr v-for="ticket in filteredTickets" :key="ticket.id">
               <td>{{ ticket.registrantName }}</td>
               <td>{{ ticket.registrantEmail }}</td>
               <td>{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</td>
@@ -71,22 +86,10 @@
               <td class="action-cell">
                 <NuxtLink
                   :to="`/admin/events/${eventId}/ticket/${ticket.id}`"
-                  class="btn-outline small mr-2"
+                  class="btn-outline small"
                 >
                   Detail
                 </NuxtLink>
-                <button
-                  v-if="ticket.status === 'PENDING' && userRole !== 'PETUGAS'"
-                  @click="approveTicket(ticket.id)"
-                  class="btn-primary small"
-                  :disabled="approvingId === ticket.id"
-                >
-                  {{
-                    approvingId === ticket.id
-                      ? "Mengirim..."
-                      : "Approve & Kirim QR"
-                  }}
-                </button>
               </td>
 
             </tr>
@@ -119,6 +122,16 @@ const {
 });
 const event = computed(() => response.value?.event);
 const tickets = computed(() => response.value?.tickets || []);
+
+const searchQuery = ref('');
+const filteredTickets = computed(() => {
+  if (!searchQuery.value.trim()) return tickets.value;
+  const q = searchQuery.value.toLowerCase();
+  return tickets.value.filter(t => 
+    (t.registrantName && t.registrantName.toLowerCase().includes(q)) || 
+    (t.registrantEmail && t.registrantEmail.toLowerCase().includes(q))
+  );
+});
 
 const userRole = ref('PETUGAS')
 onMounted(async () => {
@@ -208,52 +221,6 @@ const getScanBadgeClass = (status) => {
   if (status === "MASUK") return "badge-green";
   if (status === "KELUAR") return "badge-yellow";
   return "badge-gray";
-};
-
-const approveTicket = async (ticketId) => {
-  const result = await Swal.fire({
-    title: "Konfirmasi",
-    text: "Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Ya, Approve",
-    cancelButtonText: "Batal",
-    background: "#0f172a",
-    color: "#f8fafc",
-    confirmButtonColor: "#3b82f6",
-  });
-  if (!result.isConfirmed) return;
-
-  approvingId.value = ticketId;
-  try {
-    const res = await $fetch("/api/ticket/approve", {
-      method: "POST",
-      body: { ticketId },
-    });
-
-    if (res.success) {
-      Swal.fire({
-        title: "Sukses!",
-        text: "Berhasil! QR Code telah dikirim ke email peserta.",
-        icon: "success",
-        background: "#0f172a",
-        color: "#f8fafc",
-        confirmButtonColor: "#3b82f6",
-      });
-      await refresh();
-      lastRefreshAt.value = new Date();
-    }
-  } catch (err) {
-    Swal.fire({
-      title: "Error",
-      text: err.data?.statusMessage || "Gagal menyetujui tiket",
-      icon: "error",
-      background: "#0f172a",
-      color: "#f8fafc",
-    });
-  } finally {
-    approvingId.value = null;
-  }
 };
 
 onMounted(() => {

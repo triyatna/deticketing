@@ -41,6 +41,36 @@
               ></textarea>
             </div>
 
+            <div class="grid-two row-full">
+              <div class="form-group">
+                <label>Tanggal Event (Opsional)</label>
+                <input
+                  v-model="form.eventDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+              <div class="form-group">
+                <label>Waktu Event (Opsional)</label>
+                <input
+                  v-model="form.eventTime"
+                  type="time"
+                  class="form-input"
+                />
+              </div>
+            </div>
+            <p class="helper-text mt-1 row-full" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">Tanggal dan waktu ini akan ditampilkan di halaman pendaftaran.</p>
+
+            <div class="form-group row-full">
+              <label>Lokasi Event (Opsional)</label>
+              <input
+                v-model="form.eventLocation"
+                type="text"
+                class="form-input"
+                placeholder="Contoh: Gedung Serbaguna, Jakarta"
+              />
+            </div>
+
             <div class="group-divider row-full">
               <span>Branding Form</span>
             </div>
@@ -807,6 +837,9 @@ const form = ref({
   formSchema: [],
   notifyEnabled: false,
   notifyEmails: [],
+  eventDate: "",
+  eventTime: "",
+  eventLocation: "",
 });
 
 const staffEmailList = ref([]);
@@ -1118,6 +1151,9 @@ const loadEventForEdit = async () => {
     form.value.backgroundTexture = String(meta?.backgroundTexture || "dots");
     form.value.backgroundImageUrl = String(meta?.backgroundImageUrl || "");
     form.value.nominal = String(meta?.nominal || "");
+    form.value.eventDate = String(meta?.eventDate || "");
+    form.value.eventTime = String(meta?.eventTime || "");
+    form.value.eventLocation = String(meta?.eventLocation || "");
     form.value.paymentEnabled = !!meta?.paymentEnabled;
     form.value.registrationDeadlineEnabled = !!meta?.registrationDeadlineEnabled;
     form.value.registrationDeadlineAt = form.value.registrationDeadlineEnabled
@@ -1321,6 +1357,9 @@ const submitEvent = async () => {
       backgroundTexture: String(form.value.backgroundTexture || "dots"),
       backgroundImageUrl: String(form.value.backgroundImageUrl || "").trim(),
       nominal: String(form.value.nominal || "").trim(),
+      eventDate: String(form.value.eventDate || "").trim(),
+      eventTime: String(form.value.eventTime || "").trim(),
+      eventLocation: String(form.value.eventLocation || "").trim(),
       paymentEnabled: !!form.value.paymentEnabled,
       paymentSettings: validPaymentMethods.value,
       registrationDeadlineEnabled: !!form.value.registrationDeadlineEnabled,
