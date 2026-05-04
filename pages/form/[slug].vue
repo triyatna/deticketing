@@ -7,7 +7,15 @@
     <div v-else-if="error || !event" class="error-container">
       <div class="glass-panel error-card text-center">
         <div class="error-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -18,21 +26,64 @@
         </div>
         <h2 class="error-title">Event Tidak Ditemukan</h2>
         <p class="text-muted error-desc">
-          Maaf, halaman pendaftaran yang Anda cari tidak tersedia, URL mungkin salah, atau event telah dihapus oleh penyelenggara.
+          Maaf, halaman pendaftaran yang Anda cari tidak tersedia, URL mungkin
+          salah, atau event telah dihapus oleh penyelenggara.
         </p>
       </div>
     </div>
 
     <div v-else-if="isSuccess" class="container pt-8">
-      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 4rem 2rem; border-radius: 20px;">
-        <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(34, 197, 94, 0.1); color: #22c55e; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.2);">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <div
+        class="glass-panel max-w-3xl mx-auto text-center"
+        style="padding: 4rem 2rem; border-radius: 20px"
+      >
+        <div
+          style="
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.2);
+          "
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <h2 class="gradient-text mb-4" style="font-size: 2.2rem; font-weight: 800;">Pendaftaran Berhasil!</h2>
-        <p class="text-muted" style="font-size: 1.05rem; line-height: 1.7; max-width: 480px; margin: 0 auto;">
-          Terima kasih telah mendaftar. Data Anda telah kami terima dengan baik. Silakan tunggu informasi dan konfirmasi lebih lanjut dari panitia. E-Ticket akan dikirimkan ke email Anda jika pendaftaran telah disetujui.
+        <h2
+          class="gradient-text mb-4"
+          style="font-size: 2.2rem; font-weight: 800"
+        >
+          Pendaftaran Berhasil!
+        </h2>
+        <p
+          class="text-muted"
+          style="
+            font-size: 1.05rem;
+            line-height: 1.7;
+            max-width: 480px;
+            margin: 0 auto;
+          "
+        >
+          Terima kasih telah mendaftar. Data Anda telah kami terima dengan baik.
+          Silakan tunggu informasi dan konfirmasi lebih lanjut dari panitia.
+          E-Ticket akan dikirimkan ke email Anda jika pendaftaran telah
+          disetujui.
         </p>
       </div>
 
@@ -53,24 +104,75 @@
     </div>
 
     <div v-else-if="deviceGatePending" class="container pt-8">
-      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 3rem 2rem; border-radius: 20px;">
-        <h2 class="gradient-text mb-4" style="font-size: 1.8rem; font-weight: 800;">Memverifikasi Pendaftaran...</h2>
-        <p class="text-muted" style="font-size: 1rem; line-height: 1.6; max-width: 460px; margin: 0 auto;">
-          Mohon tunggu sebentar, sistem sedang mengecek status pendaftaran perangkat Anda.
+      <div
+        class="glass-panel max-w-3xl mx-auto text-center"
+        style="padding: 3rem 2rem; border-radius: 20px"
+      >
+        <h2
+          class="gradient-text mb-4"
+          style="font-size: 1.8rem; font-weight: 800"
+        >
+          Memverifikasi Pendaftaran...
+        </h2>
+        <p
+          class="text-muted"
+          style="
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 460px;
+            margin: 0 auto;
+          "
+        >
+          Mohon tunggu sebentar, sistem sedang mengecek status pendaftaran
+          perangkat Anda.
         </p>
       </div>
     </div>
 
     <div v-else-if="isSubmitting" class="container pt-8">
-      <div class="glass-panel max-w-3xl mx-auto text-center" style="padding: 4rem 2rem; border-radius: 20px;">
-        <div style="margin: 0 auto 1.5rem; display: flex; justify-content: center;">
-          <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 60px; height: 60px; color: #3b82f6;">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12" />
+      <div
+        class="glass-panel max-w-3xl mx-auto text-center"
+        style="padding: 4rem 2rem; border-radius: 20px"
+      >
+        <div
+          style="margin: 0 auto 1.5rem; display: flex; justify-content: center"
+        >
+          <svg
+            class="btn-spinner"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style="width: 60px; height: 60px; color: #3b82f6"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-dasharray="32"
+              stroke-dashoffset="12"
+            />
           </svg>
         </div>
-        <h2 class="gradient-text mb-4" style="font-size: 2.2rem; font-weight: 800;">Mengirim Data...</h2>
-        <p class="text-muted" style="font-size: 1.05rem; line-height: 1.7; max-width: 480px; margin: 0 auto;">
-          Mohon tunggu sebentar, sistem sedang memproses pendaftaran dan mengunggah dokumen Anda dengan aman. <strong>Jangan menutup atau menyegarkan halaman ini.</strong>
+        <h2
+          class="gradient-text mb-4"
+          style="font-size: 2.2rem; font-weight: 800"
+        >
+          Mengirim Data...
+        </h2>
+        <p
+          class="text-muted"
+          style="
+            font-size: 1.05rem;
+            line-height: 1.7;
+            max-width: 480px;
+            margin: 0 auto;
+          "
+        >
+          Mohon tunggu sebentar, sistem sedang memproses pendaftaran dan
+          mengunggah dokumen Anda dengan aman.
+          <strong>Jangan menutup atau menyegarkan halaman ini.</strong>
         </p>
       </div>
     </div>
@@ -85,17 +187,78 @@
             class="event-header-image"
           />
           <h1 class="gradient-text">{{ event.name }}</h1>
-          <p class="text-muted mt-2 pre-wrap" v-html="formatDescription(event.description)"></p>
-          <div v-if="eventDate || eventLocation" class="event-meta-wrap mt-4" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; color: #cbd5e1; font-weight: 500; font-size: 0.95rem;">
-            <div v-if="eventDate" class="event-meta-item" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #3b82f6;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <p
+            class="text-muted mt-2 pre-wrap"
+            v-html="formatDescription(event.description)"
+          ></p>
+          <div
+            v-if="eventDate || eventLocation"
+            class="event-meta-wrap mt-4"
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              justify-content: center;
+              gap: 1rem;
+              color: #cbd5e1;
+              font-weight: 500;
+              font-size: 0.95rem;
+            "
+          >
+            <div
+              v-if="eventDate"
+              class="event-meta-item"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.4rem 0.8rem;
+                border-radius: 8px;
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="width: 16px; height: 16px; color: #3b82f6"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
               <ClientOnly>
                 {{ formattedEventDateTime }}
                 <template #fallback>Memuat tanggal...</template>
               </ClientOnly>
             </div>
-            <div v-if="eventLocation" class="event-meta-item" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #10b981;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <div
+              v-if="eventLocation"
+              class="event-meta-item"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.4rem 0.8rem;
+                border-radius: 8px;
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="width: 16px; height: 16px; color: #10b981"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
               {{ eventLocation }}
             </div>
           </div>
@@ -116,6 +279,38 @@
             {{ registrationDeadlineLabel }}.
             <template #fallback>...</template>
           </ClientOnly>
+        </div>
+
+        <div v-else-if="isEventPassed" class="event-passed-container">
+          <div class="passed-card glass-panel">
+            <div class="passed-icon-wrap">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6L6 18M6 6l12 12"></path>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h2 class="passed-title gradient-text">Event Telah Berakhir</h2>
+            <p class="passed-desc">
+              Mohon maaf, periode pendaftaran untuk event
+              <strong>{{ event.name }}</strong> telah ditutup karena waktu
+              pelaksanaan event sudah terlewat atau selesai.
+            </p>
+            <div class="passed-actions">
+              <button @click="handleCloseTab" class="btn-outline">
+                Kembali
+              </button>
+            </div>
+          </div>
         </div>
 
         <form
@@ -549,10 +744,20 @@
             </p>
 
             <div v-if="proofFileCache" class="proof-preview mb-3">
-              <img :src="proofFileCache.dataUrl" alt="Bukti Transfer" class="proof-thumb" />
+              <img
+                :src="proofFileCache.dataUrl"
+                alt="Bukti Transfer"
+                class="proof-thumb"
+              />
               <div class="proof-info">
                 <span class="proof-name">{{ proofFileCache.name }}</span>
-                <button type="button" class="proof-remove" @click="removeProofCache">&times; Hapus</button>
+                <button
+                  type="button"
+                  class="proof-remove"
+                  @click="removeProofCache"
+                >
+                  &times; Hapus
+                </button>
               </div>
             </div>
 
@@ -573,8 +778,21 @@
               :disabled="isSubmitting"
             >
               <span v-if="isSubmitting" class="btn-spinner-wrap">
-                <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12" />
+                <svg
+                  class="btn-spinner"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-dasharray="32"
+                    stroke-dashoffset="12"
+                  />
                 </svg>
                 Memproses...
               </span>
@@ -629,7 +847,10 @@ const showAlert = (title, text, icon = "info") => {
 
 const toBase64Url = (bytes) => {
   const binary = String.fromCharCode(...bytes);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 };
 
 const buildRawDeviceMeta = () => {
@@ -732,7 +953,6 @@ const hashFingerprint = async (fingerprintSource) => {
   return toBase64Url(bytes);
 };
 
-
 const {
   data: response,
   pending,
@@ -746,7 +966,9 @@ const event = computed(() => response.value?.event);
 const availableQuota = computed(() => response.value?.availableQuota);
 
 useHead(() => ({
-  title: event.value ? `Pendaftaran ${event.value.name}` : "Memuat Pendaftaran...",
+  title: event.value
+    ? `Pendaftaran ${event.value.name}`
+    : "Memuat Pendaftaran...",
   meta: [
     {
       name: "robots",
@@ -892,11 +1114,16 @@ const formattedEventDateTime = computed(() => {
     if (eventTime.value) {
       // Combine date and time
       const dateObj = new Date(`${eventDate.value}T${eventTime.value}`);
-      return dateObj.toLocaleString("id-ID", { dateStyle: 'full', timeStyle: 'short' }) + ' WIB';
+      return (
+        dateObj.toLocaleString("id-ID", {
+          dateStyle: "full",
+          timeStyle: "short",
+        }) + " WIB"
+      );
     } else {
       // Only date
       const dateObj = new Date(`${eventDate.value}T00:00:00`);
-      return dateObj.toLocaleString("id-ID", { dateStyle: 'full' });
+      return dateObj.toLocaleString("id-ID", { dateStyle: "full" });
     }
   } catch (e) {
     return eventDate.value;
@@ -905,22 +1132,22 @@ const formattedEventDateTime = computed(() => {
 
 const formatDescription = (text) => {
   if (!text) return "";
-  
+
   // Escape HTML to prevent XSS
   const escapeHtml = (unsafe) => {
     return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   };
-  
+
   const escapedText = escapeHtml(text);
-  
+
   // Regex to find URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
+
   return escapedText.replace(urlRegex, (url) => {
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline;">${url}</a>`;
   });
@@ -967,7 +1194,7 @@ const headerImageUrl = computed(() => {
 
 const textureClass = computed(() => {
   if (String(formMeta.value?.backgroundMode || "") !== "texture") return "";
-  return `texture-${formMeta.value?.backgroundTexture || 'dots'}`;
+  return `texture-${formMeta.value?.backgroundTexture || "dots"}`;
 });
 
 const registrationBackgroundStyle = computed(() => {
@@ -1025,6 +1252,24 @@ const isDeadlinePassed = computed(() => {
   return Date.now() > deadline.getTime();
 });
 
+const isEventPassed = computed(() => {
+  if (!eventDate.value) return false;
+
+  let eventTimestamp;
+  if (eventTime.value) {
+    // Check based on specific time if provided
+    eventTimestamp = new Date(
+      `${eventDate.value}T${eventTime.value}`,
+    ).getTime();
+  } else {
+    // If only date, consider it passed after the end of the day (23:59:59)
+    eventTimestamp = new Date(`${eventDate.value}T23:59:59`).getTime();
+  }
+
+  if (Number.isNaN(eventTimestamp)) return false;
+  return Date.now() > eventTimestamp;
+});
+
 const questionItems = computed(() =>
   schemaItems.value.filter((item) => item.itemType === "question"),
 );
@@ -1051,9 +1296,12 @@ watch(
   [form, answers],
   ([newForm, newAnswers]) => {
     if (!process.client) return;
-    localStorage.setItem(CACHE_KEY.value, JSON.stringify({ form: newForm, answers: newAnswers }));
+    localStorage.setItem(
+      CACHE_KEY.value,
+      JSON.stringify({ form: newForm, answers: newAnswers }),
+    );
   },
-  { deep: true }
+  { deep: true },
 );
 
 watch(proofFileCache, (val) => {
@@ -1089,15 +1337,17 @@ onMounted(() => {
         const parsed = JSON.parse(proofCached);
         if (parsed?.dataUrl && parsed?.name) {
           proofFileCache.value = parsed;
-          const arr = parsed.dataUrl.split(',');
+          const arr = parsed.dataUrl.split(",");
           const mime = arr[0].match(/:(.*?);/)?.[1] || parsed.type;
           const bstr = atob(arr[1]);
           const u8arr = new Uint8Array(bstr.length);
           for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-          selectedProofFile.value = new File([u8arr], parsed.name, { type: mime });
+          selectedProofFile.value = new File([u8arr], parsed.name, {
+            type: mime,
+          });
         }
       } catch (e) {
-        console.error('Proof cache error', e);
+        console.error("Proof cache error", e);
       }
     }
   }
@@ -1263,7 +1513,11 @@ const handleProofUpload = (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) {
-    showAlert("Ukuran File Terlalu Besar", "Ukuran file maksimal 2MB.", "warning");
+    showAlert(
+      "Ukuran File Terlalu Besar",
+      "Ukuran file maksimal 2MB.",
+      "warning",
+    );
     e.target.value = "";
     selectedProofFile.value = null;
     return;
@@ -1273,7 +1527,7 @@ const handleProofUpload = (e) => {
   const reader = new FileReader();
   reader.onload = (ev) => {
     proofFileCache.value = {
-      dataUrl: ev.target.result || '',
+      dataUrl: ev.target.result || "",
       name: file.name,
       type: file.type,
     };
@@ -1361,6 +1615,16 @@ const ratingRange = (max) => {
   const range = [];
   for (let i = 1; i <= end; i += 1) range.push(i);
   return range;
+};
+
+const handleCloseTab = () => {
+  if (process.client) {
+    window.close();
+    // Fallback if browser blocks window.close()
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 200);
+  }
 };
 
 const toEmbedVideo = (url) => {
@@ -1474,7 +1738,7 @@ const submitRegistration = async () => {
 
   isSubmitting.value = true;
   if (process.client) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   try {
     const payloadAnswers = { ...answers.value };
@@ -1508,7 +1772,7 @@ const submitRegistration = async () => {
         method: "POST",
         body: multipart,
       }),
-      new Promise(resolve => setTimeout(resolve, 2000))
+      new Promise((resolve) => setTimeout(resolve, 2000)),
     ]);
 
     if (res.success) {
@@ -1561,58 +1825,146 @@ const submitRegistration = async () => {
 }
 
 .registration-page.texture-zigzag {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
     linear-gradient(225deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
     linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
     linear-gradient(315deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%);
   background-size: 40px 40px;
-  background-position: 20px 0, 20px 0, 0 0, 0 0;
+  background-position:
+    20px 0,
+    20px 0,
+    0 0,
+    0 0;
 }
 
 .registration-page.texture-crosshatch {
-  background: 
-    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08)),
-    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.08));
+  background:
+    linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.08) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.08) 75%,
+      rgba(255, 255, 255, 0.08)
+    ),
+    linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.08) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.08) 75%,
+      rgba(255, 255, 255, 0.08)
+    );
   background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
+  background-position:
+    0 0,
+    15px 15px;
 }
 
 .registration-page.texture-triangles {
-  background-image: 
-    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%), 
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%), 
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
     linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
   background-size: 40px 40px;
-  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+  background-position:
+    0 0,
+    0 20px,
+    20px -20px,
+    -20px 0px;
 }
 
 .registration-page.texture-cubes {
   background-color: transparent;
-  background-image: 
-    linear-gradient(30deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
-    linear-gradient(150deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
-    linear-gradient(30deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
-    linear-gradient(150deg, rgba(255, 255, 255, 0.08) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.08) 87.5%, rgba(255, 255, 255, 0.08)),
-    linear-gradient(60deg, rgba(255, 255, 255, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1)),
-    linear-gradient(60deg, rgba(255, 255, 255, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1));
+  background-image:
+    linear-gradient(
+      30deg,
+      rgba(255, 255, 255, 0.08) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(255, 255, 255, 0.08) 87.5%,
+      rgba(255, 255, 255, 0.08)
+    ),
+    linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.08) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(255, 255, 255, 0.08) 87.5%,
+      rgba(255, 255, 255, 0.08)
+    ),
+    linear-gradient(
+      30deg,
+      rgba(255, 255, 255, 0.08) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(255, 255, 255, 0.08) 87.5%,
+      rgba(255, 255, 255, 0.08)
+    ),
+    linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.08) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(255, 255, 255, 0.08) 87.5%,
+      rgba(255, 255, 255, 0.08)
+    ),
+    linear-gradient(
+      60deg,
+      rgba(255, 255, 255, 0.1) 25%,
+      transparent 25.5%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.1) 75%,
+      rgba(255, 255, 255, 0.1)
+    ),
+    linear-gradient(
+      60deg,
+      rgba(255, 255, 255, 0.1) 25%,
+      transparent 25.5%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.1) 75%,
+      rgba(255, 255, 255, 0.1)
+    );
   background-size: 40px 70px;
-  background-position: 0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px;
+  background-position:
+    0 0,
+    0 0,
+    20px 35px,
+    20px 35px,
+    0 0,
+    20px 35px;
 }
 
 .registration-page.texture-circles {
-  background-image: 
+  background-image:
     radial-gradient(circle, rgba(255, 255, 255, 0.08) 20%, transparent 20%),
     radial-gradient(circle, rgba(255, 255, 255, 0.08) 20%, transparent 20%);
   background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
+  background-position:
+    0 0,
+    20px 20px;
 }
 
 .registration-page.texture-waves {
-  background-image: 
-    radial-gradient(circle at 100% 50%, transparent 20%, rgba(255, 255, 255, 0.06) 21%, rgba(255, 255, 255, 0.06) 34%, transparent 35%, transparent),
-    radial-gradient(circle at 0% 50%, transparent 20%, rgba(255, 255, 255, 0.06) 21%, rgba(255, 255, 255, 0.06) 34%, transparent 35%, transparent);
+  background-image:
+    radial-gradient(
+      circle at 100% 50%,
+      transparent 20%,
+      rgba(255, 255, 255, 0.06) 21%,
+      rgba(255, 255, 255, 0.06) 34%,
+      transparent 35%,
+      transparent
+    ),
+    radial-gradient(
+      circle at 0% 50%,
+      transparent 20%,
+      rgba(255, 255, 255, 0.06) 21%,
+      rgba(255, 255, 255, 0.06) 34%,
+      transparent 35%,
+      transparent
+    );
   background-size: 40px 40px;
 }
 
@@ -1625,7 +1977,9 @@ const submitRegistration = async () => {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: opacity 0.2s ease, transform 0.1s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
 }
 
 .submit-btn:disabled {
@@ -1648,7 +2002,9 @@ const submitRegistration = async () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .proof-preview {
@@ -2235,6 +2591,54 @@ label {
   border-radius: 12px;
 }
 
+.event-passed-container {
+  padding: 1rem 0;
+}
+
+.passed-card {
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-radius: 20px;
+}
+
+.passed-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.passed-icon-wrap svg {
+  width: 32px;
+  height: 32px;
+}
+
+.passed-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.passed-desc {
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 440px;
+  margin: 0 auto 2rem;
+}
+
+.passed-actions {
+  display: flex;
+  gap: 1rem;
+}
 
 .pre-wrap {
   white-space: pre-wrap;

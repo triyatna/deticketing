@@ -28,19 +28,19 @@
         <p class="stat-value">{{ formatNumber(summary.totalRegistrations) }}</p>
       </article>
       <article class="glass-panel stat-card">
+        <p class="stat-label">Pendaftaran Hari Ini</p>
+        <p class="stat-value text-blue">{{ formatNumber(summary.todayRegistrations) }}</p>
+      </article>
+      <article class="glass-panel stat-card">
+        <p class="stat-label">Event Akan Hadir</p>
+        <p class="stat-value text-green">{{ formatNumber(summary.upcomingCount) }}</p>
+      </article>
+      <article class="glass-panel stat-card">
         <p class="stat-label">Scan Hari Ini</p>
         <p class="stat-value">{{ formatNumber(summary.todayScans) }}</p>
       </article>
       <article class="glass-panel stat-card">
-        <p class="stat-label">Pendaftaran Hari Ini</p>
-        <p class="stat-value">{{ formatNumber(summary.todayRegistrations) }}</p>
-      </article>
-      <article class="glass-panel stat-card">
-        <p class="stat-label">Approved / Pending</p>
-        <p class="stat-value">{{ formatNumber(summary.totalApproved) }} / {{ formatNumber(summary.totalPending) }}</p>
-      </article>
-      <article class="glass-panel stat-card">
-        <p class="stat-label">Masuk / Keluar Hari Ini</p>
+        <p class="stat-label">Check-In / Out Hari Ini</p>
         <p class="stat-value">{{ formatNumber(summary.todayCheckIns) }} / {{ formatNumber(summary.todayCheckOuts) }}</p>
       </article>
     </div>
@@ -54,21 +54,30 @@
         <h3>Scanner Kehadiran</h3>
         <p>Gunakan QR scanner untuk proses check-in/check-out peserta.</p>
       </NuxtLink>
-      <NuxtLink class="glass-panel quick-card" to="/admin/events" >
-        <h3>Data Pendaftar</h3>
-        <p>Review data registrasi, approval tiket, dan bukti pembayaran peserta.</p>
-      </NuxtLink>
-      <NuxtLink
-        v-if="userRole === 'ADMIN'"
-        class="glass-panel quick-card"
-        to="/admin/settings"
-      >
-        <h3>Pengaturan Sistem</h3>
-        <p>Kelola branding, SMTP, secret aplikasi, dan pengaturan operasional.</p>
-      </NuxtLink>
     </div>
 
     <div class="content-grid">
+      <section class="glass-panel content-card full-width chart-card">
+        <div class="section-head">
+          <h3>Tren Pendaftaran</h3>
+          <div class="range-selector">
+            <select v-model="selectedRange" class="range-select">
+              <option value="7d">7 Hari Terakhir</option>
+              <option value="30d">30 Hari Terakhir</option>
+              <option value="1y">1 Tahun Terakhir</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-box">
+          <ClientOnly>
+            <Line v-if="trendChartData" :data="trendChartData" :options="trendChartOptions" />
+            <template #fallback>
+              <div class="chart-loading">Memuat chart...</div>
+            </template>
+          </ClientOnly>
+        </div>
+      </section>
+
       <section class="glass-panel content-card">
         <div class="section-head">
           <h3>Event Terbaru</h3>
@@ -105,7 +114,7 @@
               </ClientOnly>
             </div>
             <div class="item-right">
-              <span :class="['badge', ticket.status === 'APPROVED' ? 'badge-green' : 'badge-yellow']">
+              <span :class="['badge', ticket.status === 'APPROVED' ? 'badge-green' : ticket.status === 'REJECTED' ? 'badge-red' : 'badge-yellow']">
                 {{ ticket.status }}
               </span>
             </div>
@@ -159,15 +168,42 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler
+} from 'chart.js'
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler
+)
 
 definePageMeta({
   layout: 'admin',
   middleware: 'auth'
 })
 
+const selectedRange = ref('7d')
+
 const { data: response, pending, error } = useFetch('/api/admin/dashboard', {
+  query: { range: selectedRange },
   key: 'admin-dashboard-overview',
+  watch: [selectedRange],
   retry: 0,
   timeout: 7000,
 })
@@ -181,10 +217,12 @@ const summary = computed(() => response.value?.summary || {
   totalRegistrations: 0,
   totalApproved: 0,
   totalPending: 0,
+  totalRejected: 0,
   todayRegistrations: 0,
   todayScans: 0,
   todayCheckIns: 0,
   todayCheckOuts: 0,
+  upcomingCount: 0
 })
 
 const recentEvents = computed(() => response.value?.recentEvents || [])
@@ -196,6 +234,35 @@ const generatedAtLabel = computed(() => {
   if (!raw) return '-'
   return new Date(raw).toLocaleString('id-ID')
 })
+
+const trendChartData = computed(() => {
+  if (!response.value?.trend) return null;
+  return {
+    labels: response.value.trend.labels,
+    datasets: [
+      {
+        label: 'Pendaftaran Baru',
+        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+        borderColor: '#3b82f6',
+        pointBackgroundColor: '#3b82f6',
+        pointBorderColor: '#fff',
+        fill: true,
+        tension: 0.4,
+        data: response.value.trend.data
+      }
+    ]
+  }
+});
+
+const trendChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+  }
+};
 
 const formatNumber = (value) => {
   const num = Number(value || 0)
@@ -273,6 +340,25 @@ const formatDateTime = (value) => {
   margin-top: 0.35rem;
   font-size: clamp(1.3rem, 2.6vw, 1.8rem);
   font-weight: 800;
+}
+
+.text-blue { color: #3b82f6; }
+.text-green { color: #22c55e; }
+
+.range-select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--line-soft);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.range-select:hover {
+  border-color: #3b82f6;
 }
 
 .quick-grid {
@@ -430,10 +516,55 @@ const formatDateTime = (value) => {
   font-weight: 600;
 }
 
+.badge-red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-box {
+  flex: 1;
+  min-height: 240px;
+  position: relative;
+  width: 100%;
+}
+
+.doughnut-box {
+  display: flex;
+  justify-content: center;
+}
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 900px) {
   .stats-grid,
   .quick-grid,
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 }

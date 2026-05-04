@@ -43,11 +43,12 @@
 
             <div class="grid-two row-full">
               <div class="form-group">
-                <label>Tanggal Event (Opsional)</label>
+                <label>Tanggal Event</label>
                 <input
                   v-model="form.eventDate"
                   type="date"
                   class="form-input"
+                  required
                 />
               </div>
               <div class="form-group">
@@ -1413,6 +1414,16 @@ const normalizeContentItem = (item) => {
 };
 
 const submitEvent = async () => {
+  if (!form.value.eventDate) {
+    Swal.fire({
+      title: "Perhatian",
+      text: "Tanggal Event wajib diisi!",
+      icon: "warning",
+      background: "#0f172a",
+      color: "#f8fafc"
+    });
+    return;
+  }
   isLoading.value = true;
   try {
     const processedSchema = form.value.formSchema
