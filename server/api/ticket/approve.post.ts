@@ -24,47 +24,69 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const ticket = await prisma.ticket.findUnique({
+    const primaryTicket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       include: { event: true }
     })
 
-    if (!ticket) throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
-    if (ticket.status === 'APPROVED') throw createError({ statusCode: 400, statusMessage: 'Tiket sudah diapprove' })
+    if (!primaryTicket) throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
+    if (primaryTicket.status === 'APPROVED') throw createError({ statusCode: 400, statusMessage: 'Tiket sudah diapprove' })
 
-    // Generate event-scoped encrypted token: v1.{eventId}.{encryptedPayload}
-    const eventQrSecret = await getOrCreateEventQrSecret(ticket.eventId)
-    const rawToken = `${ticket.eventId}_${ticket.id}`
-    const encryptedPayload = encryptWithSecret(rawToken, eventQrSecret)
-    const encryptedToken = `v1.${ticket.eventId}.${encryptedPayload}`
-
-    // Generate QR Code as Data URI
-    const qrCodeDataUrl = await QRCode.toDataURL(encryptedToken, {
-      errorCorrectionLevel: 'H',
-      margin: 2,
-      width: 400
-    })
+    const ticketsToApprove = (primaryTicket as any).orderId 
+      ? await prisma.ticket.findMany({ where: { orderId: (primaryTicket as any).orderId, status: 'PENDING' } as any, include: { event: true } })
+      : [primaryTicket]
 
     const baseUrl = resolveRequestBaseUrl(event)
+    const eventQrSecret = await getOrCreateEventQrSecret(primaryTicket.eventId)
 
-    // Send Email FIRST. If this fails, the ticket remains PENDING.
-    await sendTicketEmail(ticket.registrantEmail, ticket.registrantName, ticket.event.name, qrCodeDataUrl, baseUrl)
-
-    // Update ticket in database ONLY IF email succeeds
-    await prisma.ticket.update({
-      where: { id: ticketId },
-      data: {
-        status: 'APPROVED',
-        qrCodeToken: encryptedToken
+    for (let i = 0; i < ticketsToApprove.length; i++) {
+      const ticket: any = ticketsToApprove[i]
+      if (!ticket) continue
+      
+      // Delay if more than one ticket to avoid spam flagging
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500))
       }
-    })
 
-    broadcastToRoom(`event:${ticket.eventId}`, { type: 'update', action: 'ticket_approved' })
+      const rawToken = `${ticket.eventId}_${ticket.id}`
+      const eventName = ticket.event?.name || primaryTicket.event.name
+      
+      const encryptedPayload = encryptWithSecret(rawToken, eventQrSecret)
+      const encryptedToken = `v1.${ticket.eventId}.${encryptedPayload}`
+
+      const qrCodeDataUrl = await QRCode.toDataURL(encryptedToken, {
+        errorCorrectionLevel: 'H',
+        margin: 2,
+        width: 400
+      })
+
+      // Send email
+      await sendTicketEmail(
+        ticket.registrantEmail, 
+        ticket.registrantName, 
+        eventName, 
+        qrCodeDataUrl, 
+        baseUrl
+      )
+
+      // Update in DB
+      await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: {
+          status: 'APPROVED',
+          qrCodeToken: encryptedToken
+        }
+      })
+    }
+
+    broadcastToRoom(`event:${primaryTicket.eventId}`, { type: 'update', action: 'ticket_approved' })
     broadcastToRoom('global', { type: 'update', action: 'ticket_approved' })
 
     return {
       success: true,
-      message: 'Tiket berhasil diapprove dan QR Code telah dikirim ke email.'
+      message: ticketsToApprove.length > 1 
+        ? `${ticketsToApprove.length} tiket dalam pesanan ini berhasil diapprove.`
+        : 'Tiket berhasil diapprove dan QR Code telah dikirim ke email.'
     }
   } catch (error: any) {
     console.error('Approve Ticket Error:', error)

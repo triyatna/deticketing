@@ -1,14 +1,16 @@
 <template>
   <div>
     <div class="header-action">
-      <h1 class="page-title">
-        Detail Pendaftar
-      </h1>
-      <NuxtLink :to="`/admin/events/${eventId}/tickets`" class="btn-outline">Kembali</NuxtLink>
+      <h1 class="page-title">Detail Pendaftar</h1>
+      <NuxtLink :to="`/admin/events/${eventId}/tickets`" class="btn-outline"
+        >Kembali</NuxtLink
+      >
     </div>
 
     <div class="glass-panel mt-4">
-      <div v-if="pending" class="text-center py-8">Memuat detail pendaftar...</div>
+      <div v-if="pending" class="text-center py-8">
+        Memuat detail pendaftar...
+      </div>
       <div v-else-if="error" class="text-center py-8 text-red">
         Gagal memuat data. Pendaftar mungkin tidak ditemukan.
       </div>
@@ -17,17 +19,17 @@
           <!-- Kolom Kiri: Info Dasar & Form Tambahan -->
           <div class="detail-col">
             <h3 class="section-title">Informasi Pendaftar</h3>
-            
+
             <div class="detail-group">
               <label>Nama Lengkap</label>
               <p>{{ ticket.registrantName }}</p>
             </div>
-            
+
             <div class="detail-group">
               <label>Email</label>
               <p>{{ ticket.registrantEmail }}</p>
             </div>
-            
+
             <div class="detail-group">
               <label>Waktu Daftar</label>
               <ClientOnly>
@@ -38,14 +40,63 @@
               </ClientOnly>
             </div>
 
+            <div v-if="ticket.orderId" class="detail-group">
+              <label>Order ID (Multi-Ticket)</label>
+              <p>
+                <span class="badge badge-gray">{{ ticket.orderId }}</span>
+              </p>
+            </div>
+
+            <div
+              v-if="siblings && siblings.length"
+              class="mt-4 p-4 glass-panel"
+              style="
+                border: 1px dashed var(--glass-border);
+                border-radius: 12px;
+              "
+            >
+              <h4 class="text-sm font-semibold mb-2">
+                Tiket Lain dalam Pesanan Ini:
+              </h4>
+              <div class="sibling-list">
+                <NuxtLink
+                  v-for="s in siblings"
+                  :key="s.id"
+                  :to="`/admin/events/${eventId}/ticket/${s.id}`"
+                  class="sibling-item"
+                >
+                  <span>{{ s.registrantName }}</span>
+                  <span
+                    :class="['badge small', getStatusBadgeClass(s.status)]"
+                    >{{ s.status }}</span
+                  >
+                </NuxtLink>
+              </div>
+            </div>
+
             <div v-if="parsedFormData.length" class="mt-6">
               <h3 class="section-title">Data Tambahan Form</h3>
-              <div v-for="(item, idx) in parsedFormData" :key="idx" class="detail-group mb-3">
+              <div
+                v-for="(item, idx) in parsedFormData"
+                :key="idx"
+                class="detail-group mb-3"
+              >
                 <label>{{ item.question }}</label>
                 <p v-if="item.type === 'file'">
-                   <a :href="`/api/admin/proof/${ticket.id}?file=${item.answer.fileName}`" target="_blank" class="text-blue font-semibold">Unduh {{ item.answer.originalName }}</a>
+                  <a
+                    :href="`/api/admin/proof/${ticket.id}?file=${item.answer.fileName}`"
+                    target="_blank"
+                    class="text-blue font-semibold"
+                    >Unduh {{ item.answer.originalName }}</a
+                  >
                 </p>
-                <p v-else style="white-space: pre-wrap;">{{ Array.isArray(item.answer) ? item.answer.join(', ') : item.answer }}</p>
+                <p v-else style="white-space: pre-wrap">
+                  {{
+                    Array.isArray(item.answer)
+                      ? item.answer.join(", ")
+                      : item.answer
+                  }}
+                </p>
               </div>
             </div>
           </div>
@@ -63,7 +114,10 @@
               </div>
               <div class="status-row">
                 <span class="status-label">Kehadiran:</span>
-                <span v-if="ticket.status === 'APPROVED'" :class="['badge', getScanBadgeClass(ticket.scanStatus)]">
+                <span
+                  v-if="ticket.status === 'APPROVED'"
+                  :class="['badge', getScanBadgeClass(ticket.scanStatus)]"
+                >
                   {{ ticket.scanStatus.replace("_", " ") }}
                 </span>
                 <span v-else class="text-muted">-</span>
@@ -74,17 +128,35 @@
               <label>Bukti Pembayaran</label>
               <div v-if="ticket.paymentProofUrl" class="proof-container">
                 <a :href="`/api/admin/proof/${ticket.id}`" target="_blank">
-                  <img :src="`/api/admin/proof/${ticket.id}`" alt="Bukti Pembayaran" class="proof-img" />
+                  <img
+                    :src="`/api/admin/proof/${ticket.id}`"
+                    alt="Bukti Pembayaran"
+                    class="proof-img"
+                  />
                 </a>
-                <a :href="`/api/admin/proof/${ticket.id}`" target="_blank" class="btn-outline small full-width mt-2">Buka Resolusi Penuh</a>
+                <a
+                  :href="`/api/admin/proof/${ticket.id}`"
+                  target="_blank"
+                  class="btn-outline small full-width mt-2"
+                  >Buka Resolusi Penuh</a
+                >
               </div>
               <p v-else class="text-muted">- Tidak ada bukti pembayaran -</p>
             </div>
 
             <div v-if="userRole !== 'PETUGAS'" class="action-box mt-6">
-              <p v-if="ticket.status === 'PENDING'" class="text-sm text-muted mb-3">Periksa bukti pembayaran sebelum menyetujui pendaftar. Jika disetujui, QR Code akan otomatis dikirim ke email pendaftar.</p>
-              
-              <div class="action-buttons" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <p
+                v-if="ticket.status === 'PENDING'"
+                class="text-sm text-muted mb-3"
+              >
+                Periksa bukti pembayaran sebelum menyetujui pendaftar. Jika
+                disetujui, QR Code akan otomatis dikirim ke email pendaftar.
+              </p>
+
+              <div
+                class="action-buttons"
+                style="display: flex; flex-direction: column; gap: 0.75rem"
+              >
                 <!-- Tombol Approve (hanya untuk PENDING) -->
                 <button
                   v-if="ticket.status === 'PENDING'"
@@ -92,7 +164,11 @@
                   class="btn-primary full-width"
                   :disabled="isApproving || isUpdatingStatus"
                 >
-                  {{ isApproving ? "Memproses & Mengirim Email..." : "Approve & Kirim E-Ticket" }}
+                  {{
+                    isApproving
+                      ? "Memproses & Mengirim Email..."
+                      : "Approve & Kirim E-Ticket"
+                  }}
                 </button>
 
                 <!-- Tombol Kirim Ulang (hanya untuk APPROVED) -->
@@ -102,9 +178,13 @@
                   class="btn-primary full-width"
                   :disabled="isApproving || isUpdatingStatus"
                 >
-                  {{ isApproving ? "Mengirim Ulang..." : "Kirim Ulang E-Ticket QR Code" }}
+                  {{
+                    isApproving
+                      ? "Mengirim Ulang..."
+                      : "Kirim Ulang E-Ticket QR Code"
+                  }}
                 </button>
-                
+
                 <!-- Tombol Tolak/Batal (hanya untuk PENDING) -->
                 <button
                   v-if="ticket.status === 'PENDING'"
@@ -114,7 +194,7 @@
                 >
                   Tolak Pendaftaran
                 </button>
-                
+
                 <!-- Tombol Cabut Batal (hanya untuk REJECTED) -->
                 <button
                   v-if="ticket.status === 'REJECTED'"
@@ -143,13 +223,13 @@ const route = useRoute();
 const eventId = route.params.id;
 const ticketId = route.params.ticketId;
 
-const userRole = ref('PETUGAS')
+const userRole = ref("PETUGAS");
 onMounted(async () => {
   try {
-    const res = await $fetch('/api/auth/me')
-    if (res.success) userRole.value = res.user.role
+    const res = await $fetch("/api/auth/me");
+    if (res.success) userRole.value = res.user.role;
   } catch {}
-})
+});
 
 const {
   data: response,
@@ -163,9 +243,12 @@ const {
 
 const event = computed(() => response.value?.event);
 const ticket = computed(() => response.value?.ticket);
+const siblings = computed(() => response.value?.siblings || []);
 
 useHead(() => ({
-  title: ticket.value ? `Detail: ${ticket.value.registrantName}` : "Memuat Pendaftar...",
+  title: ticket.value
+    ? `Detail: ${ticket.value.registrantName}`
+    : "Memuat Pendaftar...",
 }));
 
 const isApproving = ref(false);
@@ -183,18 +266,20 @@ const parsedFormData = computed(() => {
   try {
     const data = JSON.parse(ticket.value.formData);
     const result = [];
-    
-    const questions = parsedFormSchema.value.filter(q => q.itemType === "question");
-    
+
+    const questions = parsedFormSchema.value.filter(
+      (q) => q.itemType === "question",
+    );
+
     for (const q of questions) {
       const answer = data[q.id];
       if (answer !== undefined && answer !== null && answer !== "") {
         if (Array.isArray(answer) && answer.length === 0) continue;
-        
+
         result.push({
           question: q.label,
           type: q.questionType === "file_upload" ? "file" : "text",
-          answer: answer
+          answer: answer,
         });
       }
     }
@@ -217,11 +302,21 @@ const getScanBadgeClass = (status) => {
 };
 
 const approveTicket = async (id, isResend = false) => {
+  const isMulti = ticket.value.orderId && siblings.value.length > 0;
+  const pendingSiblingsCount = siblings.value.filter(
+    (s) => s.status === "PENDING",
+  ).length;
+  const totalToApprove = 1 + (isResend ? 0 : pendingSiblingsCount);
+
+  const confirmText = isResend
+    ? "Kirim ulang E-Ticket QR Code ke pendaftar? Pastikan nomor WA/email pendaftar sudah benar."
+    : isMulti && totalToApprove > 1
+      ? `Approve pembayaran ini? Terdapat ${totalToApprove} tiket dalam pesanan ini yang akan disetujui dan dikirimkan secara bersamaan.`
+      : "Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.";
+
   const result = await Swal.fire({
     title: "Konfirmasi",
-    text: isResend 
-      ? "Kirim ulang E-Ticket QR Code ke pendaftar? Pastikan nomor WA/email pendaftar sudah benar." 
-      : "Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.",
+    text: confirmText,
     icon: "question",
     showCancelButton: true,
     confirmButtonText: isResend ? "Ya, Kirim Ulang" : "Ya, Approve",
@@ -242,8 +337,8 @@ const approveTicket = async (id, isResend = false) => {
     if (res.success) {
       Swal.fire({
         title: "Sukses!",
-        text: isResend 
-          ? "E-Ticket berhasil dikirim ulang!" 
+        text: isResend
+          ? "E-Ticket berhasil dikirim ulang!"
           : "Berhasil! QR Code telah dikirim ke email peserta.",
         icon: "success",
         background: "#0f172a",
@@ -268,9 +363,9 @@ const approveTicket = async (id, isResend = false) => {
 const isUpdatingStatus = ref(false);
 
 const updateTicketStatus = async (id, newStatus) => {
-  const isCancel = newStatus === 'REJECTED';
+  const isCancel = newStatus === "REJECTED";
   const actionText = isCancel ? "membatalkan (menolak)" : "mencabut pembatalan";
-  
+
   const result = await Swal.fire({
     title: "Konfirmasi",
     text: `Apakah Anda yakin ingin ${actionText} tiket ini?`,
@@ -294,7 +389,7 @@ const updateTicketStatus = async (id, newStatus) => {
     if (res.success) {
       Swal.fire({
         title: "Sukses!",
-        text: `Tiket berhasil ${isCancel ? 'dibatalkan' : 'dikembalikan ke Pending'}.`,
+        text: `Tiket berhasil ${isCancel ? "dibatalkan" : "dikembalikan ke Pending"}.`,
         icon: "success",
         background: "#0f172a",
         color: "#f8fafc",
@@ -325,22 +420,57 @@ const updateTicketStatus = async (id, newStatus) => {
 .page-title {
   font-size: 1.5rem;
 }
-.mt-4 { margin-top: 1rem; }
-.mt-6 { margin-top: 1.5rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.text-center { text-align: center; }
-.py-8 { padding: 2rem 0; }
-.text-muted { color: var(--text-muted); }
-.text-red { color: #ef4444; }
-.text-sm { font-size: 0.875rem; }
-.text-blue { color: var(--primary); text-decoration: none; }
-.text-blue:hover { text-decoration: underline; }
-.font-semibold { font-weight: 600; }
-.full-width { width: 100%; text-align: center; justify-content: center; }
+.mt-4 {
+  margin-top: 1rem;
+}
+.mt-6 {
+  margin-top: 1.5rem;
+}
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+.text-center {
+  text-align: center;
+}
+.py-8 {
+  padding: 2rem 0;
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-red {
+  color: #ef4444;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.text-blue {
+  color: var(--primary);
+  text-decoration: none;
+}
+.text-blue:hover {
+  text-decoration: underline;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.full-width {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
 
-.border-red { border-color: #ef4444; }
-.text-red { color: #ef4444 !important; }
-.hover-red:hover { background-color: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; }
+.border-red {
+  border-color: #ef4444;
+}
+.text-red {
+  color: #ef4444 !important;
+}
+.hover-red:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
 
 .detail-container {
   padding: 1.5rem;
@@ -441,8 +571,47 @@ const updateTicketStatus = async (id, newStatus) => {
   font-size: 0.75rem;
   font-weight: 600;
 }
-.badge-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-.badge-yellow { background: rgba(234, 179, 8, 0.2); color: #facc15; }
-.badge-gray { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
-.badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge.small {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+}
+.badge-green {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+.badge-yellow {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+}
+.badge-gray {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+.badge-red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.sibling-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sibling-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: #f8fafc;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.sibling-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border);
+}
 </style>

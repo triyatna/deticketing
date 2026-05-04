@@ -47,7 +47,14 @@
           </thead>
           <tbody>
             <tr v-for="ticket in filteredTickets" :key="ticket.id">
-              <td>{{ ticket.registrantName }}</td>
+              <td>
+                <div class="flex flex-col">
+                  <span>{{ ticket.registrantName }}</span>
+                  <span v-if="ticket.orderId" class="text-xs text-muted" style="font-size: 10px; margin-top: 2px;">
+                    <span class="badge badge-gray small">Multi-Ticket</span>
+                  </span>
+                </div>
+              </td>
               <td>{{ ticket.registrantEmail }}</td>
               <td>
                 <ClientOnly>
@@ -258,6 +265,11 @@ onBeforeUnmount(() => {
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
+  display: inline-block;
+}
+.badge.small {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
 }
 .badge-green {
   background: rgba(34, 197, 94, 0.2);

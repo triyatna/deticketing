@@ -41,6 +41,7 @@ model Ticket {
   scanStatus      String   @default("BELUM_HADIR") // BELUM_HADIR, MASUK, KELUAR
   
   qrCodeToken     String?  @unique // Encrypted token for QR
+  orderId         String?  // Field to group multiple tickets from one checkout
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -51,6 +52,7 @@ model Ticket {
   @@index([eventId, registrantEmail])
   @@index([eventId, status])
   @@index([eventId, scanStatus])
+  @@index([orderId])
 }
 
 model ScanLog {

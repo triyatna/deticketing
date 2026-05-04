@@ -4,28 +4,43 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 
 ---
 
-## [1.1.0] - 2026-05-04 (Upcoming)
+## [1.1.0] - 2026-05-04 (pre-release)
 
-### Fitur Baru & Perubahan Besar
+### Added
 
+- **Multi-Ticket Checkout**: Pendaftar kini dapat membeli lebih dari 1 tiket dalam satu kali pengisian form (Checkout Rombongan).
+- **Group Purchase UI**: Toggle interaktif "Daftar untuk Rombongan?" dengan quantity stepper dan input nama dinamis.
+- **Adaptive Billing Summary**: Redesain ringkasan pembayaran dengan tampilan profesional yang menyesuaikan antara mode individu dan rombongan.
+- **Unlimited Ticket Mode**: Dukungan pembelian tiket tanpa batas dalam satu pesanan jika nilai batas maksimal diatur ke `0`.
+- **Konfigurasi Event**: Toggle "Izinkan Multi-Ticket" dan pengaturan "Maksimal Tiket Per Order" di halaman edit event.
+- **Dynamic Form Logic**: Penambahan input nama otomatis sesuai jumlah tiket yang dipilih di form pendaftaran.
+- **Batch Approval System**: Persetujuan otomatis untuk seluruh tiket dalam satu pesanan (order) sekaligus dari dashboard admin.
+- **Anti-Spam Email Delivery**: Pengiriman e-ticket secara bertahap dengan delay 1.5 detik per email dan subjek email personal.
+- **Staff Notification Enrichment**: Notifikasi email untuk admin kini menyertakan daftar seluruh nama peserta dan total tiket untuk pesanan rombongan.
+- **UI Refinement**: Penambahan padding dan perbaikan tata letak pada halaman detail tiket di dashboard admin untuk informasi tiket "bersaudara".
+
+### Changed
+
+- **Enhanced Admin UI**: Indikator "Multi-Ticket" pada daftar pendaftar dan visualisasi grup pesanan pada halaman detail tiket.
 - **Sistem Real-Time WebSocket**: Migrasi penuh dari sistem polling/interval ke sinkronisasi instan berbasis WebSocket (Nitro/CrossWS). Perubahan mencakup Dashboard Admin, Daftar Event, dan Daftar Pendaftar.
-- **Halaman Detail Event Dedicated**: Mengganti modal detail dengan halaman khusus (`/admin/events/[id]/detail.vue`) yang menampilkan konfigurasi event secara komprehensif, mulai dari data dasar hingga pengaturan form tambahan dan metode pembayaran.
-- **Optimasi Arsitektur WebSocket**: Implementasi `wsHub` pada server-side untuk manajemen room koneksi yang efisien dalam mode single-process PM2.
-
-### Antarmuka (UI/UX)
-
-- **Penyederhanaan Kelola Event**: Redesain tabel utama dengan menghapus kolom "Kuota" dan "Status Bukti" guna memberikan ruang bagi tampilan yang lebih bersih dan fokus pada navigasi.
-- **Standardisasi Desain Detail**: Penyelarasan visual halaman detail event dengan estetika dashboard (glassmorphism) dan perbaikan tata letak padding serta margin.
-- **Live Update Animation**: Integrasi animasi indikator "Live" pada daftar pendaftar untuk memberikan umpan balik visual saat sistem sedang memantau data baru secara real-time.
-
-### Perbaikan Teknis
-
-- **Resolusi Layout**: Perbaikan masalah padding pada panel admin dan perbaikan posisi kolom pencarian pada daftar pendaftar.
-- **Cleanup Kode**: Pembersihan logika polling lama dan optimalisasi alur fetch data administratif.
 
 ---
 
-## [1.0.96] - 2026-05-04
+## [1.0.5] - 2026-05-01
+
+### Added
+
+- **Event Detail View**: Halaman detail event khusus untuk meninjau seluruh konfigurasi dan metadata event secara mendalam.
+- **Staff Filter Logic**: Implementasi filter pada API pendaftar sehingga Panitia/Petugas hanya dapat melihat data tiket dari event yang ditugaskan kepada mereka.
+- **Event Assignment UI**: Integrasi sistem penugasan staff langsung di dalam form pembuatan/edit event dengan fitur pencarian dan multi-select.
+
+### Changed
+
+- **Role-Based Access Control**: Penguatan sistem keamanan di mana staff dengan role Panitia atau Petugas hanya dapat mengakses event yang secara spesifik ditugaskan kepada mereka.
+
+---
+
+## [1.0.0] - 2026-04-30
 
 ### Fitur Baru
 
@@ -34,45 +49,7 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 - **Voice & Visual Mismatch Alerts**: Implementasi peringatan suara (Text-to-Speech) dan peringatan visual (Red Alert) jika tiket yang discan tidak sesuai dengan event yang sedang diproses.
 - **Scanner Search & Filter**: Fitur pencarian case-insensitive pada layar pemilihan event di scanner untuk memudahkan navigasi saat terdapat banyak event aktif.
 
-### Antarmuka (UI/UX)
+### Perbaikan & Optimalisasi
 
-- **Scrollable Dashboard Lists**: Implementasi vertical scrolling pada daftar pendaftar terbaru di Dashboard Global dan Event guna menjaga layout tetap kompak.
-- **Enhanced Attendance Chart**: Grafik tren kehadiran kini mendukung durasi multi-hari dengan fitur horizontal scrolling untuk keterbacaan data yang lebih baik.
-- **Premium Scanner Cards**: Redesain layar pemilihan event dengan estetika premium, efek glassmorphism, dan indikator "Live" dinamis untuk event hari ini.
-- **Layout Compaction**: Optimalisasi jarak, margin, dan padding pada seluruh panel administratif untuk efisiensi ruang kerja.
-
----
-
-## [1.0.93] - 2026-05-04
-
-### Fitur Baru
-
-- **Role-Based Event Assignment**: Implementasi manajemen penugasan staff (Panitia/Petugas) ke event spesifik. Staff kini hanya memiliki akses ke event yang didelegasikan kepada mereka.
-- **Notifikasi Pendaftaran Staff**: Sistem pengiriman notifikasi email otomatis kepada staff operasional saat terdapat pendaftaran peserta baru.
-- **Dynamic Form Labels**: Fleksibilitas penamaan label pada komponen form pendaftaran dinamis.
-
-### Keamanan
-
-- **Hardening Form Submission**: Penguatan mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda dan spam.
-- **Sanitisasi XSS & SQLi**: Peningkatan prosedur filter karakter pada deskripsi event dan label form untuk mencegah serangan injeksi.
-- **Kontrol Akses**: Pengetatan validasi izin akses melalui middleware `checkEventAccess` pada seluruh endpoint API administratif.
-
-### Antarmuka (UI/UX)
-
-- **Live Indicator**: Integrasi indikator pemantauan real-time pada dashboard pendaftar.
-- **Standardisasi Desain**: Penyelarasan elemen header, gradien, dan transisi visual pada panel admin dan form publik.
-- **Sinkronisasi Navigasi**: Perbaikan konsistensi status menu aktif pada perangkat mobile.
-
-### Perbaikan dan Internal
-
-- **Migrasi Prisma v7**: Pembaruan dependensi ke Prisma versi 7 untuk peningkatan stabilitas query.
-- **Automasi AEO**: Integrasi generator dokumen `llms.txt` dan `llms-full.txt` pada alur build.
-- **Pembersihan Peringatan**: Resolusi masalah _hydration mismatch_ dan penggunaan properti lama pada komponen Vue.
-
----
-
-## [1.0.0] - 2026-04-30
-
-- Rilis produksi awal.
-- Alur kerja utama tiket (Pendaftaran, Approval, Pemindaian).
-- Dashboard administratif dasar.
+- **Dashboard Performance**: Optimasi kueri database pada dashboard utama untuk penanganan data pendaftaran dalam jumlah besar.
+- **UI Stability**: Perbaikan bug pada tampilan sidebar mobile dan transisi antar halaman admin.

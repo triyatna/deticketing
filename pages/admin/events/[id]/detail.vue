@@ -73,6 +73,16 @@
               <span class="label">Kuota Maksimal</span>
               <span class="value">{{ event.quota ? `${event.quota} Orang` : 'Tak Terbatas' }}</span>
             </div>
+            <div class="detail-row">
+              <span class="label">Multi-Ticket Checkout</span>
+              <span :class="['badge', formMeta.allowMultiTicket ? 'badge-green' : 'badge-gray']">
+                {{ formMeta.allowMultiTicket ? 'Aktif' : 'Nonaktif' }}
+              </span>
+            </div>
+            <div class="detail-row" v-if="formMeta.allowMultiTicket">
+              <span class="label">Maksimal Tiket Per Order</span>
+              <span class="value">{{ formMeta.maxTicketsPerOrder || 5 }} Tiket</span>
+            </div>
           </div>
         </div>
 

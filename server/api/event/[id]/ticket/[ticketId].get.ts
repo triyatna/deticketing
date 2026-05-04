@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: 'Event tidak ditemukan' })
     }
 
-    const ticket = await prisma.ticket.findUnique({
+    const ticket: any = await prisma.ticket.findUnique({
       where: { id: ticketId }
     })
 
@@ -37,10 +37,21 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
     }
 
+    let siblingTickets: any[] = []
+    if ((ticket as any).orderId) {
+      siblingTickets = await prisma.ticket.findMany({
+        where: { 
+          orderId: (ticket as any).orderId,
+          id: { not: ticketId }
+        } as any
+      })
+    }
+
     return {
       success: true,
       event: ev,
-      ticket
+      ticket,
+      siblings: siblingTickets
     }
   } catch (error: any) {
     throw createError({

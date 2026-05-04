@@ -319,7 +319,83 @@
           class="registration-form"
         >
           <section class="form-card">
-            <div class="static-grid">
+            <!-- Multi-Ticket Mode Toggle -->
+            <div v-if="allowMultiTicket" class="mode-toggle-section mb-4">
+              <label class="toggle-card" :class="{ active: isMultiTicketMode }">
+                <input type="checkbox" v-model="isMultiTicketMode" class="hidden-check">
+                <div class="toggle-info">
+                  <div class="toggle-icon">
+                    <svg v-if="!isMultiTicketMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  </div>
+                  <div class="toggle-text">
+                    <span class="toggle-title">Daftar untuk Rombongan?</span>
+                    <span class="toggle-desc">Pilih ini jika Anda ingin memesan lebih dari 1 tiket sekaligus.</span>
+                  </div>
+                </div>
+                <div class="toggle-status">
+                  <div class="status-indicator"></div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Multi-Ticket Selection (Only if mode enabled) -->
+            <div v-if="allowMultiTicket && isMultiTicketMode" class="quantity-section mb-6">
+              <label class="section-label">Jumlah Tiket yang Dipesan</label>
+              <div class="quantity-selector">
+                <button type="button" @click="ticketQuantity > 2 && ticketQuantity--" class="qty-btn" :disabled="ticketQuantity <= 2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <div class="qty-display">
+                  <span class="qty-num">{{ ticketQuantity }}</span>
+                  <span class="qty-text">Tiket</span>
+                </div>
+                <button type="button" @click="ticketQuantity < (maxTicketsPerOrder || 999) && ticketQuantity++" class="qty-btn" :disabled="maxTicketsPerOrder > 0 && ticketQuantity >= maxTicketsPerOrder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
+              <p v-if="maxTicketsPerOrder > 0" class="qty-hint">
+                Maksimal {{ maxTicketsPerOrder }} tiket per pesanan.
+              </p>
+            </div>
+
+            <!-- Participant Data Section -->
+            <div v-if="isMultiTicketMode" class="participants-section mb-6">
+              <label class="section-label">Data Peserta Rombongan</label>
+              
+              <!-- Peserta Utama -->
+              <div class="participant-card primary">
+                <div class="participant-badge">Peserta 1 (Utama)</div>
+                <div class="form-group mb-0">
+                  <label>Nama Lengkap <span class="text-red">*</span></label>
+                  <input
+                    v-model="form.registrantName"
+                    type="text"
+                    class="form-input input-capitalize"
+                    required
+                    placeholder="Contoh: John Doe"
+                  />
+                </div>
+              </div>
+
+              <!-- Peserta Tambahan -->
+              <div v-for="(name, idx) in additionalNames" :key="idx" class="participant-card mt-3">
+                <div class="participant-badge">Peserta {{ idx + 2 }}</div>
+                <div class="form-group mb-0">
+                  <label>Nama Lengkap <span class="text-red">*</span></label>
+                  <input
+                    v-model="additionalNames[idx]"
+                    type="text"
+                    class="form-input input-capitalize"
+                    required
+                    :placeholder="`Nama peserta ke-${idx + 2}`"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Simple Design for Individual -->
+            <div v-else class="static-grid mb-6">
               <div class="form-group">
                 <label>Nama Lengkap <span class="text-red">*</span></label>
                 <input
@@ -327,17 +403,20 @@
                   type="text"
                   class="form-input input-capitalize"
                   required
+                  placeholder="Contoh: John Doe"
                 />
               </div>
+            </div>
 
+            <div class="static-grid">
               <div class="form-group">
-                <label>Email Aktif <span class="text-red">*</span></label>
+                <label>Email Aktif (Untuk Pengiriman Tiket) <span class="text-red">*</span></label>
                 <input
                   v-model="form.registrantEmail"
                   type="email"
                   class="form-input"
                   required
-                  placeholder="Tiket akan dikirim ke email ini"
+                  placeholder="john@example.com"
                 />
               </div>
             </div>
@@ -662,11 +741,32 @@
           >
             <h4>Instruksi Pembayaran</h4>
 
-            <div v-if="eventNominal" class="global-nominal-card">
-              <span class="nominal-label">Total yang harus dibayar:</span>
-              <strong class="nominal-value">{{
-                formatPrice(eventNominal)
-              }}</strong>
+            <!-- Conditional Payment Summary -->
+            <div v-if="eventNominal">
+              <!-- Group Design (Billing Summary) -->
+              <div v-if="ticketQuantity > 1" class="billing-summary mt-4">
+                <div class="billing-item">
+                  <span class="billing-label">Harga per Tiket</span>
+                  <span class="billing-value">{{ formatPrice(eventNominal) }}</span>
+                </div>
+                <div class="billing-item">
+                  <span class="billing-label">Kuantitas Tiket</span>
+                  <span class="billing-value">x {{ ticketQuantity }}</span>
+                </div>
+                <div class="billing-divider"></div>
+                <div class="billing-footer">
+                  <span class="total-label">Total Pembayaran</span>
+                  <div class="total-wrap">
+                    <span class="total-amount">{{ formatPrice(eventNominal * ticketQuantity) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Individual Design (Previous Simple Design) -->
+              <div v-else class="global-nominal-card mt-4">
+                <span class="nominal-label">Total yang harus dibayar:</span>
+                <strong class="nominal-value">{{ formatPrice(eventNominal) }}</strong>
+              </div>
             </div>
 
             <div class="payment-methods">
@@ -1298,6 +1398,34 @@ const isSuccess = ref(false);
 const proofFileCache = ref(null);
 const deviceMeta = ref(null);
 const deviceStatusChecked = ref(false);
+
+const allowMultiTicket = computed(() => !!formMeta.value?.allowMultiTicket);
+const maxTicketsPerOrder = computed(() => Number(formMeta.value?.maxTicketsPerOrder ?? 5));
+
+const ticketQuantity = ref(1);
+const additionalNames = ref([]);
+const isMultiTicketMode = ref(false);
+
+watch(isMultiTicketMode, (val) => {
+  if (val) {
+    if (ticketQuantity.value < 2) {
+      ticketQuantity.value = 2;
+    }
+  } else {
+    ticketQuantity.value = 1;
+  }
+});
+
+watch(ticketQuantity, (newVal) => {
+  const diff = newVal - 1 - additionalNames.value.length;
+  if (diff > 0) {
+    for (let i = 0; i < diff; i++) {
+      additionalNames.value.push("");
+    }
+  } else if (diff < 0) {
+    additionalNames.value.splice(newVal - 1);
+  }
+});
 const proofInputRef = ref(null);
 
 const PROOF_CACHE_KEY = computed(() => `proof_cache_${slug}`);
@@ -1723,6 +1851,14 @@ const validateRequired = () => {
     return "Bukti Pembayaran / Transfer";
   }
 
+  if (allowMultiTicket.value) {
+    for (let i = 0; i < additionalNames.value.length; i++) {
+      if (!additionalNames.value[i]?.trim()) {
+        return `Nama Pendaftar ${i + 2}`;
+      }
+    }
+  }
+
   return "";
 };
 
@@ -1763,6 +1899,12 @@ const submitRegistration = async () => {
     multipart.append("registrantName", form.value.registrantName);
     multipart.append("registrantEmail", form.value.registrantEmail);
     multipart.append("formData", JSON.stringify(payloadAnswers));
+    
+    if (allowMultiTicket.value) {
+      multipart.append("quantity", String(ticketQuantity.value));
+      multipart.append("additionalNames", JSON.stringify(additionalNames.value));
+    }
+
     if (deviceMeta.value) {
       multipart.append("deviceMeta", JSON.stringify(deviceMeta.value));
     }
@@ -2162,7 +2304,232 @@ const submitRegistration = async () => {
   border: 1px solid var(--line-soft);
   border-radius: 12px;
   background: rgba(8, 17, 33, 0.45);
-  padding: 0.95rem;
+  padding: 1.25rem;
+}
+
+.section-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quantity-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  width: fit-content;
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+}
+
+.qty-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qty-btn:hover:not(:disabled) {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+.qty-btn:disabled {
+  background: #334155;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.qty-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.qty-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.qty-text {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.qty-hint {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.participants-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.participant-card {
+  position: relative;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 1.5rem 1.25rem 1.25rem;
+  transition: all 0.2s;
+}
+
+.participant-card.primary {
+  border-left: 4px solid var(--primary);
+}
+
+.participant-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.participant-badge {
+  position: absolute;
+  top: -10px;
+  left: 15px;
+  background: var(--line-soft);
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border: 1px solid var(--line-soft);
+}
+
+.participant-card.primary .participant-badge {
+  background: var(--primary);
+  color: #fff;
+}
+
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-0 { margin-bottom: 0; }
+.mb-4 { margin-bottom: 1rem; }
+
+.mode-toggle-section {
+  cursor: pointer;
+}
+
+.toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-card.active {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+}
+
+.hidden-check {
+  display: none;
+}
+
+.toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.toggle-card.active .toggle-icon {
+  background: var(--primary);
+  color: #fff;
+}
+
+.toggle-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.toggle-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.toggle-status {
+  width: 40px;
+  height: 22px;
+  background: #334155;
+  border-radius: 99px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-card.active .toggle-status {
+  background: var(--primary);
+}
+
+.toggle-card.active .status-indicator {
+  left: calc(100% - 19px);
 }
 
 .static-grid {
@@ -2446,6 +2813,99 @@ label {
   padding: 0.48rem;
   text-align: center;
   font-size: 0.82rem;
+}
+
+.billing-summary {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.billing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.billing-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.billing-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.billing-divider {
+  height: 1px;
+  border-top: 1px dashed var(--line-soft);
+  margin: 0.25rem 0;
+}
+
+.global-nominal-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}
+
+.nominal-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.nominal-value {
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+.billing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.total-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  gap: 0.25rem;
+}
+
+.total-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.total-badge {
+  font-size: 0.65rem;
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .grid-table th:first-child,

@@ -161,7 +161,7 @@ export const sendTicketEmail = async (
   await transporter.sendMail({
     from: formattedFrom,
     to,
-    subject: `E-Ticket Anda untuk ${eventName} - ${appName}`,
+    subject: `E-Ticket ${registrantName} untuk ${eventName} - ${appName}`,
     html,
     attachments: [
       {
@@ -181,7 +181,8 @@ export const sendStaffNotificationEmail = async (
   registrantName: string,
   registrantEmail: string,
   requestBaseUrl: string = "",
-  paymentProof?: { data: Buffer; filename: string; mimeType: string }
+  paymentProof?: { data: Buffer; filename: string; mimeType: string },
+  groupInfo?: { totalTickets: number; allNames: string[] }
 ) => {
   if (!toEmails || toEmails.length === 0) return;
 
@@ -229,14 +230,25 @@ export const sendStaffNotificationEmail = async (
     });
   }
 
+  const groupHtml = groupInfo && groupInfo.totalTickets > 1 ? `
+    <div style="margin-top: 15px; padding: 15px; background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
+      <p style="margin: 0 0 8px; font-size: 14px; font-weight: bold; color: #0369a1;">Pendaftaran Rombongan (${groupInfo.totalTickets} Tiket)</p>
+      <p style="margin: 0 0 5px; font-size: 13px; color: #0c4a6e; font-weight: 600;">Daftar Nama:</p>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #0c4a6e;">
+        ${groupInfo.allNames.map(name => `<li>${name}</li>`).join('')}
+      </ul>
+    </div>
+  ` : "";
+
   const contentHtml = `
         <p style="font-size: 16px; color: #333; line-height: 1.6;">
           Terdapat pendaftaran baru pada event <strong>${eventName}</strong>.
         </p>
         <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 20px;">
-          <p style="margin: 0 0 10px; font-size: 15px; color: #333;"><strong>Nama:</strong> ${registrantName}</p>
+          <p style="margin: 0 0 10px; font-size: 15px; color: #333;"><strong>Pendaftar Utama:</strong> ${registrantName}</p>
           <p style="margin: 0; font-size: 15px; color: #333;"><strong>Email:</strong> ${registrantEmail}</p>
         </div>
+        ${groupHtml}
         ${paymentProof ? `<p style="margin-top: 15px; font-size: 14px; color: #16a34a; font-weight: bold;">✓ Bukti pembayaran terlampir pada email ini.</p>` : ""}
         <div style="margin-top: 30px; text-align: center;">
           <a href="${requestBaseUrl}/admin/events/${eventId}/ticket/${ticketId}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Lihat Detail Pendaftar</a>

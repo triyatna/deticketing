@@ -422,12 +422,36 @@
 
             <div class="form-group row-full mt-4">
               <label class="checkbox-container">
-                <input type="checkbox" v-model="form.allowDuplicateEmail" />
+                <input type="checkbox" v-model="form.allowMultiTicket" />
+                <span class="checkmark"></span>
+                Izinkan Checkout Tiket Lebih dari 1 (Multi-Ticket)
+              </label>
+              <p class="helper-text mt-1 ml-8">
+                Jika diaktifkan, pendaftar bisa membeli lebih dari 1 tiket dalam satu kali pengisian form (misal untuk rombongan).
+              </p>
+            </div>
+
+            <div class="form-group row-full ml-8 mt-2" v-if="form.allowMultiTicket">
+              <label>Maksimal Tiket Per Order</label>
+              <input
+                v-model="form.maxTicketsPerOrder"
+                type="number"
+                class="form-input"
+                style="max-width: 150px;"
+                min="0"
+                max="100"
+              />
+              <p class="helper-text">Batas jumlah tiket dalam satu kali checkout. Isi <strong>0</strong> untuk tidak terbatas.</p>
+            </div>
+
+            <div class="form-group row-full mt-4">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="form.allowDuplicateEmail" :disabled="form.allowMultiTicket" />
                 <span class="checkmark"></span>
                 Izinkan Pendaftaran Email Berulang (Duplikat)
               </label>
               <p class="helper-text mt-1 ml-8">
-                Jika dicentang, 1 email yang sama diizinkan mendaftar berkali-kali pada event ini.
+                {{ form.allowMultiTicket ? 'Wajib aktif jika fitur Multi-Ticket diaktifkan.' : 'Jika dicentang, 1 email yang sama diizinkan mendaftar berkali-kali pada event ini.' }}
               </p>
             </div>
 
@@ -893,6 +917,8 @@ const form = ref({
   backgroundImageUrl: "",
   allowDuplicateEmail: false,
   allowDuplicateDevice: true,
+  allowMultiTicket: false,
+  maxTicketsPerOrder: 5,
   registrationDeadlineEnabled: false,
   registrationDeadlineAt: "",
   quota: "",
@@ -909,6 +935,12 @@ const form = ref({
   eventLocation: "",
   assignmentEnabled: false,
   assignedStaffIds: [],
+});
+
+watch(() => form.value.allowMultiTicket, (val) => {
+  if (val) {
+    form.value.allowDuplicateEmail = true;
+  }
 });
 
 const currentUserRole = ref('PETUGAS');
@@ -1253,6 +1285,8 @@ const loadEventForEdit = async () => {
       : "";
     form.value.allowDuplicateEmail = !!meta?.allowDuplicateEmail;
     form.value.allowDuplicateDevice = meta?.allowDuplicateDevice !== false;
+    form.value.allowMultiTicket = !!meta?.allowMultiTicket;
+    form.value.maxTicketsPerOrder = Number(meta?.maxTicketsPerOrder ?? 5);
     form.value.notifyEnabled = !!meta?.notifyEnabled;
     form.value.notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : [];
     form.value.assignmentEnabled = !!meta?.assignmentEnabled;
@@ -1475,6 +1509,8 @@ const submitEvent = async () => {
       notifyEmails: form.value.notifyEmails,
       allowDuplicateEmail: !!form.value.allowDuplicateEmail,
       allowDuplicateDevice: !!form.value.allowDuplicateDevice,
+      allowMultiTicket: !!form.value.allowMultiTicket,
+      maxTicketsPerOrder: Number(form.value.maxTicketsPerOrder ?? 5),
       assignmentEnabled: !!form.value.assignmentEnabled,
       assignedStaffIds: Array.isArray(form.value.assignedStaffIds) ? form.value.assignedStaffIds : [],
     };

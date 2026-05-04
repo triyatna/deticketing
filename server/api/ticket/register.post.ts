@@ -49,6 +49,8 @@ export default defineEventHandler(async (event) => {
   }
 
   let eventId = '', registrantName = '', registrantEmail = '', formDataStr = '', deviceMetaStr = ''
+  let quantity = 1
+  let additionalNames: string[] = []
   let paymentProofFile: any = null
   const dynamicFiles: Record<string, any> = {}
 
@@ -58,6 +60,13 @@ export default defineEventHandler(async (event) => {
     if (field.name === 'registrantEmail') registrantEmail = field.data.toString()
     if (field.name === 'formData') formDataStr = field.data.toString()
     if (field.name === 'deviceMeta') deviceMetaStr = field.data.toString()
+    if (field.name === 'quantity') quantity = parseInt(field.data.toString()) || 1
+    if (field.name === 'additionalNames') {
+      try {
+        const parsed = JSON.parse(field.data.toString())
+        if (Array.isArray(parsed)) additionalNames = parsed.map(n => String(n || '').trim()).filter(Boolean)
+      } catch {}
+    }
     if (field.name === 'paymentProof' && field.filename) {
       paymentProofFile = field
     }
@@ -93,6 +102,17 @@ export default defineEventHandler(async (event) => {
       const parsedSchema = JSON.parse(evt.formSchema || '[]')
       if (Array.isArray(parsedSchema)) {
         const meta = parsedSchema.find((item) => item?.itemType === 'form_meta')
+        const allowMultiTicket = !!meta?.allowMultiTicket
+        const maxTicketsPerOrder = Number(meta?.maxTicketsPerOrder ?? 0)
+
+        if (quantity > 1 && !allowMultiTicket) {
+          throw createError({ statusCode: 400, statusMessage: 'Event ini tidak mengizinkan pembelian lebih dari 1 tiket.' })
+        }
+
+        if (allowMultiTicket && maxTicketsPerOrder > 0 && quantity > maxTicketsPerOrder) {
+          throw createError({ statusCode: 400, statusMessage: `Maksimal pembelian adalah ${maxTicketsPerOrder} tiket per pesanan.` })
+        }
+
         registrationDeadlineEnabled = !!meta?.registrationDeadlineEnabled
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
@@ -118,7 +138,8 @@ export default defineEventHandler(async (event) => {
             return !!method.accountName && !!method.accountNumber
           })
       }
-    } catch {
+    } catch (e: any) {
+      if (e.statusCode) throw e
       registrationDeadlineEnabled = false
       registrationDeadlineAt = ''
       paymentSettings = []
@@ -136,8 +157,8 @@ export default defineEventHandler(async (event) => {
 
     if (evt.quota !== null) {
       const currentRegistrants = await prisma.ticket.count({ where: { eventId } })
-      if (currentRegistrants >= evt.quota) {
-        throw createError({ statusCode: 400, statusMessage: 'Kuota pendaftaran telah penuh' })
+      if (currentRegistrants + quantity > evt.quota) {
+        throw createError({ statusCode: 400, statusMessage: 'Kuota pendaftaran tidak mencukupi untuk jumlah tiket yang diminta' })
       }
     }
 
@@ -243,15 +264,33 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const ticket = await prisma.ticket.create({
-      data: {
-        eventId,
-        registrantName,
-        registrantEmail,
-        formData: JSON.stringify(parsedFormData),
-        paymentProofUrl: savedFileName // Reusing this field to store the local filename
-      }
+    const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase()
+    const allNames = [registrantName, ...additionalNames]
+    
+    const ticketCreationPromises = allNames.map((name) => {
+      const formattedName = name
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .trim()
+
+      return prisma.ticket.create({
+        data: {
+          eventId,
+          registrantName: formattedName,
+          registrantEmail,
+          formData: JSON.stringify(parsedFormData),
+          paymentProofUrl: savedFileName,
+          orderId
+        } as any
+      })
     })
+
+    const results = await prisma.$transaction(ticketCreationPromises)
+    const primaryTicket = results[0]
+
+    if (!primaryTicket) {
+      throw createError({ statusCode: 500, statusMessage: 'Gagal membuat tiket' })
+    }
 
     if (notifyEnabled && notifyEmails.length > 0) {
       const baseUrl = resolveRequestBaseUrl(event)
@@ -265,11 +304,15 @@ export default defineEventHandler(async (event) => {
         notifyEmails,
         evt.name,
         eventId,
-        ticket.id,
+        primaryTicket.id,
         registrantName,
         registrantEmail,
         baseUrl,
-        paymentProofArg
+        paymentProofArg,
+        {
+          totalTickets: results.length,
+          allNames: allNames.map(n => n.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim())
+        }
       ).catch((err) => {
         console.error('Failed to send staff notification email:', err)
       })
@@ -280,7 +323,9 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      ticketId: ticket.id
+      ticketId: primaryTicket.id,
+      orderId: orderId,
+      count: results.length
     }
   } catch (error: any) {
     console.error('Register Ticket Error:', error)
