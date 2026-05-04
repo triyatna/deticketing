@@ -2322,6 +2322,7 @@ const submitRegistration = async () => {
   border: 1px solid var(--line-soft);
   border-radius: 12px;
   padding: 1.25rem;
+  text-align: center;
 }
 
 .quantity-selector {
@@ -2333,6 +2334,7 @@ const submitRegistration = async () => {
   padding: 0.5rem;
   border-radius: 12px;
   border: 1px solid var(--line-soft);
+  margin: 0 auto;
 }
 
 .qty-btn {
