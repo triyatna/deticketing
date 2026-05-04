@@ -4,6 +4,22 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 
 ---
 
+## [1.0.96] - 2026-05-04
+
+### Fitur Baru
+- **Multi-Day Event Support**: Dukungan penuh untuk event berdurasi lebih dari satu hari. Penambahan field `eventEndDate` dan penyesuaian otomatis pada form pendaftaran publik serta dashboard pemantauan.
+- **Scanner Event Selection**: Alur kerja baru pada scanner QR yang mewajibkan pemilihan event aktif sebelum melakukan pemindaian. Dilengkapi dengan filter otomatis untuk menyembunyikan event yang telah berakhir.
+- **Voice & Visual Mismatch Alerts**: Implementasi peringatan suara (Text-to-Speech) dan peringatan visual (Red Alert) jika tiket yang discan tidak sesuai dengan event yang sedang diproses.
+- **Scanner Search & Filter**: Fitur pencarian case-insensitive pada layar pemilihan event di scanner untuk memudahkan navigasi saat terdapat banyak event aktif.
+
+### Antarmuka (UI/UX)
+- **Scrollable Dashboard Lists**: Implementasi vertical scrolling pada daftar pendaftar terbaru di Dashboard Global dan Event guna menjaga layout tetap kompak.
+- **Enhanced Attendance Chart**: Grafik tren kehadiran kini mendukung durasi multi-hari dengan fitur horizontal scrolling untuk keterbacaan data yang lebih baik.
+- **Premium Scanner Cards**: Redesain layar pemilihan event dengan estetika premium, efek glassmorphism, dan indikator "Live" dinamis untuk event hari ini.
+- **Layout Compaction**: Optimalisasi jarak, margin, dan padding pada seluruh panel administratif untuk efisiensi ruang kerja.
+
+---
+
 ## [1.0.93] - 2026-05-04
 
 ### Fitur Baru

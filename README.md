@@ -4,9 +4,10 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 
 ## Fitur Utama
 
-### Manajemen Form Dinamis
+### Manajemen Form & Penjadwalan
 
-Sistem dilengkapi dengan pembangun form yang mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks. Admin dapat mengonfigurasi skema form secara dinamis tanpa perlu melakukan perubahan pada basis data.
+- **Pembangun Form Dinamis**: Mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks.
+- **Fleksibilitas Penjadwalan**: Dukungan untuk event satu hari maupun event berdurasi panjang (multi-day) dengan penanganan tanggal selesai otomatis.
 
 ### Keamanan Data dan Privasi
 
@@ -25,7 +26,9 @@ Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terha
 
 ### Operasional Lapangan
 
-Dilengkapi dengan pemindai QR Code berbasis web yang terintegrasi untuk proses check-in peserta di lokasi event dengan sinkronisasi data real-time.
+- **Advanced QR Scanner**: Pemindai QR berbasis web yang mendukung pemilihan event spesifik, pencarian event, dan validasi ketat antar event.
+- **Peringatan Audio-Visual**: Feedback suara dan visual real-time saat pemindaian berhasil atau gagal (termasuk peringatan salah event).
+- **Pemantauan Multi-Day**: Grafik kehadiran yang mendukung event berdurasi panjang dengan akumulasi data per jam yang akurat.
 
 ## Teknologi Utama
 
