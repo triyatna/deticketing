@@ -57,7 +57,7 @@
     </div>
 
     <div class="content-grid">
-      <section class="glass-panel content-card full-width chart-card">
+      <section class="glass-panel content-card chart-card">
         <div class="section-head">
           <h3>Tren Pendaftaran</h3>
           <div class="range-selector">
@@ -71,6 +71,27 @@
         <div class="chart-box">
           <ClientOnly>
             <Line v-if="trendChartData" :data="trendChartData" :options="trendChartOptions" />
+            <template #fallback>
+              <div class="chart-loading">Memuat chart...</div>
+            </template>
+          </ClientOnly>
+        </div>
+      </section>
+
+      <section class="glass-panel content-card chart-card">
+        <div class="section-head">
+          <h3>Tren Pelaksanaan Event</h3>
+          <div class="range-selector">
+            <select v-model="selectedEventRange" class="range-select">
+              <option value="7d">7 Hari Terakhir</option>
+              <option value="30d">30 Hari Terakhir</option>
+              <option value="1y">1 Tahun Terakhir</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-box">
+          <ClientOnly>
+            <Line v-if="eventTrendChartData" :data="eventTrendChartData" :options="eventTrendChartOptions" />
             <template #fallback>
               <div class="chart-loading">Memuat chart...</div>
             </template>
@@ -199,11 +220,11 @@ definePageMeta({
 })
 
 const selectedRange = ref('7d')
+const selectedEventRange = ref('7d')
 
-const { data: response, pending, error } = useFetch('/api/admin/dashboard', {
-  query: { range: selectedRange },
+const { data: response, pending, error } = useFetch(() => `/api/admin/dashboard?range=${selectedRange.value}&eventRange=${selectedEventRange.value}`, {
   key: 'admin-dashboard-overview',
-  watch: [selectedRange],
+  watch: [selectedRange, selectedEventRange],
   retry: 0,
   timeout: 7000,
 })
@@ -235,34 +256,109 @@ const generatedAtLabel = computed(() => {
   return new Date(raw).toLocaleString('id-ID')
 })
 
+const getChartColors = (index) => {
+  const colors = [
+    { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+    { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
+    { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+    { border: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+    { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+    { border: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+    { border: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' },
+  ]
+  return colors[index % colors.length]
+};
+
 const trendChartData = computed(() => {
-  if (!response.value?.trend) return null;
+  if (!response.value?.trend?.eventDatasets) return null;
+  
   return {
     labels: response.value.trend.labels,
-    datasets: [
-      {
-        label: 'Pendaftaran Baru',
-        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-        borderColor: '#3b82f6',
-        pointBackgroundColor: '#3b82f6',
+    datasets: response.value.trend.eventDatasets.map((ds, idx) => {
+      const color = getChartColors(idx)
+      return {
+        label: ds.name,
+        backgroundColor: color.bg,
+        borderColor: color.border,
+        pointBackgroundColor: color.border,
         pointBorderColor: '#fff',
         fill: true,
         tension: 0.4,
-        data: response.value.trend.data
+        data: ds.data
+      }
+    })
+  }
+});
+
+const trendChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { 
+    legend: { 
+      display: true,
+      position: 'top',
+      align: 'end',
+      labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true, boxWidth: 6, padding: 15 }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      padding: 10,
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      titleColor: '#fff',
+      bodyColor: '#94a3b8',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1
+    }
+  },
+  scales: {
+    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+  }
+}));
+
+const eventTrendChartData = computed(() => {
+  if (!response.value?.eventTrend) return null;
+  return {
+    labels: response.value.eventTrend.labels,
+    datasets: [
+      {
+        label: 'Jumlah Event',
+        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+        borderColor: '#22c55e',
+        pointBackgroundColor: '#22c55e',
+        pointBorderColor: '#fff',
+        fill: true,
+        tension: 0.4,
+        data: response.value.eventTrend.data
       }
     ]
   }
 });
 
-const trendChartOptions = {
+const eventTrendChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        afterLabel: (context) => {
+          const index = context.dataIndex;
+          const names = response.value?.eventTrend?.names?.[index];
+          if (names && names.length > 0) {
+            return ['', 'Event:', ...names.map(n => `• ${n}`)];
+          }
+          return '';
+        }
+      }
+    }
+  },
   scales: {
     y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
     x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
   }
-};
+}));
 
 const formatNumber = (value) => {
   const num = Number(value || 0)
@@ -443,6 +539,21 @@ const formatDateTime = (value) => {
 .list-wrap {
   display: grid;
   gap: 0.55rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
 }
 
 .list-item {
@@ -494,6 +605,22 @@ const formatDateTime = (value) => {
 
 .scan-table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 400px;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
 }
 
 .scan-table {

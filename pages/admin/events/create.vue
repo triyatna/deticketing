@@ -41,14 +41,22 @@
               ></textarea>
             </div>
 
-            <div class="grid-two row-full">
+            <div class="grid-three row-full">
               <div class="form-group">
-                <label>Tanggal Event</label>
+                <label>Tanggal Mulai</label>
                 <input
                   v-model="form.eventDate"
                   type="date"
                   class="form-input"
                   required
+                />
+              </div>
+              <div class="form-group">
+                <label>Tanggal Selesai (Opsional)</label>
+                <input
+                  v-model="form.eventEndDate"
+                  type="date"
+                  class="form-input"
                 />
               </div>
               <div class="form-group">
@@ -896,6 +904,7 @@ const form = ref({
   notifyEnabled: false,
   notifyEmails: [],
   eventDate: "",
+  eventEndDate: "",
   eventTime: "",
   eventLocation: "",
   assignmentEnabled: false,
@@ -1234,6 +1243,7 @@ const loadEventForEdit = async () => {
     form.value.backgroundImageUrl = String(meta?.backgroundImageUrl || "");
     form.value.nominal = String(meta?.nominal || "");
     form.value.eventDate = String(meta?.eventDate || "");
+    form.value.eventEndDate = String(meta?.eventEndDate || "");
     form.value.eventTime = String(meta?.eventTime || "");
     form.value.eventLocation = String(meta?.eventLocation || "");
     form.value.paymentEnabled = !!meta?.paymentEnabled;
@@ -1452,6 +1462,7 @@ const submitEvent = async () => {
       backgroundImageUrl: String(form.value.backgroundImageUrl || "").trim(),
       nominal: String(form.value.nominal || "").trim(),
       eventDate: String(form.value.eventDate || "").trim(),
+      eventEndDate: String(form.value.eventEndDate || "").trim(),
       eventTime: String(form.value.eventTime || "").trim(),
       eventLocation: String(form.value.eventLocation || "").trim(),
       paymentEnabled: !!form.value.paymentEnabled,
@@ -1798,6 +1809,12 @@ onMounted(async () => {
 .grid-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.grid-three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem;
 }
 

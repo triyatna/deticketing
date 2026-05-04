@@ -1,23 +1,101 @@
 <template>
   <div>
-    <div class="header-action">
+    <div :class="['header-action', { 'header-mb': !selectedEventId }]">
       <div>
         <h1 class="page-title">Scanner QR Kehadiran</h1>
-        <p class="page-subtitle">
-          Validasi tiket peserta dengan kamera perangkat secara real-time.
+        <p v-if="selectedEvent" class="page-subtitle">
+          Scanning untuk: <strong>{{ selectedEvent.name }}</strong>
+        </p>
+        <p v-else class="page-subtitle">
+          Pilih event aktif di bawah ini untuk memulai validasi kehadiran.
         </p>
       </div>
-      <span
-        :class="[
-          'status-pill',
-          isScanning && cameraReady ? 'status-live' : 'status-offline',
-        ]"
-      >
-        {{ isScanning && cameraReady ? "Live Camera" : "Standby" }}
-      </span>
+      <div v-if="selectedEvent" class="header-right-meta">
+        <button class="btn-outline btn-sm" @click="changeEvent">Ganti Event</button>
+        <span
+          :class="[
+            'status-pill',
+            isScanning && cameraReady ? 'status-live' : 'status-offline',
+          ]"
+        >
+          {{ isScanning && cameraReady ? "Live Camera" : "Standby" }}
+        </span>
+      </div>
     </div>
 
-    <div class="scanner-grid">
+    <div v-if="!selectedEventId" class="event-selection-container">
+      <div v-if="loadingEvents" class="glass-panel text-center py-8">
+        Memuat daftar event aktif...
+      </div>
+      <div v-else-if="!activeEvents.length" class="glass-panel text-center py-8">
+        Tidak ada event aktif saat ini.
+      </div>
+      <div v-else>
+        <!-- Search Field (Only if > 3 events) -->
+        <div v-if="activeEvents.length > 3" class="search-wrapper mb-6">
+          <div class="search-input-group">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              v-model="eventSearch" 
+              type="text" 
+              placeholder="Cari nama event..." 
+              class="search-input"
+            />
+          </div>
+        </div>
+
+        <div v-if="!filteredActiveEvents.length" class="glass-panel text-center py-8">
+          Event tidak ditemukan.
+        </div>
+
+        <div class="event-grid">
+          <div 
+            v-for="evt in filteredActiveEvents" 
+            :key="evt.id" 
+            class="event-card-premium"
+            @click="selectEvent(evt.id)"
+          >
+            <div class="card-glow"></div>
+            <div class="evt-card-content">
+              <div class="evt-card-header">
+                <div class="evt-card-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </div>
+                <div v-if="isToday(evt.date)" class="live-badge">
+                  <span class="live-pulse"></span>
+                  HARI INI
+                </div>
+              </div>
+              
+              <div class="evt-card-body">
+                <h3 class="evt-card-name">{{ evt.name }}</h3>
+                <p class="evt-card-slug">/form/{{ evt.slug }}</p>
+              </div>
+
+              <div class="evt-card-footer">
+                <div class="select-hint">
+                  Pilih & Mulai Scan
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="scanner-grid">
       <section class="glass-panel scanner-panel">
         <div class="scanner-toolbar">
           <button
@@ -276,6 +354,73 @@ const scanResultModal = ref({
 });
 const toasts = ref([]);
 
+const activeEvents = ref([]);
+const selectedEventId = ref("");
+const loadingEvents = ref(false);
+const eventSearch = ref("");
+
+const filteredActiveEvents = computed(() => {
+  if (!eventSearch.value.trim()) return activeEvents.value;
+  const q = eventSearch.value.toLowerCase();
+  return activeEvents.value.filter(
+    (e) =>
+      (e.name && e.name.toLowerCase().includes(q)) ||
+      (e.slug && e.slug.toLowerCase().includes(q)),
+  );
+});
+
+const selectedEvent = computed(() => {
+  return activeEvents.value.find((e) => e.id === selectedEventId.value);
+});
+
+const selectEvent = (id) => {
+  selectedEventId.value = id;
+};
+
+const changeEvent = async () => {
+  if (isScanning.value) {
+    const confirm = await Swal.fire({
+      title: "Hentikan Scan?",
+      text: "Anda akan mengganti event. Scanner akan dimatikan sementara.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ganti Event",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#3b82f6",
+      background: "#0f172a",
+      color: "#f1f7ff",
+    });
+    if (!confirm.isConfirmed) return;
+    await stopScanner();
+  }
+  selectedEventId.value = "";
+};
+
+const fetchActiveEvents = async () => {
+  loadingEvents.value = true;
+  try {
+    const res = await $fetch("/api/admin/active-events");
+    if (res.success) {
+      activeEvents.value = res.events;
+    }
+  } catch (err) {
+    pushToast("error", "Gagal memuat daftar event aktif");
+  } finally {
+    loadingEvents.value = false;
+  }
+};
+
+const isToday = (dateStr) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return (
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear()
+  );
+};
+
 const isIosStandalonePwa = ref(false);
 const isLikelyInAppBrowser = ref(false);
 const isSecureCameraContext = ref(false);
@@ -363,6 +508,21 @@ const announceStatusConfirmed = (name, action) => {
     utter.lang = "id-ID";
     utter.rate = 1;
     utter.pitch = 1;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    // noop
+  }
+};
+
+const announceError = (message) => {
+  if (!import.meta.client || !("speechSynthesis" in window) || !message) return;
+
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(message);
+    utter.lang = "id-ID";
+    utter.rate = 1;
+    utter.pitch = 0.85; // Lower pitch for warnings
     window.speechSynthesis.speak(utter);
   } catch {
     // noop
@@ -846,7 +1006,10 @@ const processDetectedQr = async (decodedText) => {
   try {
     const res = await $fetch("/api/scan/validate", {
       method: "POST",
-      body: { qrToken: decodedText },
+      body: { 
+        qrToken: decodedText,
+        eventId: selectedEventId.value
+      },
       timeout: 7000,
       retry: 0,
     });
@@ -866,8 +1029,12 @@ const processDetectedQr = async (decodedText) => {
     }
   } catch (err) {
     const message = err?.data?.statusMessage || "QR Code tidak valid";
+    const isMismatch = message.toLowerCase().includes("event lain");
+    
+    announceError(isMismatch ? "Peringatan! Event tidak sesuai." : message);
+
     await Swal.fire({
-      title: "Gagal!",
+      title: isMismatch ? "Event Tidak Sesuai!" : "Gagal!",
       text: message,
       icon: "error",
       confirmButtonText: "OK",
@@ -1174,6 +1341,7 @@ const showCameraPermissionHelp = () => {
 
 onMounted(async () => {
   detectRuntime();
+  await fetchActiveEvents();
   await checkCameraPermission();
 
   if (cameraPermissionState.value === "granted") {
@@ -1210,6 +1378,10 @@ onBeforeUnmount(async () => {
   align-items: start;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.header-mb {
+  margin-bottom: 2.2rem;
 }
 
 .page-title {
@@ -1517,6 +1689,229 @@ onBeforeUnmount(async () => {
     display: grid;
     grid-template-columns: 1fr;
     justify-content: stretch;
+  }
+}
+
+/* Event Selection UI Premium */
+.event-selection-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.search-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.search-input-group {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.search-input-group .search-input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.search-input-group .search-input:focus {
+  border-color: #3b82f6;
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  outline: none;
+}
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.event-card-premium {
+  position: relative;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.1rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent);
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.event-card-premium:hover {
+  transform: translateY(-8px);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.event-card-premium:hover .card-glow {
+  opacity: 1;
+}
+
+.evt-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+}
+
+.evt-card-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  width: 100%;
+}
+
+.evt-card-icon-wrap {
+  width: 40px;
+  height: 40px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.event-card-premium:hover .evt-card-icon-wrap {
+  background: #3b82f6;
+  color: #fff;
+  transform: rotate(-5deg) scale(1.1);
+}
+
+.live-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  padding: 0.28rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.live-pulse {
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  position: relative;
+}
+
+.live-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.evt-card-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.evt-card-slug {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.evt-card-footer {
+  margin-top: auto;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.select-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.select-hint svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.event-card-premium:hover .select-hint {
+  color: #60a5fa;
+}
+
+.event-card-premium:hover .select-hint svg {
+  transform: translateX(4px);
+}
+
+.header-right-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .event-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

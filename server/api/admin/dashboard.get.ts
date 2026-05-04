@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
-  const range = (query.range as string) || '7d'
+  const regRange = (query.range as string) || '7d'
+  const eventRange = (query.eventRange as string) || '7d'
 
   const startToday = new Date()
   startToday.setHours(0, 0, 0, 0)
@@ -117,58 +118,122 @@ export default defineEventHandler(async (event) => {
       totalTickets: evt._count.tickets
     }))
 
-    // Fetch Trend Data
-    let daysToFetch = 7
-    if (range === '30d') daysToFetch = 30
-    if (range === '1y') daysToFetch = 12 // Months for 1 year
+    // 1. Calculate Registration Trend (Per Event)
+    const regLabels: string[] = []
+    const eventDatasets: { name: string, data: number[] }[] = []
+    let regDays = 7
+    if (regRange === '30d') regDays = 30
+    if (regRange === '1y') regDays = 12
 
-    const trendLabels: string[] = []
-    const trendData: number[] = []
+    const regAgo = new Date()
+    if (regRange === '1y') {
+      regAgo.setFullYear(regAgo.getFullYear() - 1)
+      regAgo.setDate(1)
+    } else {
+      regAgo.setDate(regAgo.getDate() - (regDays - 1))
+    }
+    regAgo.setHours(0, 0, 0, 0)
 
-    if (range === '1y') {
+    const trendRaw = await prisma.ticket.findMany({
+      where: { createdAt: { gte: regAgo } },
+      select: {
+        createdAt: true,
+        event: { select: { name: true } }
+      }
+    })
+
+    // Get unique event names from the tickets found
+    const uniqueActiveEvents = [...new Set(trendRaw.map(t => t.event.name))]
+    uniqueActiveEvents.forEach(name => {
+      eventDatasets.push({ name, data: [] })
+    })
+
+    if (regRange === '1y') {
+      for (let i = 0; i < 12; i++) {
+        const d = new Date(regAgo)
+        d.setMonth(d.getMonth() + i)
+        regLabels.push(d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }))
+        
+        eventDatasets.forEach(ds => {
+          const count = trendRaw.filter(t => {
+            const tDate = new Date(t.createdAt)
+            return t.event.name === ds.name && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
+          }).length
+          ds.data.push(count)
+        })
+      }
+    } else {
+      for (let i = 0; i < regDays; i++) {
+        const d = new Date(regAgo)
+        d.setDate(d.getDate() + i)
+        regLabels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
+        
+        eventDatasets.forEach(ds => {
+          const count = trendRaw.filter(t => {
+            const tDate = new Date(t.createdAt)
+            return t.event.name === ds.name && tDate.getDate() === d.getDate() && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
+          }).length
+          ds.data.push(count)
+        })
+      }
+    }
+
+    // 2. Calculate Event Trend
+    const eventLabels: string[] = []
+    const eventTrendData: number[] = []
+    const eventTrendNames: string[][] = []
+    let evDays = 7
+    if (eventRange === '30d') evDays = 30
+    if (eventRange === '1y') evDays = 12
+
+    if (eventRange === '1y') {
       const yearAgo = new Date()
       yearAgo.setFullYear(yearAgo.getFullYear() - 1)
       yearAgo.setDate(1)
       yearAgo.setHours(0, 0, 0, 0)
 
-      const trendRaw = await prisma.ticket.findMany({
-        where: { createdAt: { gte: yearAgo } },
-        select: { createdAt: true }
-      })
-
       for (let i = 0; i < 12; i++) {
         const d = new Date(yearAgo)
         d.setMonth(d.getMonth() + i)
-        const label = d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' })
-        trendLabels.push(label)
-
-        const count = trendRaw.filter(t => {
-          const tDate = new Date(t.createdAt)
-          return tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
-        }).length
-        trendData.push(count)
+        eventLabels.push(d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }))
+        
+        const matches = allEventsRaw.filter(evt => {
+          try {
+            const schema = JSON.parse(evt.formSchema)
+            const meta = schema.find((item: any) => item.itemType === 'form_meta')
+            if (meta?.eventDate) {
+              const evtDate = new Date(meta.eventDate)
+              return evtDate.getMonth() === d.getMonth() && evtDate.getFullYear() === d.getFullYear()
+            }
+            return false
+          } catch { return false }
+        })
+        eventTrendData.push(matches.length)
+        eventTrendNames.push(matches.map(m => m.name))
       }
     } else {
       const ago = new Date()
-      ago.setDate(ago.getDate() - (daysToFetch - 1))
+      ago.setDate(ago.getDate() - (evDays - 1))
       ago.setHours(0, 0, 0, 0)
 
-      const trendRaw = await prisma.ticket.findMany({
-        where: { createdAt: { gte: ago } },
-        select: { createdAt: true }
-      })
-
-      for (let i = 0; i < daysToFetch; i++) {
+      for (let i = 0; i < evDays; i++) {
         const d = new Date(ago)
         d.setDate(d.getDate() + i)
-        const dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-        trendLabels.push(dateStr)
+        eventLabels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
         
-        const count = trendRaw.filter(t => {
-          const tDate = new Date(t.createdAt)
-          return tDate.getDate() === d.getDate() && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
-        }).length
-        trendData.push(count)
+        const matches = allEventsRaw.filter(evt => {
+          try {
+            const schema = JSON.parse(evt.formSchema)
+            const meta = schema.find((item: any) => item.itemType === 'form_meta')
+            if (meta?.eventDate) {
+              const evtDate = new Date(meta.eventDate)
+              return evtDate.getDate() === d.getDate() && evtDate.getMonth() === d.getMonth() && evtDate.getFullYear() === d.getFullYear()
+            }
+            return false
+          } catch { return false }
+        })
+        eventTrendData.push(matches.length)
+        eventTrendNames.push(matches.map(m => m.name))
       }
     }
 
@@ -187,8 +252,13 @@ export default defineEventHandler(async (event) => {
         upcomingCount: upcomingEvents.length
       },
       trend: {
-        labels: trendLabels,
-        data: trendData
+        labels: regLabels,
+        eventDatasets: eventDatasets
+      },
+      eventTrend: {
+        labels: eventLabels,
+        data: eventTrendData,
+        names: eventTrendNames
       },
       recentEvents: allEventsRaw.slice(0, 5).map((item) => ({
         id: item.id,
@@ -202,8 +272,8 @@ export default defineEventHandler(async (event) => {
       recentRegistrations,
       recentScans,
       user: {
-        id: decoded.id,
-        role: decoded.role,
+        id: (decoded as any).id,
+        role: (decoded as any).role,
       },
       generatedAt: new Date().toISOString(),
     }

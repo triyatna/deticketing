@@ -1106,25 +1106,36 @@ const formMeta = computed(() => {
 });
 
 const eventDate = computed(() => formMeta.value?.eventDate || "");
+const eventEndDate = computed(() => formMeta.value?.eventEndDate || "");
 const eventTime = computed(() => formMeta.value?.eventTime || "");
 
 const formattedEventDateTime = computed(() => {
   if (!eventDate.value) return "";
   try {
-    if (eventTime.value) {
-      // Combine date and time
-      const dateObj = new Date(`${eventDate.value}T${eventTime.value}`);
-      return (
-        dateObj.toLocaleString("id-ID", {
-          dateStyle: "full",
-          timeStyle: "short",
-        }) + " WIB"
-      );
-    } else {
-      // Only date
-      const dateObj = new Date(`${eventDate.value}T00:00:00`);
-      return dateObj.toLocaleString("id-ID", { dateStyle: "full" });
+    const start = new Date(`${eventDate.value}T00:00:00`);
+    const dateOptions = {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    };
+
+    let result = start.toLocaleDateString("id-ID", dateOptions);
+
+    if (eventEndDate.value && eventEndDate.value !== eventDate.value) {
+      const end = new Date(`${eventEndDate.value}T00:00:00`);
+      result += ` - ${end.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}`;
     }
+
+    if (eventTime.value) {
+      result += ` | ${eventTime.value} WIB`;
+    }
+
+    return result;
   } catch (e) {
     return eventDate.value;
   }
@@ -1255,15 +1266,14 @@ const isDeadlinePassed = computed(() => {
 const isEventPassed = computed(() => {
   if (!eventDate.value) return false;
 
+  const targetDateStr = eventEndDate.value || eventDate.value;
   let eventTimestamp;
   if (eventTime.value) {
     // Check based on specific time if provided
-    eventTimestamp = new Date(
-      `${eventDate.value}T${eventTime.value}`,
-    ).getTime();
+    eventTimestamp = new Date(`${targetDateStr}T${eventTime.value}`).getTime();
   } else {
     // If only date, consider it passed after the end of the day (23:59:59)
-    eventTimestamp = new Date(`${eventDate.value}T23:59:59`).getTime();
+    eventTimestamp = new Date(`${targetDateStr}T23:59:59`).getTime();
   }
 
   if (Number.isNaN(eventTimestamp)) return false;

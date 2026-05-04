@@ -39,18 +39,27 @@ export default defineEventHandler(async (event) => {
       prisma.ticket.count({ where: { eventId, status: 'REJECTED' } }),
       prisma.ticket.count({ where: { eventId, scanStatus: 'MASUK' } }),
       prisma.ticket.count({ where: { eventId, scanStatus: 'KELUAR' } }),
-      prisma.ticket.count({ where: { eventId, scanStatus: 'BELUM_HADIR' } })
+      prisma.ticket.count({ where: { eventId, scanStatus: 'BELUM_HADIR', status: 'APPROVED' } })
     ])
 
     // Calculate revenue
     let revenue = 0
     let isPaid = false
+    let isRunning = false
     try {
       const schema = JSON.parse(eventData.formSchema)
       const formMeta = Array.isArray(schema) ? schema.find((s: any) => s.itemType === 'form_meta') : {}
-      if (formMeta && formMeta.paymentEnabled && formMeta.nominal) {
-        isPaid = true
-        revenue = approvedTickets * Number(formMeta.nominal)
+      if (formMeta) {
+        if (formMeta.paymentEnabled && formMeta.nominal) {
+          isPaid = true
+          revenue = approvedTickets * Number(formMeta.nominal)
+        }
+        if (formMeta.eventDate) {
+          const now = new Date()
+          const evtDate = new Date(formMeta.eventDate)
+          // Consider running if event date is today or has passed (started)
+          isRunning = now >= evtDate
+        }
       }
     } catch {
       // ignore
@@ -70,48 +79,113 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // Calculate 7-day trend
+    // Calculate Registration Trend (7 Days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setHours(0, 0, 0, 0);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Include today + 6 past days = 7 days
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-    const trendTickets = await prisma.ticket.findMany({
+    const regTrendTickets = await prisma.ticket.findMany({
       where: { 
         eventId,
         createdAt: { gte: sevenDaysAgo }
       },
-      select: { createdAt: true, scanStatus: true }
+      select: { createdAt: true }
     });
 
-    // Group by day (YYYY-MM-DD)
-    const trendMap: Record<string, { total: number, belumHadir: number, masuk: number, keluar: number }> = {};
+    const regTrendMap: Record<string, number> = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
       d.setDate(d.getDate() + i);
       const dateStr = d.toISOString().split('T')[0] as string;
-      trendMap[dateStr] = { total: 0, belumHadir: 0, masuk: 0, keluar: 0 };
+      regTrendMap[dateStr] = 0;
     }
-
-    trendTickets.forEach(t => {
+    regTrendTickets.forEach(t => {
       const dateStr = new Date(t.createdAt).toISOString().split('T')[0] as string;
-      if (trendMap[dateStr] !== undefined) {
-        trendMap[dateStr].total++;
-        if (t.scanStatus === 'BELUM_HADIR') trendMap[dateStr].belumHadir++;
-        else if (t.scanStatus === 'MASUK') trendMap[dateStr].masuk++;
-        else if (t.scanStatus === 'KELUAR') trendMap[dateStr].keluar++;
-      }
+      if (regTrendMap[dateStr] !== undefined) regTrendMap[dateStr]++;
     });
 
-    const trendData = {
-      labels: Object.keys(trendMap).map(d => {
+    const regTrend = {
+      labels: Object.keys(regTrendMap).map(d => {
         const dateObj = new Date(d);
         return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
       }),
-      data: Object.values(trendMap).map(m => m.total),
-      belumHadir: Object.values(trendMap).map(m => m.belumHadir),
-      masuk: Object.values(trendMap).map(m => m.masuk),
-      keluar: Object.values(trendMap).map(m => m.keluar),
+      data: Object.values(regTrendMap)
     };
+
+    // Calculate Attendance Trend (Hourly if within Event Period)
+    let attendanceTrend: any = null;
+    let isEventPeriod = false;
+    let startOfEvent: Date | null = null;
+    let endOfEvent: Date | null = null;
+    
+    try {
+      const schema = JSON.parse(eventData.formSchema)
+      const formMeta = Array.isArray(schema) ? schema.find((s: any) => s.itemType === 'form_meta') : {}
+      if (formMeta?.eventDate) {
+        startOfEvent = new Date(formMeta.eventDate);
+        startOfEvent.setHours(0, 0, 0, 0);
+        
+        endOfEvent = formMeta.eventEndDate ? new Date(formMeta.eventEndDate) : new Date(formMeta.eventDate);
+        endOfEvent.setHours(23, 59, 59, 999);
+
+        const now = new Date();
+        if (now >= startOfEvent && now <= endOfEvent) {
+          isEventPeriod = true;
+        }
+      }
+    } catch { /* ignore */ }
+
+    if (isEventPeriod && startOfEvent && endOfEvent) {
+      const logs = await prisma.scanLog.findMany({
+        where: {
+          ticket: { eventId },
+          scannedAt: { gte: startOfEvent, lte: endOfEvent }
+        },
+        select: { scannedAt: true, action: true }
+      });
+
+      // Calculate total hours
+      const diffMs = endOfEvent.getTime() - startOfEvent.getTime();
+      const totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      const isMultiDay = totalHours > 24;
+
+      const hourlyLabels = [];
+      const hourlyMasuk = Array(totalHours).fill(0);
+      const hourlyKeluar = Array(totalHours).fill(0);
+      const hourlyBelumHadir = Array(totalHours).fill(0);
+
+      for (let i = 0; i < totalHours; i++) {
+        const d = new Date(startOfEvent.getTime() + i * 60 * 60 * 1000);
+        const hourStr = `${d.getHours().toString().padStart(2, '0')}:00`;
+        if (isMultiDay) {
+          hourlyLabels.push(`${d.getDate()}/${d.getMonth() + 1} ${hourStr}`);
+        } else {
+          hourlyLabels.push(hourStr);
+        }
+      }
+
+      logs.forEach(log => {
+        const logMs = new Date(log.scannedAt).getTime();
+        const hourIndex = Math.floor((logMs - startOfEvent!.getTime()) / (1000 * 60 * 60));
+        if (hourIndex >= 0 && hourIndex < totalHours) {
+          if (log.action === 'MASUK') hourlyMasuk[hourIndex]++;
+          else if (log.action === 'KELUAR') hourlyKeluar[hourIndex]++;
+        }
+      });
+
+      let cumulativeMasuk = 0;
+      for (let h = 0; h < totalHours; h++) {
+        cumulativeMasuk += hourlyMasuk[h];
+        hourlyBelumHadir[h] = Math.max(0, approvedTickets - cumulativeMasuk);
+      }
+
+      attendanceTrend = {
+        labels: hourlyLabels,
+        masuk: hourlyMasuk,
+        keluar: hourlyKeluar,
+        belumHadir: hourlyBelumHadir
+      };
+    }
 
     return {
       success: true,
@@ -119,7 +193,9 @@ export default defineEventHandler(async (event) => {
         id: eventData.id,
         name: eventData.name,
         quota: eventData.quota,
-        isPaid
+        isPaid,
+        isRunning,
+        isEventPeriod
       },
       metrics: {
         total: totalTickets,
@@ -132,7 +208,8 @@ export default defineEventHandler(async (event) => {
         revenue
       },
       recentRegistrations: recentTickets,
-      trend: trendData
+      regTrend,
+      attendanceTrend
     }
 
   } catch (error: any) {
