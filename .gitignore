@@ -39,6 +39,8 @@ data/runtime-secrets.json
 # Uploads
 public/uploads/*
 !public/uploads/.gitkeep
+server/private/uploads/*
+!server/private/uploads/.gitkeep
 
 # Scratch/temp files
 scratch/
