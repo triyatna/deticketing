@@ -89,7 +89,10 @@
           <div v-if="eventDate || eventLocation" class="event-meta-wrap mt-4" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; color: #cbd5e1; font-weight: 500; font-size: 0.95rem;">
             <div v-if="eventDate" class="event-meta-item" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 8px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #3b82f6;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              {{ formattedEventDateTime }}
+              <ClientOnly>
+                {{ formattedEventDateTime }}
+                <template #fallback>Memuat tanggal...</template>
+              </ClientOnly>
             </div>
             <div v-if="eventLocation" class="event-meta-item" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 8px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; color: #10b981;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -109,7 +112,10 @@
 
         <div v-else-if="isDeadlinePassed" class="alert error">
           Pendaftaran untuk event ini sudah ditutup pada
-          {{ registrationDeadlineLabel }}.
+          <ClientOnly>
+            {{ registrationDeadlineLabel }}.
+            <template #fallback>...</template>
+          </ClientOnly>
         </div>
 
         <form

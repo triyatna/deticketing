@@ -142,7 +142,9 @@
               <div class="recent-info">
                 <p class="recent-name">{{ ticket.registrantName }}</p>
                 <p class="recent-email">{{ ticket.registrantEmail }}</p>
-                <p class="recent-time">{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</p>
+                <ClientOnly>
+                  <p class="recent-time">{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</p>
+                </ClientOnly>
               </div>
               <div class="recent-status">
                 <span :class="['badge', getStatusBadgeClass(ticket.status)]">

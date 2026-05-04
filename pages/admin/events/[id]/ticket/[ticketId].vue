@@ -30,7 +30,12 @@
             
             <div class="detail-group">
               <label>Waktu Daftar</label>
-              <p>{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</p>
+              <ClientOnly>
+                <p>{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</p>
+                <template #fallback>
+                  <p class="text-muted">Loading...</p>
+                </template>
+              </ClientOnly>
             </div>
 
             <div v-if="parsedFormData.length" class="mt-6">
@@ -52,15 +57,16 @@
             <div class="status-card">
               <div class="status-row">
                 <span class="status-label">Status Tiket:</span>
-                <span :class="['badge', ticket.status === 'APPROVED' ? 'badge-green' : 'badge-yellow']">
+                <span :class="['badge', getStatusBadgeClass(ticket.status)]">
                   {{ ticket.status }}
                 </span>
               </div>
               <div class="status-row">
                 <span class="status-label">Kehadiran:</span>
-                <span :class="['badge', getScanBadgeClass(ticket.scanStatus)]">
+                <span v-if="ticket.status === 'APPROVED'" :class="['badge', getScanBadgeClass(ticket.scanStatus)]">
                   {{ ticket.scanStatus.replace("_", " ") }}
                 </span>
+                <span v-else class="text-muted">-</span>
               </div>
             </div>
 
@@ -79,6 +85,7 @@
               <p v-if="ticket.status === 'PENDING'" class="text-sm text-muted mb-3">Periksa bukti pembayaran sebelum menyetujui pendaftar. Jika disetujui, QR Code akan otomatis dikirim ke email pendaftar.</p>
               
               <div class="action-buttons" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Tombol Approve (hanya untuk PENDING) -->
                 <button
                   v-if="ticket.status === 'PENDING'"
                   @click="approveTicket(ticket.id)"
@@ -87,23 +94,35 @@
                 >
                   {{ isApproving ? "Memproses & Mengirim Email..." : "Approve & Kirim E-Ticket" }}
                 </button>
-                
+
+                <!-- Tombol Kirim Ulang (hanya untuk APPROVED) -->
                 <button
-                  v-if="ticket.status !== 'REJECTED'"
+                  v-if="ticket.status === 'APPROVED'"
+                  @click="approveTicket(ticket.id, true)"
+                  class="btn-primary full-width"
+                  :disabled="isApproving || isUpdatingStatus"
+                >
+                  {{ isApproving ? "Mengirim Ulang..." : "Kirim Ulang E-Ticket QR Code" }}
+                </button>
+                
+                <!-- Tombol Tolak/Batal (hanya untuk PENDING) -->
+                <button
+                  v-if="ticket.status === 'PENDING'"
                   @click="updateTicketStatus(ticket.id, 'REJECTED')"
                   class="btn-outline full-width border-red text-red hover-red"
                   :disabled="isApproving || isUpdatingStatus"
                 >
-                  Batalkan Tiket
+                  Tolak Pendaftaran
                 </button>
                 
+                <!-- Tombol Cabut Batal (hanya untuk REJECTED) -->
                 <button
                   v-if="ticket.status === 'REJECTED'"
                   @click="updateTicketStatus(ticket.id, 'PENDING')"
                   class="btn-outline full-width"
                   :disabled="isApproving || isUpdatingStatus"
                 >
-                  Cabut Batal (Jadikan Pending)
+                  Cabut Penolakan (Jadikan Pending)
                 </button>
               </div>
             </div>
@@ -185,19 +204,27 @@ const parsedFormData = computed(() => {
   }
 });
 
+const getStatusBadgeClass = (status) => {
+  if (status === "APPROVED") return "badge-green";
+  if (status === "REJECTED") return "badge-red";
+  return "badge-yellow";
+};
+
 const getScanBadgeClass = (status) => {
   if (status === "MASUK") return "badge-green";
   if (status === "KELUAR") return "badge-yellow";
   return "badge-gray";
 };
 
-const approveTicket = async (id) => {
+const approveTicket = async (id, isResend = false) => {
   const result = await Swal.fire({
     title: "Konfirmasi",
-    text: "Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.",
+    text: isResend 
+      ? "Kirim ulang E-Ticket QR Code ke pendaftar? Pastikan nomor WA/email pendaftar sudah benar." 
+      : "Approve pembayaran ini? Sistem akan mengirimkan E-Ticket berisi QR Code ke email pendaftar.",
     icon: "question",
     showCancelButton: true,
-    confirmButtonText: "Ya, Approve",
+    confirmButtonText: isResend ? "Ya, Kirim Ulang" : "Ya, Approve",
     cancelButtonText: "Batal",
     background: "#0f172a",
     color: "#f8fafc",
@@ -215,7 +242,9 @@ const approveTicket = async (id) => {
     if (res.success) {
       Swal.fire({
         title: "Sukses!",
-        text: "Berhasil! QR Code telah dikirim ke email peserta.",
+        text: isResend 
+          ? "E-Ticket berhasil dikirim ulang!" 
+          : "Berhasil! QR Code telah dikirim ke email peserta.",
         icon: "success",
         background: "#0f172a",
         color: "#f8fafc",
@@ -415,4 +444,5 @@ const updateTicketStatus = async (id, newStatus) => {
 .badge-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
 .badge-yellow { background: rgba(234, 179, 8, 0.2); color: #facc15; }
 .badge-gray { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+.badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 </style>

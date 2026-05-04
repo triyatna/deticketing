@@ -265,6 +265,98 @@
           </button>
         </div>
       </section>
+
+      <section class="glass-panel setting-card card-whatsapp">
+        <div class="card-head">
+          <h3>Konfigurasi WhatsApp Gateway</h3>
+          <p>Digunakan untuk pengiriman notifikasi via WhatsApp.</p>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>API Endpoint URL</label>
+            <input
+              v-model="settings.WA_ENDPOINT"
+              type="text"
+              class="form-input"
+              placeholder="https://api.wa-gateway.com/v1/send"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>API Key / Token</label>
+            <div class="input-with-action">
+              <input
+                v-model="settings.WA_API_KEY"
+                :type="showWaKey ? 'text' : 'password'"
+                class="form-input"
+                placeholder="Masukkan API Key"
+              />
+              <button 
+                type="button" 
+                class="btn-icon-toggle" 
+                @click="showWaKey = !showWaKey"
+                title="Lihat/Sembunyi Key"
+              >
+                <div :class="showWaKey ? 'i-heroicons-eye-slash-solid' : 'i-heroicons-eye-solid'"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="test-row">
+          <input
+            v-model="testWaNumber"
+            type="text"
+            class="form-input"
+            placeholder="Nomor WA (contoh: 628123456789)"
+          />
+          <button
+            type="button"
+            class="btn-warning"
+            :disabled="isTestingWa"
+            @click="testWa"
+          >
+            {{ isTestingWa ? "Menguji..." : "Test Koneksi WA" }}
+          </button>
+        </div>
+
+        <div class="guard-section mt-4">
+          <div class="section-divider">
+            <span>WhatsApp Guard (Anti-Ban)</span>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Status Guard</label>
+              <select v-model="settings.WA_GUARD_ENABLED" class="form-input">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Min Delay (Detik)</label>
+              <input
+                v-model="settings.WA_GUARD_DELAY_MIN"
+                type="number"
+                class="form-input"
+                placeholder="1"
+              />
+            </div>
+            <div class="form-group">
+              <label>Max Delay (Detik)</label>
+              <input
+                v-model="settings.WA_GUARD_DELAY_MAX"
+                type="number"
+                class="form-input"
+                placeholder="5"
+              />
+            </div>
+          </div>
+          <p class="field-hint mt-2">
+            Pesan akan dikirim secara berurutan dengan jeda waktu acak untuk menghindari blokir dari WhatsApp.
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -303,11 +395,20 @@ const settings = ref({
   SCANNER_SOUND_ENABLED: "true",
   SCANNER_COOLDOWN_MS: "800",
   SCANNER_VOICE_LANG: "id-ID",
+  WA_ENDPOINT: "",
+  WA_API_KEY: "",
+  WA_GUARD_ENABLED: "false",
+  WA_GUARD_DELAY_MIN: "1",
+  WA_GUARD_DELAY_MAX: "5",
 });
 
 const testEmail = ref("");
+const testWaNumber = ref("");
+const waStatus = ref(null); // { type: 'success' | 'error', message: string }
+const showWaKey = ref(false);
 const isSaving = ref(false);
 const isTesting = ref(false);
+const isTestingWa = ref(false);
 const isUpdating = ref(false);
 const isChangingPass = ref(false);
 const passwordForm = ref({
@@ -410,6 +511,34 @@ const testSmtp = async () => {
     showNotice("error", err.data?.statusMessage || "Koneksi SMTP gagal.");
   } finally {
     isTesting.value = false;
+  }
+};
+
+const testWa = async () => {
+  if (!testWaNumber.value) {
+    showNotice("error", "Silakan masukkan nomor WA tujuan test.");
+    return;
+  }
+
+  isTestingWa.value = true;
+  try {
+    const res = await $fetch("/api/admin/settings/test-whatsapp", {
+      method: "POST",
+      body: {
+        waEndpoint: settings.value.WA_ENDPOINT,
+        waApiKey: settings.value.WA_API_KEY,
+        testNumber: testWaNumber.value,
+      },
+    });
+    if (res.success) {
+      waStatus.value = { type: 'success', message: 'Tersambung' };
+      showNotice("success", res.message || "Koneksi WhatsApp berhasil.");
+    }
+  } catch (err) {
+    waStatus.value = { type: 'error', message: 'Gagal' };
+    showNotice("error", err.data?.statusMessage || "Koneksi WhatsApp gagal.");
+  } finally {
+    isTestingWa.value = false;
   }
 };
 
@@ -519,7 +648,8 @@ const runUpdate = async () => {
   grid-column: span 6;
 }
 
-.card-smtp {
+.card-smtp,
+.card-whatsapp {
   grid-column: 1 / -1;
 }
 
@@ -699,7 +829,8 @@ label {
   .card-app-secret,
   .card-security,
   .card-update,
-  .card-smtp {
+  .card-smtp,
+  .card-whatsapp {
     grid-column: 1 / -1;
   }
 }
@@ -736,4 +867,56 @@ label {
     font-size: 0.88rem;
   }
 }
+
+.guard-section {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  .section-divider {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+}
+
+.input-with-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .form-input {
+    padding-right: 2.8rem;
+  }
+
+  .btn-icon-toggle {
+    position: absolute;
+    right: 0.6rem;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #f8fafc;
+    }
+
+    div {
+      font-size: 1.1rem;
+    }
+  }
+}
+
 </style>

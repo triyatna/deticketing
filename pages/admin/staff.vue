@@ -45,7 +45,10 @@
                 </span>
               </td>
               <td>
-                {{ new Date(staff.createdAt).toLocaleDateString("id-ID") }}
+                <ClientOnly>
+                  {{ new Date(staff.createdAt).toLocaleDateString("id-ID") }}
+                  <template #fallback>-</template>
+                </ClientOnly>
               </td>
               <td>
                 <div v-if="canManageStaff(staff)" class="flex-actions">
@@ -60,10 +63,10 @@
                   </button>
 
                   <button
-                    v-if="!staff.email"
+                    v-if="canManageStaff(staff)"
                     @click="updateEmail(staff)"
                     class="btn-email small"
-                    title="Tambah Email"
+                    :title="staff.email ? 'Ubah Email' : 'Tambah Email'"
                   >
                     Email
                   </button>
@@ -360,8 +363,9 @@ const changeRole = async (staff) => {
 
 const updateEmail = async (staff) => {
   const { value: newEmail } = await Swal.fire({
-    title: `Update Email: ${staff.name}`,
+    title: `${staff.email ? 'Ubah' : 'Tambah'} Email: ${staff.name}`,
     input: "email",
+    inputValue: staff.email || "",
     inputPlaceholder: "Masukkan email valid",
     showCancelButton: true,
     background: "#0f172a",

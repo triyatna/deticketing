@@ -100,7 +100,9 @@
           <div v-for="ticket in recentRegistrations" :key="ticket.id" class="list-item">
             <div>
               <p class="item-title">{{ ticket.registrantName }}</p>
-              <p class="item-meta">{{ ticket.event?.name || "-" }} • {{ formatDateTime(ticket.createdAt) }}</p>
+              <ClientOnly>
+                <p class="item-meta">{{ ticket.event?.name || "-" }} • {{ formatDateTime(ticket.createdAt) }}</p>
+              </ClientOnly>
             </div>
             <div class="item-right">
               <span :class="['badge', ticket.status === 'APPROVED' ? 'badge-green' : 'badge-yellow']">
@@ -114,7 +116,9 @@
       <section class="glass-panel content-card full-width">
         <div class="section-head">
           <h3>Log Scan Terbaru</h3>
-          <span class="updated-at">Update: {{ generatedAtLabel }}</span>
+          <ClientOnly>
+            <span class="updated-at">Update: {{ generatedAtLabel }}</span>
+          </ClientOnly>
         </div>
         <div v-if="!recentScans.length" class="empty-box">Belum ada aktivitas scan.</div>
         <div v-else class="scan-table-wrap">
@@ -130,7 +134,12 @@
             </thead>
             <tbody>
               <tr v-for="scan in recentScans" :key="scan.id">
-                <td>{{ formatDateTime(scan.scannedAt) }}</td>
+                <td>
+                  <ClientOnly>
+                    {{ formatDateTime(scan.scannedAt) }}
+                    <template #fallback>-</template>
+                  </ClientOnly>
+                </td>
                 <td>{{ scan.ticket?.registrantName || "-" }}</td>
                 <td>{{ scan.ticket?.event?.name || "-" }}</td>
                 <td>

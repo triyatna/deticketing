@@ -12,7 +12,9 @@
         <div class="realtime-status">
           <span class="dot-live"></span>
         </div>
-        <p class="realtime-time">Update terakhir: {{ lastRefreshLabel }}</p>
+        <ClientOnly>
+          <p class="realtime-time">Update terakhir: {{ lastRefreshLabel }}</p>
+        </ClientOnly>
       </div>
 
       <div v-if="pending" class="text-center py-8">Loading pendaftar...</div>
@@ -55,7 +57,12 @@
             <tr v-for="ticket in filteredTickets" :key="ticket.id">
               <td>{{ ticket.registrantName }}</td>
               <td>{{ ticket.registrantEmail }}</td>
-              <td>{{ new Date(ticket.createdAt).toLocaleString("id-ID") }}</td>
+              <td>
+                <ClientOnly>
+                  {{ new Date(ticket.createdAt).toLocaleString("id-ID") }}
+                  <template #fallback>-</template>
+                </ClientOnly>
+              </td>
               <td>
                 <a
                   v-if="ticket.paymentProofUrl"
@@ -70,18 +77,17 @@
                 <span
                   :class="[
                     'badge',
-                    ticket.status === 'APPROVED'
-                      ? 'badge-green'
-                      : 'badge-yellow',
+                    getStatusBadgeClass(ticket.status)
                   ]"
                 >
                   {{ ticket.status }}
                 </span>
               </td>
               <td>
-                <span :class="['badge', getScanBadgeClass(ticket.scanStatus)]">
+                <span v-if="ticket.status === 'APPROVED'" :class="['badge', getScanBadgeClass(ticket.scanStatus)]">
                   {{ ticket.scanStatus.replace("_", " ") }}
                 </span>
+                <span v-else class="text-muted">-</span>
               </td>
               <td class="action-cell">
                 <NuxtLink
@@ -217,6 +223,12 @@ const handleVisibilityChange = async () => {
   scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS);
 };
 
+const getStatusBadgeClass = (status) => {
+  if (status === "APPROVED") return "badge-green";
+  if (status === "REJECTED") return "badge-red";
+  return "badge-yellow";
+};
+
 const getScanBadgeClass = (status) => {
   if (status === "MASUK") return "badge-green";
   if (status === "KELUAR") return "badge-yellow";
@@ -338,6 +350,10 @@ onBeforeUnmount(() => {
 .badge-gray {
   background: rgba(148, 163, 184, 0.2);
   color: #94a3b8;
+}
+.badge-red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 .btn-primary.small {
