@@ -8,6 +8,7 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 
 - **Pembangun Form Dinamis**: Mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks.
 - **Fleksibilitas Penjadwalan**: Dukungan untuk event satu hari maupun event berdurasi panjang (multi-day) dengan penanganan tanggal selesai otomatis.
+- **Detail Event Komprehensif**: Manajemen event yang mendalam melalui halaman detail khusus untuk peninjauan konfigurasi lengkap.
 
 ### Keamanan Data dan Privasi
 
@@ -23,6 +24,7 @@ Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terha
 
 - **E-Ticket Otomatis**: Peserta akan menerima tiket elektronik dengan QR Code unik segera setelah pendaftaran disetujui.
 - **Notifikasi Staff**: Notifikasi otomatis dikirimkan ke email staff operasional saat terdapat pendaftaran baru yang memerlukan peninjauan.
+- **Sinkronisasi Real-Time**: Monitoring pendaftaran dan perubahan status secara instan tanpa perlu memuat ulang halaman (Powered by WebSocket).
 
 ### Operasional Lapangan
 
@@ -33,6 +35,7 @@ Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terha
 ## Teknologi Utama
 
 - **Framework**: Nuxt 3 (Vue.js 3 & Nitro)
+- **Real-Time**: WebSocket (Nitro/CrossWS)
 - **ORM**: Prisma 7
 - **Database**: SQLite (Default)
 - **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption
