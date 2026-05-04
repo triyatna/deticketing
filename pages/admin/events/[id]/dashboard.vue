@@ -300,10 +300,13 @@ const {
   data: response,
   pending,
   error,
+  refresh,
 } = useFetch(`/api/event/${eventId}/dashboard`, {
   key: `admin-dashboard-${eventId}`,
   retry: 0,
 });
+
+useRealtimeWs(`event:${eventId}`, () => refresh());
 
 const event = computed(() => response.value?.event || {});
 const metrics = computed(

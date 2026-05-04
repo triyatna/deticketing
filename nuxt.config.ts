@@ -2,6 +2,12 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
 
+  nitro: {
+    experimental: {
+      websocket: true,
+    },
+  },
+
   devtools: { enabled: true },
 
   modules: ["nuxt-security"],

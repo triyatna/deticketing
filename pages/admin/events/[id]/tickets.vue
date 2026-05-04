@@ -8,14 +8,6 @@
     </div>
 
     <div class="glass-panel mt-4">
-      <div class="realtime-bar">
-        <div class="realtime-status">
-          <span class="dot-live"></span>
-        </div>
-        <ClientOnly>
-          <p class="realtime-time">Update terakhir: {{ lastRefreshLabel }}</p>
-        </ClientOnly>
-      </div>
 
       <div v-if="pending" class="text-center py-8">Loading pendaftar...</div>
       <div v-else-if="error" class="text-center py-8 text-red">
@@ -23,7 +15,7 @@
       </div>
 
       <div v-else-if="tickets && tickets.length">
-        <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-end;">
+        <div class="search-bar-wrap">
           <input 
             type="text" 
             v-model="searchQuery" 
@@ -153,74 +145,30 @@ useHead(() => ({
 }));
 
 const approvingId = ref(null);
-const lastRefreshAt = ref(new Date());
-const realtimeTimer = ref(null);
 const isRealtimeRefreshing = ref(false);
-const realtimeErrorStreak = ref(0);
-const realtimeIntervalMs = ref(5000);
-const BASE_REALTIME_INTERVAL_MS = 5000;
-const MAX_REALTIME_INTERVAL_MS = 20000;
 
-const lastRefreshLabel = computed(() => {
-  const date = lastRefreshAt.value;
-  if (!date) return "-";
-  return new Date(date).toLocaleTimeString("id-ID");
-});
-
-const scheduleNextRefresh = (overrideDelay = null) => {
-  if (realtimeTimer.value) {
-    clearTimeout(realtimeTimer.value);
-    realtimeTimer.value = null;
-  }
-
-  const delay = Number(
-    overrideDelay || realtimeIntervalMs.value || BASE_REALTIME_INTERVAL_MS,
-  );
-  realtimeTimer.value = setTimeout(() => {
-    refreshRealtime(true);
-  }, delay);
-};
-
-const refreshRealtime = async (fromTimer = false) => {
-  if (isRealtimeRefreshing.value) return;
-  if (approvingId.value) return;
-  if (typeof document !== "undefined" && document.hidden) {
-    if (fromTimer) scheduleNextRefresh(MAX_REALTIME_INTERVAL_MS);
-    return;
-  }
-
+useRealtimeWs(`event:${eventId}`, async () => {
+  if (isRealtimeRefreshing.value || approvingId.value) return;
   isRealtimeRefreshing.value = true;
   try {
     await refresh();
-    lastRefreshAt.value = new Date();
-    realtimeErrorStreak.value = 0;
-    realtimeIntervalMs.value = BASE_REALTIME_INTERVAL_MS;
-  } catch {
-    realtimeErrorStreak.value += 1;
-    realtimeIntervalMs.value = Math.min(
-      MAX_REALTIME_INTERVAL_MS,
-      BASE_REALTIME_INTERVAL_MS * Math.max(1, realtimeErrorStreak.value),
-    );
   } finally {
     isRealtimeRefreshing.value = false;
-    if (fromTimer) {
-      scheduleNextRefresh();
-    }
   }
-};
+});
 
 const handleWindowFocus = async () => {
-  await refreshRealtime();
-  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS);
+  if (isRealtimeRefreshing.value || approvingId.value) return;
+  isRealtimeRefreshing.value = true;
+  try {
+    await refresh();
+  } finally {
+    isRealtimeRefreshing.value = false;
+  }
 };
 
 const handleVisibilityChange = async () => {
-  if (document.hidden) {
-    scheduleNextRefresh(MAX_REALTIME_INTERVAL_MS);
-    return;
-  }
-  await refreshRealtime();
-  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS);
+  if (!document.hidden) await handleWindowFocus();
 };
 
 const getStatusBadgeClass = (status) => {
@@ -236,18 +184,11 @@ const getScanBadgeClass = (status) => {
 };
 
 onMounted(() => {
-  lastRefreshAt.value = new Date();
-  scheduleNextRefresh(BASE_REALTIME_INTERVAL_MS);
-
   window.addEventListener("focus", handleWindowFocus);
   document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
-  if (realtimeTimer.value) {
-    clearTimeout(realtimeTimer.value);
-    realtimeTimer.value = null;
-  }
   window.removeEventListener("focus", handleWindowFocus);
   document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
@@ -285,36 +226,15 @@ onBeforeUnmount(() => {
   text-decoration: underline;
 }
 
-.realtime-bar {
+.search-bar-wrap {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 0 0.95rem;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--glass-border);
-  padding: 0.75rem 0.95rem;
-}
-
-.realtime-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: #9ee8b2;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.dot-live {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
-}
-
-.realtime-time {
-  color: var(--text-muted);
-  font-size: 0.78rem;
 }
 
 .data-table {

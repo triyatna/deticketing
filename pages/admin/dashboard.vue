@@ -222,12 +222,14 @@ definePageMeta({
 const selectedRange = ref('7d')
 const selectedEventRange = ref('7d')
 
-const { data: response, pending, error } = useFetch(() => `/api/admin/dashboard?range=${selectedRange.value}&eventRange=${selectedEventRange.value}`, {
+const { data: response, pending, error, refresh } = useFetch(() => `/api/admin/dashboard?range=${selectedRange.value}&eventRange=${selectedEventRange.value}`, {
   key: 'admin-dashboard-overview',
   watch: [selectedRange, selectedEventRange],
   retry: 0,
   timeout: 7000,
 })
+
+useRealtimeWs('global', () => refresh())
 
 useHead({
   title: "Dashboard Operasional",

@@ -29,8 +29,6 @@
             <tr>
               <th>Nama Event</th>
               <th>URL</th>
-              <th>Kuota</th>
-              <th>Status Bukti</th>
               <th>Dibuat Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -48,12 +46,6 @@
                   </button>
                 </div>
               </td>
-              <td>{{ event.quota ? event.quota : 'Tak Terbatas' }}</td>
-              <td>
-                <span :class="['badge', event.requireProof ? 'badge-green' : 'badge-gray']">
-                  {{ event.requireProof ? 'Wajib' : 'Opsional' }}
-                </span>
-              </td>
               <td>
                 <span class="creator-name">{{ event.createdByName || '-' }}</span>
               </td>
@@ -64,7 +56,13 @@
                     :to="`/admin/events/${event.id}/edit`" 
                     class="btn-outline action-btn"
                   >
-                    Edit Event
+                    Edit
+                  </NuxtLink>
+                  <NuxtLink 
+                    :to="`/admin/events/${event.id}/detail`" 
+                    class="btn-outline action-btn"
+                  >
+                    Detail
                   </NuxtLink>
                   <NuxtLink :to="`/admin/events/${event.id}/dashboard`" class="btn-primary action-btn">
                     Dashboard
@@ -87,11 +85,9 @@
         </table>
       </div>
     </div>
-
-
-
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed } from 'vue'
@@ -104,6 +100,9 @@ const { data: response, pending, error, refresh } = useFetch('/api/event', {
   retry: 0,
   timeout: 7000,
 })
+
+useRealtimeWs('global', () => refresh())
+
 const events = computed(() => response.value?.events || [])
 const userRole = computed(() => String(response.value?.user?.role || 'PANITIA'))
 
@@ -190,11 +189,16 @@ const handleDeleteEvent = async (eventItem) => {
   font-size: 0.9rem;
 }
 
+.creator-name {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+
 .table-shell {
   margin-top: 1rem;
   padding: 0.9rem;
 }
-
 
 
 .state-box {

@@ -4,7 +4,7 @@ import { encryptWithSecret } from '../../utils/crypto'
 import { sendTicketEmail } from '../../utils/mailer'
 import { resolveRequestBaseUrl } from '../../utils/requestBaseUrl'
 import { getOrCreateEventQrSecret } from '../../utils/eventQrSecret'
-
+import { broadcastToRoom } from '../../utils/wsHub'
 import { verifyToken } from '../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
@@ -58,6 +58,9 @@ export default defineEventHandler(async (event) => {
         qrCodeToken: encryptedToken
       }
     })
+
+    broadcastToRoom(`event:${ticket.eventId}`, { type: 'update', action: 'ticket_approved' })
+    broadcastToRoom('global', { type: 'update', action: 'ticket_approved' })
 
     return {
       success: true,

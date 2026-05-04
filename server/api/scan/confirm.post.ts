@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { broadcastToRoom } from '../../utils/wsHub'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -46,9 +47,18 @@ export default defineEventHandler(async (event) => {
       data: {
         ticketId,
         action,
-        scannedBy: 'Admin/Panitia' // Can be expanded to track actual logged-in user
+        scannedBy: 'Admin/Panitia'
       }
     })
+
+    const scannedTicket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { eventId: true }
+    })
+    if (scannedTicket?.eventId) {
+      broadcastToRoom(`event:${scannedTicket.eventId}`, { type: 'update', action: 'scan_confirm' })
+      broadcastToRoom('global', { type: 'update', action: 'scan_confirm' })
+    }
 
     return {
       success: true,

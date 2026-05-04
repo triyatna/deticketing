@@ -2,6 +2,7 @@ import prisma from '../../utils/prisma'
 import { saveEncryptedFile } from '../../utils/fileCrypto'
 import { sendStaffNotificationEmail } from '../../utils/mailer'
 import { resolveRequestBaseUrl } from '../../utils/requestBaseUrl'
+import { broadcastToRoom } from '../../utils/wsHub'
 
 const firstCsvValue = (value: string | undefined) => {
   if (!value) return ''
@@ -273,6 +274,9 @@ export default defineEventHandler(async (event) => {
         console.error('Failed to send staff notification email:', err)
       })
     }
+
+    broadcastToRoom(`event:${eventId}`, { type: 'update', action: 'new_registration' })
+    broadcastToRoom('global', { type: 'update', action: 'new_registration' })
 
     return {
       success: true,
