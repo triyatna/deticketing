@@ -12,14 +12,24 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 - **Smart Report Logic**: Kolom "Status Kehadiran" pada laporan otomatis muncul hanya jika event telah dilaksanakan (berdasarkan `eventDate`).
 - **Global API Interceptor**: Implementasi penanganan error 401/403 secara global untuk membersihkan sesi dan redirect otomatis ke login jika token tidak valid.
 - **Multi-Ticket Checkout**: Pendaftar kini dapat membeli lebih dari 1 tiket dalam satu kali pengisian form (Checkout Rombongan).
-- **Group Purchase UI**: Toggle interaktif "Daftar untuk Rombongan?" dengan quantity stepper dan input nama dinamis.
-- **Adaptive Billing Summary**: Redesain ringkasan pembayaran dengan tampilan profesional yang menyesuaikan antara mode individu dan rombongan.
+- **Security Hardening (RBAC)**: Pengamanan ketat pada API sistem (Backup, Restore, Update, Download) yang kini hanya bisa diakses oleh role **OWNER**.
+- **Database Management Suite**: Fitur Backup Manual, Restore dari riwayat, dan Unduh Database (.db) langsung dari dashboard Admin.
+- **Automatic Protection**: Sistem kini otomatis melakukan backup database sebelum menjalankan proses update kode.
+- **Safe Sync (Migrations)**: Implementasi **Prisma Migrations** untuk pembaharuan skema database yang aman tanpa risiko kehilangan data (Menggantikan `db push`).
+- **Zero-Downtime & Async Update**: Alur build baru yang tidak menghapus file aktif saat proses berjalan dan berjalan di latar belakang (background) untuk mencegah browser timeout.
+- **Prisma 7 Compatibility**: Pembersihan skema dan konfigurasi untuk mendukung fitur stabil di Prisma 7.
+
+### Fixed
+
+- **Sidebar Mobile**: Perbaikan tata letak sidebar pada perangkat mobile di mana tombol logout sempat tertutup (Menggunakan `100dvh`).
+- **Auth Consistency**: Perbaikan bug "zombie sessions" dan redirect berulang pada middleware auth/guest.
+- **Database Path Logic**: Penggunaan *Absolute Path* yang lebih konsisten untuk file SQLite guna mencegah database "hilang" saat server dijalankan dari direktori berbeda.
+- **Update Downtime**: Menghilangkan error 500 (ENOENT) saat proses build update sedang berlangsung di server.n rombongan.
 - **Unlimited Ticket Mode**: Dukungan pembelian tiket tanpa batas dalam satu pesanan jika nilai batas maksimal diatur ke `0`.
 - **Konfigurasi Event**: Toggle "Izinkan Multi-Ticket" dan pengaturan "Maksimal Tiket Per Order" di halaman edit event.
 - **Dynamic Form Logic**: Penambahan input nama otomatis sesuai jumlah tiket yang dipilih di form pendaftaran.
 - **Batch Approval System**: Persetujuan otomatis untuk seluruh tiket dalam satu pesanan (order) sekaligus dari dashboard admin.
 - **Anti-Spam Email Delivery**: Pengiriman e-ticket secara bertahap dengan delay 1.5 detik per email dan subjek email personal.
-- **Staff Notification Enrichment**: Notifikasi email untuk admin kini menyertakan daftar seluruh nama peserta dan total tiket untuk pesanan rombongan.
 
 ### Changed
 

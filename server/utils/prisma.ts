@@ -23,8 +23,13 @@ export const resolveSqliteFilePath = (databaseUrl: string) => {
   const rawPath = normalized.slice("file:".length).split("?")[0];
   if (!rawPath) return "";
 
+  // Hitung Project Root berdasarkan lokasi file ini
+  // File ini ada di: [ROOT]/server/utils/prisma.ts
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const projectRoot = path.resolve(path.dirname(currentFilePath), "../../");
+
   if (rawPath.startsWith("./") || rawPath.startsWith("../")) {
-    return path.resolve(process.cwd(), rawPath);
+    return path.resolve(projectRoot, rawPath);
   }
 
   if (/^[a-zA-Z]:[\\/]/.test(rawPath)) {
@@ -47,7 +52,7 @@ export const resolveSqliteFilePath = (databaseUrl: string) => {
     return path.resolve(rawPath);
   }
 
-  return path.resolve(process.cwd(), rawPath);
+  return path.resolve(projectRoot, rawPath);
 };
 
 const ensureSqlitePathReady = (databaseUrl: string) => {
