@@ -13,6 +13,16 @@ export default defineEventHandler(async (event) => {
   const eventId = event.context.params?.id
   if (!eventId) throw createError({ statusCode: 400, statusMessage: 'Event ID required' })
 
+  const getLocalDateString = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const startToday = new Date()
+  startToday.setHours(0, 0, 0, 0)
+
   try {
     const eventData = await prisma.event.findUnique({
       where: { id: eventId }
@@ -80,36 +90,36 @@ export default defineEventHandler(async (event) => {
     })
 
     // Calculate Registration Trend (7 Days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const regTrendMap: Record<string, number> = {};
+    const regLabels: string[] = [];
+    const regData: number[] = [];
+    
+    // Exactly 7 days ending today
+    const days: Date[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(startToday);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+      regLabels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+    }
 
     const regTrendTickets = await prisma.ticket.findMany({
       where: { 
         eventId,
-        createdAt: { gte: sevenDaysAgo }
+        createdAt: { gte: days[0] } // Start from the oldest day in our labels
       },
       select: { createdAt: true }
     });
 
-    const regTrendMap: Record<string, number> = {};
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sevenDaysAgo);
-      d.setDate(d.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0] as string;
-      regTrendMap[dateStr] = 0;
-    }
-    regTrendTickets.forEach(t => {
-      const dateStr = new Date(t.createdAt).toISOString().split('T')[0] as string;
-      if (regTrendMap[dateStr] !== undefined) regTrendMap[dateStr]++;
+    days.forEach(d => {
+      const dStr = getLocalDateString(d);
+      const count = regTrendTickets.filter(t => getLocalDateString(new Date(t.createdAt)) === dStr).length;
+      regData.push(count);
     });
 
     const regTrend = {
-      labels: Object.keys(regTrendMap).map(d => {
-        const dateObj = new Date(d);
-        return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
-      }),
-      data: Object.values(regTrendMap)
+      labels: regLabels,
+      data: regData
     };
 
     // Calculate Attendance Trend (Hourly if within Event Period)

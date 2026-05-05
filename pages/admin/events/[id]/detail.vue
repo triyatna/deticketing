@@ -25,15 +25,28 @@
             <label>Nama Event</label>
             <p>{{ event.name }}</p>
           </div>
-          <div class="detail-item">
+          <div class="detail-item full-width">
             <label>URL Pendaftaran</label>
-            <p>
-              <a :href="`/form/${event.slug}`" target="_blank" class="event-link">/form/{{ event.slug }}</a>
+            <p class="flex items-center gap-2">
+              <a :href="fullRegistrationUrl" target="_blank" class="event-link">{{ fullRegistrationUrl }}</a>
+              <button 
+                type="button" 
+                class="btn-copy-mini" 
+                @click="copyToClipboard(fullRegistrationUrl)"
+                title="Salin Link"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Salin</span>
+              </button>
             </p>
           </div>
           <div class="detail-item full-width">
             <label>Deskripsi</label>
             <p class="whitespace-pre-wrap">{{ event.description || 'Tidak ada deskripsi.' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Lokasi / Tempat</label>
+            <p>{{ formMeta.eventLocation || '-' }}</p>
           </div>
           <div class="detail-item">
             <label>Dibuat Oleh</label>
@@ -67,7 +80,7 @@
             </div>
             <div class="detail-row">
               <span class="label">Batas Pendaftaran</span>
-              <span class="value text-red">{{ formatDateTime(formMeta.deadline) }}</span>
+              <span class="value text-red">{{ formMeta.registrationDeadlineEnabled ? formatDateTime(formMeta.registrationDeadlineAt) : 'Tidak Dibatasi' }}</span>
             </div>
             <div class="detail-row">
               <span class="label">Kuota Maksimal</span>
@@ -81,7 +94,9 @@
             </div>
             <div class="detail-row" v-if="formMeta.allowMultiTicket">
               <span class="label">Maksimal Tiket Per Order</span>
-              <span class="value">{{ formMeta.maxTicketsPerOrder || 5 }} Tiket</span>
+              <span class="value">
+                {{ (formMeta.maxTicketsPerOrder === 0 || !formMeta.maxTicketsPerOrder) ? 'Tak Terbatas' : `${formMeta.maxTicketsPerOrder} Tiket` }}
+              </span>
             </div>
           </div>
         </div>
@@ -107,9 +122,9 @@
               </div>
               <div class="mt-4">
                 <p class="label mb-2">Metode Pembayaran:</p>
-                <div v-if="!formMeta.paymentMethods?.length" class="text-muted text-sm">Tidak ada metode</div>
+                <div v-if="!formMeta.paymentSettings?.length" class="text-muted text-sm">Tidak ada metode</div>
                 <div v-else class="methods-grid">
-                  <div v-for="method in formMeta.paymentMethods" :key="method.id" class="method-box">
+                  <div v-for="method in formMeta.paymentSettings" :key="method.id" class="method-box">
                     <div class="method-head">
                       <span class="method-type">{{ method.type.toUpperCase() }}</span>
                       <span class="method-label">{{ method.label }}</span>
@@ -139,9 +154,9 @@
             </div>
             <div class="detail-row">
               <span class="label">Email Notifikasi</span>
-              <span class="value">{{ formMeta.enableEmailNotification ? 'Aktif' : 'Nonaktif' }}</span>
+              <span class="value">{{ formMeta.notifyEnabled ? 'Aktif' : 'Nonaktif' }}</span>
             </div>
-            <div class="info-block mt-4" v-if="formMeta.enableEmailNotification && formMeta.notifyEmails?.length">
+            <div class="info-block mt-4" v-if="formMeta.notifyEnabled && formMeta.notifyEmails?.length">
               <p class="label mb-1">Email Penerima:</p>
               <div class="tags">
                 <span class="tag" v-for="email in formMeta.notifyEmails" :key="email">{{ email }}</span>
@@ -150,9 +165,8 @@
             <div class="info-block mt-4">
               <p class="label mb-1">Staf Ter-assign:</p>
               <div class="tags">
-                <template v-if="formMeta.assignedPanitia?.length || formMeta.assignedPetugas?.length">
-                  <span class="tag tag-blue" v-for="p in formMeta.assignedPanitia" :key="p">{{ p }}</span>
-                  <span class="tag tag-purple" v-for="p in formMeta.assignedPetugas" :key="p">{{ p }}</span>
+                <template v-if="formMeta.assignedStaffIds?.length">
+                  <span class="tag tag-blue" v-for="id in formMeta.assignedStaffIds" :key="id">ID: {{ id }}</span>
                 </template>
                 <span class="text-muted text-sm" v-else>Semua Staf</span>
               </div>
@@ -183,17 +197,29 @@
           <h2 class="section-title">Desain Pendaftaran</h2>
           <div class="detail-list">
             <div class="detail-row">
-              <span class="label">Background</span>
-              <span class="value">{{ formMeta.backgroundMode === 'image' ? 'Gambar' : 'Warna' }}</span>
+              <span class="label">Gambar Header</span>
+              <div v-if="formMeta.headerImageUrl" class="mt-2">
+                <img :src="formMeta.headerImageUrl" class="bg-preview" alt="Header">
+              </div>
+              <span v-else class="value text-muted">Tidak ada</span>
             </div>
-            <div v-if="formMeta.backgroundMode === 'color'" class="mt-4 flex items-center gap-4">
-              <div class="swatch" :style="{ backgroundColor: formMeta.backgroundColor || '#0f172a' }"></div>
+            <div class="detail-row mt-4">
+              <span class="label">Background Mode</span>
+              <span class="value capitalize">{{ formMeta.backgroundMode || 'Warna' }}</span>
+            </div>
+            
+            <!-- Warna / Tekstur -->
+            <div v-if="formMeta.backgroundMode === 'color' || formMeta.backgroundMode === 'texture'" class="mt-4 flex items-center gap-4">
+              <div class="swatch" :style="{ backgroundColor: formMeta.backgroundColor || '#0a1222' }"></div>
               <div class="text-sm">
-                <p class="font-bold">{{ formMeta.backgroundColor || '#0f172a' }}</p>
-                <p class="text-muted capitalize">{{ formMeta.backgroundTexture || 'No Texture' }}</p>
+                <p class="font-bold">{{ formMeta.backgroundColor || '#0a1222' }}</p>
+                <p v-if="formMeta.backgroundMode === 'texture'" class="text-muted capitalize">Tekstur: {{ formMeta.backgroundTexture || 'Dots' }}</p>
               </div>
             </div>
+
+            <!-- Gambar -->
             <div v-if="formMeta.backgroundMode === 'image' && formMeta.backgroundImageUrl" class="mt-4">
+              <p class="label mb-2">Background Image:</p>
               <img :src="formMeta.backgroundImageUrl" class="bg-preview" alt="Background">
             </div>
           </div>
@@ -207,6 +233,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import Swal from 'sweetalert2'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 
@@ -230,11 +257,24 @@ const parsedFormSchema = computed(() => {
 })
 
 const formMeta = computed(() => {
-  return parsedFormSchema.value.find(item => item.itemType === 'form_meta') || {}
+  const meta = parsedFormSchema.value.find(item => item.itemType === 'form_meta') || {}
+  
+  // Derived properties for template sync
+  return {
+    ...meta,
+    isMultiDay: !!(meta.eventDate && meta.eventEndDate && meta.eventDate !== meta.eventEndDate),
+  }
 })
 
 const customFields = computed(() => {
-  return parsedFormSchema.value.filter(item => item.itemType !== 'form_meta')
+  return parsedFormSchema.value
+    .filter(item => item.itemType !== 'form_meta')
+    .map((item, index) => ({
+      label: item.label || item.title || `Item ${index + 1}`,
+      type: item.itemType === 'question' ? item.questionType : item.itemType,
+      required: !!item.required,
+      options: item.options || []
+    }))
 })
 
 const formatDate = (dateStr) => {
@@ -254,6 +294,46 @@ const formatDateTime = (dateStr) => {
 const formatNumber = (num) => {
   if (!num) return '0'
   return new Intl.NumberFormat('id-ID').format(num)
+}
+
+const showToast = (title, icon = 'success') => {
+  return Swal.fire({
+    title,
+    icon,
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: '#0f172a',
+    color: '#f8fafc'
+  })
+}
+
+const fullRegistrationUrl = computed(() => {
+  if (!event.value?.slug || !process.client) return `/form/${event.value?.slug || ''}`
+  return `${window.location.origin}/form/${event.value.slug}`
+})
+
+const copyToClipboard = async (text) => {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    showToast('Berhasil Disalin')
+  } catch (err) {
+    // Fallback
+    const textArea = document.createElement("textarea")
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      showToast('Berhasil Disalin')
+    } catch (e) {
+      showToast('Gagal Menyalin', 'error')
+    }
+    document.body.removeChild(textArea)
+  }
 }
 </script>
 
@@ -282,7 +362,7 @@ const formatNumber = (num) => {
 }
 
 .glass-panel {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .section-title {
@@ -295,8 +375,8 @@ const formatNumber = (num) => {
 
 .grid-details {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem 2rem;
 }
 
 .detail-item {
@@ -527,4 +607,28 @@ const formatNumber = (num) => {
 .gap-4 { gap: 1rem; }
 .capitalize { text-transform: capitalize; }
 .font-semibold { font-weight: 600; }
+
+.btn-copy-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+  
+  svg {
+    opacity: 0.8;
+  }
+}
 </style>

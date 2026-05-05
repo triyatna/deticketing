@@ -11,7 +11,9 @@
         </p>
       </div>
       <div v-if="selectedEvent" class="header-right-meta">
-        <button class="btn-outline btn-sm" @click="changeEvent">Ganti Event</button>
+        <button class="btn-outline btn-sm" @click="changeEvent">
+          Ganti Event
+        </button>
         <span
           :class="[
             'status-pill',
@@ -27,34 +29,77 @@
       <div v-if="loadingEvents" class="glass-panel text-center py-8">
         Memuat daftar event aktif...
       </div>
-      <div v-else-if="!activeEvents.length" class="glass-panel text-center py-8">
-        Tidak ada event aktif saat ini.
+      <div
+        v-else-if="!activeEvents.length"
+        class="empty-state-card glass-panel"
+      >
+        <div class="empty-icon-wrap">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <path d="M8 14h.01"></path>
+            <path d="M12 14h.01"></path>
+            <path d="M16 14h.01"></path>
+            <path d="M8 18h.01"></path>
+            <path d="M12 18h.01"></path>
+            <path d="M16 18h.01"></path>
+          </svg>
+        </div>
+        <h3>Tidak Ada Event Aktif</h3>
+        <p class="mb-4">
+          Saat ini tidak ada event yang sedang berlangsung atau yang akan
+          datang.
+        </p>
+        <NuxtLink to="/admin/events/create" class="btn-primary mt-6">
+          Buat Event Pertama
+        </NuxtLink>
       </div>
       <div v-else>
         <!-- Search Field (Only if > 3 events) -->
         <div v-if="activeEvents.length > 3" class="search-wrapper mb-6">
           <div class="search-input-group">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="search-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input 
-              v-model="eventSearch" 
-              type="text" 
-              placeholder="Cari nama event..." 
+            <input
+              v-model="eventSearch"
+              type="text"
+              placeholder="Cari nama event..."
               class="search-input"
             />
           </div>
         </div>
 
-        <div v-if="!filteredActiveEvents.length" class="glass-panel text-center py-8">
+        <div
+          v-if="!filteredActiveEvents.length"
+          class="glass-panel text-center py-8"
+        >
           Event tidak ditemukan.
         </div>
 
         <div class="event-grid">
-          <div 
-            v-for="evt in filteredActiveEvents" 
-            :key="evt.id" 
+          <div
+            v-for="evt in filteredActiveEvents"
+            :key="evt.id"
             class="event-card-premium"
             @click="selectEvent(evt.id)"
           >
@@ -62,8 +107,20 @@
             <div class="evt-card-content">
               <div class="evt-card-header">
                 <div class="evt-card-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
@@ -74,7 +131,7 @@
                   HARI INI
                 </div>
               </div>
-              
+
               <div class="evt-card-body">
                 <h3 class="evt-card-name">{{ evt.name }}</h3>
                 <p class="evt-card-slug">/form/{{ evt.slug }}</p>
@@ -83,7 +140,12 @@
               <div class="evt-card-footer">
                 <div class="select-hint">
                   Pilih & Mulai Scan
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
                   </svg>
@@ -1006,9 +1068,9 @@ const processDetectedQr = async (decodedText) => {
   try {
     const res = await $fetch("/api/scan/validate", {
       method: "POST",
-      body: { 
+      body: {
         qrToken: decodedText,
-        eventId: selectedEventId.value
+        eventId: selectedEventId.value,
       },
       timeout: 7000,
       retry: 0,
@@ -1030,7 +1092,7 @@ const processDetectedQr = async (decodedText) => {
   } catch (err) {
     const message = err?.data?.statusMessage || "QR Code tidak valid";
     const isMismatch = message.toLowerCase().includes("event lain");
-    
+
     announceError(isMismatch ? "Peringatan! Event tidak sesuai." : message);
 
     await Swal.fire({
@@ -1416,6 +1478,45 @@ onBeforeUnmount(async () => {
   border-color: rgba(148, 163, 184, 0.3);
 }
 
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.4);
+  margin: 1rem 0;
+}
+
+.empty-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+}
+
+.empty-state-card h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-card p {
+  color: #94a3b8;
+  max-width: 320px;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
 .scanner-grid {
   margin-top: 1rem;
   display: grid;
@@ -1763,7 +1864,11 @@ onBeforeUnmount(async () => {
 .card-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent);
+  background: radial-gradient(
+    circle at top right,
+    rgba(59, 130, 246, 0.12),
+    transparent
+  );
   opacity: 0.5;
   transition: opacity 0.3s ease;
 }
@@ -1839,7 +1944,7 @@ onBeforeUnmount(async () => {
 }
 
 .live-pulse::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: -4px;
   background: #22c55e;
@@ -1849,8 +1954,14 @@ onBeforeUnmount(async () => {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(2.5); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
 }
 
 .evt-card-name {

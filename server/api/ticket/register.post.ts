@@ -267,18 +267,32 @@ export default defineEventHandler(async (event) => {
     const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase()
     const allNames = [registrantName, ...additionalNames]
     
-    const ticketCreationPromises = allNames.map((name) => {
+    const ticketCreationPromises = allNames.map((name, index) => {
       const formattedName = name
         .toLowerCase()
         .replace(/\b\w/g, (c) => c.toUpperCase())
         .trim()
+
+      // Clone formData and split multi-participant answers
+      const ticketFormData = { ...parsedFormData }
+      for (const [key, value] of Object.entries(ticketFormData)) {
+        if (key.includes('_p')) {
+          const parts = key.split('_p')
+          const pIdx = parseInt(parts.pop() || '-1')
+          const qId = parts.join('_p')
+          if (pIdx === index) {
+            ticketFormData[qId] = value
+          }
+          delete ticketFormData[key]
+        }
+      }
 
       return prisma.ticket.create({
         data: {
           eventId,
           registrantName: formattedName,
           registrantEmail,
-          formData: JSON.stringify(parsedFormData),
+          formData: JSON.stringify(ticketFormData),
           paymentProofUrl: savedFileName,
           orderId
         } as any

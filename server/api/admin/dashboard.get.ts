@@ -19,6 +19,13 @@ export default defineEventHandler(async (event) => {
   const startToday = new Date()
   startToday.setHours(0, 0, 0, 0)
 
+  const getLocalDateString = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
   try {
     const [
       totalEvents,
@@ -101,7 +108,9 @@ export default defineEventHandler(async (event) => {
     const now = new Date()
     const upcomingEvents = allEventsRaw.filter(evt => {
       try {
+        if (!evt.formSchema) return false
         const schema = JSON.parse(evt.formSchema)
+        if (!Array.isArray(schema)) return false
         const meta = schema.find((i: any) => i.itemType === 'form_meta')
         if (meta?.eventDate) {
           const evtDate = new Date(meta.eventDate)
@@ -115,24 +124,24 @@ export default defineEventHandler(async (event) => {
       id: evt.id,
       name: evt.name,
       slug: evt.slug,
-      totalTickets: evt._count.tickets
+      totalTickets: evt._count?.tickets || 0
     }))
 
     // 1. Calculate Registration Trend (Per Event)
     const regLabels: string[] = []
     const eventDatasets: { name: string, data: number[] }[] = []
+    
     let regDays = 7
     if (regRange === '30d') regDays = 30
-    if (regRange === '1y') regDays = 12
+    else if (regRange === '1y') regDays = 12
 
-    const regAgo = new Date()
+    const regAgo = new Date(startToday)
     if (regRange === '1y') {
-      regAgo.setFullYear(regAgo.getFullYear() - 1)
+      regAgo.setMonth(regAgo.getMonth() - 11)
       regAgo.setDate(1)
     } else {
       regAgo.setDate(regAgo.getDate() - (regDays - 1))
     }
-    regAgo.setHours(0, 0, 0, 0)
 
     const trendRaw = await prisma.ticket.findMany({
       where: { createdAt: { gte: regAgo } },
@@ -142,12 +151,13 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // Get unique event names from the tickets found
-    const uniqueActiveEvents = [...new Set(trendRaw.map(t => t.event.name))]
-    uniqueActiveEvents.forEach(name => {
+    // Use names of active events for datasets to ensure all events show up
+    const activeEventNames = [...new Set(allEventsRaw.map(e => e.name))]
+    activeEventNames.forEach(name => {
       eventDatasets.push({ name, data: [] })
     })
 
+    const days: Date[] = []
     if (regRange === '1y') {
       for (let i = 0; i < 12; i++) {
         const d = new Date(regAgo)
@@ -156,26 +166,32 @@ export default defineEventHandler(async (event) => {
         
         eventDatasets.forEach(ds => {
           const count = trendRaw.filter(t => {
+            if (!t.event?.name || t.event.name !== ds.name) return false
             const tDate = new Date(t.createdAt)
-            return t.event.name === ds.name && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
+            return tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
           }).length
           ds.data.push(count)
         })
       }
     } else {
-      for (let i = 0; i < regDays; i++) {
-        const d = new Date(regAgo)
-        d.setDate(d.getDate() + i)
+      // Create exactly 'regDays' labels ending today
+      for (let i = regDays - 1; i >= 0; i--) {
+        const d = new Date(startToday)
+        d.setDate(d.getDate() - i)
+        days.push(d)
         regLabels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
-        
+      }
+
+      days.forEach(d => {
+        const dStr = getLocalDateString(d)
         eventDatasets.forEach(ds => {
           const count = trendRaw.filter(t => {
-            const tDate = new Date(t.createdAt)
-            return t.event.name === ds.name && tDate.getDate() === d.getDate() && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()
+            if (!t.event?.name || t.event.name !== ds.name) return false
+            return getLocalDateString(new Date(t.createdAt)) === dStr
           }).length
           ds.data.push(count)
         })
-      }
+      })
     }
 
     // 2. Calculate Event Trend
@@ -199,7 +215,9 @@ export default defineEventHandler(async (event) => {
         
         const matches = allEventsRaw.filter(evt => {
           try {
+            if (!evt.formSchema) return false
             const schema = JSON.parse(evt.formSchema)
+            if (!Array.isArray(schema)) return false
             const meta = schema.find((item: any) => item.itemType === 'form_meta')
             if (meta?.eventDate) {
               const evtDate = new Date(meta.eventDate)
@@ -212,22 +230,20 @@ export default defineEventHandler(async (event) => {
         eventTrendNames.push(matches.map(m => m.name))
       }
     } else {
-      const ago = new Date()
-      ago.setDate(ago.getDate() - (evDays - 1))
-      ago.setHours(0, 0, 0, 0)
-
-      for (let i = 0; i < evDays; i++) {
-        const d = new Date(ago)
-        d.setDate(d.getDate() + i)
+      for (let i = evDays - 1; i >= 0; i--) {
+        const d = new Date(startToday)
+        d.setDate(d.getDate() - i)
         eventLabels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
         
+        const dStr = getLocalDateString(d)
         const matches = allEventsRaw.filter(evt => {
           try {
+            if (!evt.formSchema) return false
             const schema = JSON.parse(evt.formSchema)
+            if (!Array.isArray(schema)) return false
             const meta = schema.find((item: any) => item.itemType === 'form_meta')
             if (meta?.eventDate) {
-              const evtDate = new Date(meta.eventDate)
-              return evtDate.getDate() === d.getDate() && evtDate.getMonth() === d.getMonth() && evtDate.getFullYear() === d.getFullYear()
+              return getLocalDateString(new Date(meta.eventDate)) === dStr
             }
             return false
           } catch { return false }
@@ -278,9 +294,10 @@ export default defineEventHandler(async (event) => {
       generatedAt: new Date().toISOString(),
     }
   } catch (error: any) {
+    console.error('[Dashboard API Error]:', error)
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || 'Gagal memuat data dashboard',
+      statusMessage: error.statusMessage || 'Gagal memuat data dashboard. Pastikan database sudah terinisialisasi.',
     })
   }
 })

@@ -1,5 +1,6 @@
 <template>
   <div class="create-shell">
+    <div id="qr-scanner-hidden" style="display:none"></div>
     <div class="header-action">
       <div>
         <h1 class="page-title">{{ isEditMode ? 'Edit Event' : 'Buat Event Baru' }}</h1>
@@ -295,7 +296,7 @@
                           <option value="other">Lainnya</option>
                         </select>
                       </div>
-                      <div class="form-group">
+                      <div class="form-group" v-if="method.type !== 'qris'">
                         <label>Label / Nama Metode</label>
                         <input
                           v-model="method.label"
@@ -328,7 +329,18 @@
                     </div>
 
                     <div class="form-group" v-if="method.type === 'qris'">
-                      <label>URL Gambar QRIS</label>
+                      <label>QRIS Content String (Auto-extracted from Image)</label>
+                      <textarea
+                        v-model="method.qrisString"
+                        class="form-input"
+                        rows="2"
+                        placeholder="Contoh: 000201010211266..."
+                      ></textarea>
+                      <p class="helper-text mt-1">String ini digunakan untuk membuat QRIS Dinamis otomatis.</p>
+                    </div>
+
+                    <div class="form-group" v-if="method.type === 'qris'">
+                      <label>URL Gambar QRIS (Static Reference)</label>
                       <input
                         v-model="method.qrisImageUrl"
                         type="text"
@@ -349,7 +361,7 @@
                         <span class="upload-tip">{{
                           isUploading(`qris_${method.id}`)
                             ? "Uploading..."
-                            : "Upload QRIS image"
+                            : "Upload QRIS image to extract string"
                         }}</span>
                       </div>
                     </div>
@@ -580,6 +592,11 @@
                         <input type="checkbox" v-model="item.required" />
                         <span class="checkmark"></span>
                         Wajib Diisi?
+                      </label>
+                      <label v-if="form.allowMultiTicket" class="checkbox-container">
+                        <input type="checkbox" v-model="item.enableMulti" />
+                        <span class="checkmark"></span>
+                        Aktifkan Multi (untuk tiap peserta)?
                       </label>
                     </div>
 
@@ -895,6 +912,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Swal from "sweetalert2";
 import draggable from "vuedraggable";
+import { Html5Qrcode } from "html5-qrcode";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 const route = useRoute();
@@ -942,6 +960,19 @@ watch(() => form.value.allowMultiTicket, (val) => {
     form.value.allowDuplicateEmail = true;
   }
 });
+
+watch(
+  () => form.value.paymentMethods,
+  (methods) => {
+    if (!Array.isArray(methods)) return;
+    methods.forEach((m) => {
+      if (m.type === "qris") {
+        m.label = "QRIS";
+      }
+    });
+  },
+  { deep: true },
+);
 
 const currentUserRole = ref('PETUGAS');
 const assignableStaffList = ref([]);
@@ -1045,9 +1076,53 @@ const onUploadBackgroundImage = async (evt) => {
 const onUploadMethodQris = async (evt, method) => {
   const file = getFileFromInput(evt);
   if (!file || !method) return;
+
   const busyKey = `qris_${method.id}`;
+  setUploading(busyKey, true);
+
+  // 1. Decode QRIS String from File
+  let decodeSuccess = false;
+  try {
+    const html5QrCode = new Html5Qrcode("qr-scanner-hidden", { verbose: false });
+    const decodedText = await html5QrCode.scanFile(file, false);
+    
+    if (decodedText) {
+      method.qrisString = decodedText;
+      decodeSuccess = true;
+      method.label = "QRIS";
+      
+      Swal.fire({
+        title: "QRIS Terdeteksi!",
+        text: "String QRIS berhasil diekstrak secara otomatis.",
+        icon: "success",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+        showConfirmButton: false,
+        background: "#0f172a",
+        color: "#f8fafc"
+      });
+    }
+  } catch (err) {
+    console.warn("QRIS Decode Error:", err);
+    Swal.fire({
+      title: "Gagal Ekstrak QRIS",
+      text: "Gambar tidak terbaca sebagai QRIS. Pastikan gambar jelas atau isi string secara manual.",
+      icon: "warning",
+      toast: true,
+      position: "top-end",
+      timer: 4000,
+      showConfirmButton: false,
+      background: "#0f172a",
+      color: "#f8fafc"
+    });
+  }
+
+  // 2. Upload Image
   const url = await uploadImageFile(file, "payment-qris", busyKey);
   if (url) method.qrisImageUrl = url;
+  
+  setUploading(busyKey, false);
 };
 
 const onUploadContentImage = async (evt, item) => {
@@ -1074,6 +1149,7 @@ const addQuestion = () => {
     ratingMax: 5,
     gridRowsText: "",
     gridColsText: "",
+    enableMulti: false,
   });
 };
 
@@ -1121,6 +1197,7 @@ const addPaymentMethod = () => {
     accountName: "",
     accountNumber: "",
     qrisImageUrl: "",
+    qrisString: "",
     note: "",
   });
 };
@@ -1193,6 +1270,7 @@ const toEditorQuestionItem = (item, index) => {
     gridColsText: Array.isArray(item?.gridCols)
       ? item.gridCols.join("\n")
       : String(item?.gridColsText || ""),
+    enableMulti: !!item?.enableMulti,
   };
 };
 
@@ -1300,6 +1378,7 @@ const loadEventForEdit = async () => {
           accountName: String(method?.accountName || ""),
           accountNumber: String(method?.accountNumber || ""),
           qrisImageUrl: String(method?.qrisImageUrl || ""),
+          qrisString: String(method?.qrisString || ""),
           note: String(method?.note || ""),
         }))
       : [];
@@ -1332,6 +1411,7 @@ const normalizePaymentMethod = (method) => {
     accountName: String(method?.accountName || "").trim(),
     accountNumber: String(method?.accountNumber || "").trim(),
     qrisImageUrl: String(method?.qrisImageUrl || "").trim(),
+    qrisString: String(method?.qrisString || "").trim(),
     note: String(method?.note || "").trim(),
   };
 };
@@ -1385,6 +1465,7 @@ const normalizeQuestionItem = (item) => {
       : 5,
     gridRows: [],
     gridCols: [],
+    enableMulti: !!item.enableMulti,
   };
 
   if (question.scaleMax < question.scaleMin) {
@@ -2023,6 +2104,7 @@ label {
   min-height: 44px;
   display: flex;
   align-items: center;
+  gap: 1.25rem;
 }
 
 .deadline-wrap {

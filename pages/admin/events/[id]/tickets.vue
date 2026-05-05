@@ -4,7 +4,29 @@
       <h1 class="page-title">
         Pendaftar Event: {{ event?.name || "Loading..." }}
       </h1>
-      <NuxtLink to="/admin/events" class="btn-outline">Kembali</NuxtLink>
+      <div class="flex gap-2">
+        <!-- Export Dropdown -->
+        <div class="export-dropdown-wrap" v-if="tickets.length > 0">
+          <button 
+            class="btn-outline flex items-center gap-2" 
+            @click="isExportDropdownOpen = !isExportDropdownOpen"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export
+          </button>
+          <div v-if="isExportDropdownOpen" class="export-menu glass-panel shadow-lg">
+            <button @click="handleExport('csv')" class="export-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              Export CSV (.csv)
+            </button>
+            <button @click="handleExport('pdf')" class="export-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h3a2 2 0 0 0 0-4H9v4z"></path></svg>
+              Export PDF (.pdf)
+            </button>
+          </div>
+        </div>
+        <NuxtLink to="/admin/events" class="btn-outline">Kembali</NuxtLink>
+      </div>
     </div>
 
     <div class="glass-panel mt-4">
@@ -106,9 +128,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, h } from "vue";
 import { useRoute } from "vue-router";
 import Swal from "sweetalert2";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 const route = useRoute();
@@ -138,12 +162,150 @@ const filteredTickets = computed(() => {
   );
 });
 
+const isExportDropdownOpen = ref(false);
+
+// Close dropdown on click outside
+const closeDropdown = (e) => {
+  if (isExportDropdownOpen.value && !e.target.closest('.export-dropdown-wrap')) {
+    isExportDropdownOpen.value = false;
+  }
+};
+
+const customFieldLabels = computed(() => {
+  if (!event.value?.formSchema) return [];
+  try {
+    const schema = JSON.parse(event.value.formSchema);
+    return schema
+      .filter(item => item.itemType !== 'form_meta')
+      .map(item => item.label || item.title || 'Field');
+  } catch { return []; }
+});
+
+const isEventStarted = computed(() => {
+  if (!event.value?.formSchema) return false;
+  try {
+    const schema = JSON.parse(event.value.formSchema);
+    const meta = schema.find(item => item.itemType === 'form_meta');
+    if (!meta?.eventDate) return false;
+    const now = new Date();
+    const evtDate = new Date(meta.eventDate);
+    // Standardize to start of day for comparison if needed, 
+    // but here we consider started if current time is >= event date
+    return now >= evtDate;
+  } catch { return false; }
+});
+
+const generateFileName = () => {
+  const name = (event.value?.name || 'event').replace(/\s+/g, '_');
+  const year = new Date().getFullYear();
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `Laporan_peserta_event_${name}_${year}_${randomStr}`;
+};
+
+const handleExport = async (type) => {
+  isExportDropdownOpen.value = false;
+  
+  if (!filteredTickets.value.length) {
+    Swal.fire({
+      title: 'Export Gagal',
+      text: 'Tidak ada data pendaftar untuk dieksport.',
+      icon: 'warning',
+      background: '#0f172a',
+      color: '#f8fafc'
+    });
+    return;
+  }
+
+  // Define column order: Name, Email, Custom Fields, Date, Approval, (optional) Attendance
+  const headers = ['Nama Lengkap', 'Email', ...customFieldLabels.value, 'Waktu Daftar', 'Status Approval'];
+  if (isEventStarted.value) {
+    headers.push('Status Kehadiran');
+  }
+
+  const dataToExport = filteredTickets.value.map(t => {
+    let parsedFormData = {};
+    try {
+      parsedFormData = t.formData ? JSON.parse(t.formData) : {};
+    } catch { parsedFormData = {}; }
+
+    const row = {};
+    row['Nama Lengkap'] = t.registrantName;
+    row['Email'] = t.registrantEmail;
+    
+    // Custom fields data sync
+    customFieldLabels.value.forEach(label => {
+      row[label] = parsedFormData[label] || '-';
+    });
+
+    row['Waktu Daftar'] = new Date(t.createdAt).toLocaleString('id-ID');
+    row['Status Approval'] = t.status;
+    
+    if (isEventStarted.value) {
+      row['Status Kehadiran'] = t.scanStatus ? t.scanStatus.replace('_', ' ') : 'BELUM HADIR';
+    }
+
+    return row;
+  });
+
+  if (type === 'csv') {
+    exportCSV(headers, dataToExport);
+  } else if (type === 'pdf') {
+    exportPDF(headers, dataToExport);
+  }
+};
+
+const exportCSV = (headers, data) => {
+  const csvContent = [
+    headers.join(','),
+    ...data.map(row => 
+      headers.map(header => {
+        const val = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+        return `"${val.replace(/"/g, '""')}"`;
+      }).join(',')
+    )
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${generateFileName()}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const exportPDF = (headers, data) => {
+  const doc = new jsPDF('landscape');
+  const rows = data.map(row => headers.map(h => row[h]));
+
+  doc.setFontSize(18);
+  doc.text(`Laporan Pendaftar: ${event.value.name}`, 14, 15);
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Diekspor pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+
+  autoTable(doc, {
+    head: [headers],
+    body: rows,
+    startY: 28,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { top: 25 },
+  });
+
+  doc.save(`${generateFileName()}.pdf`);
+};
+
 const userRole = ref('PETUGAS')
 onMounted(async () => {
   try {
     const res = await $fetch('/api/auth/me')
     if (res.success) userRole.value = res.user.role
   } catch {}
+  window.addEventListener("click", closeDropdown);
 })
 
 
@@ -198,6 +360,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("focus", handleWindowFocus);
   document.removeEventListener("visibilitychange", handleVisibilityChange);
+  window.removeEventListener("click", closeDropdown);
 });
 </script>
 
@@ -206,7 +369,57 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
+
+.export-dropdown-wrap {
+  position: relative;
+}
+
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  min-width: 180px;
+  z-index: 100;
+  padding: 0.5rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px);
+}
+
+.export-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #f1f7ff;
+  font-size: 0.85rem;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary);
+}
+
+.export-item svg {
+  opacity: 0.7;
+}
+
+.flex { display: flex; }
+.gap-2 { gap: 0.5rem; }
+.items-center { align-items: center; }
 .page-title {
   font-size: 1.5rem;
 }

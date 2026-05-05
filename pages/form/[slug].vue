@@ -322,15 +322,56 @@
             <!-- Multi-Ticket Mode Toggle -->
             <div v-if="allowMultiTicket" class="mode-toggle-section mb-4">
               <label class="toggle-card" :class="{ active: isMultiTicketMode }">
-                <input type="checkbox" v-model="isMultiTicketMode" class="hidden-check">
+                <input
+                  type="checkbox"
+                  v-model="isMultiTicketMode"
+                  class="hidden-check"
+                />
                 <div class="toggle-info">
                   <div class="toggle-icon">
-                    <svg v-if="!isMultiTicketMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <svg
+                      v-if="!isMultiTicketMode"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                      ></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <svg
+                      v-else
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                      ></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
                   </div>
                   <div class="toggle-text">
                     <span class="toggle-title">Daftar untuk Rombongan?</span>
-                    <span class="toggle-desc">Pilih ini jika Anda ingin memesan lebih dari 1 tiket sekaligus.</span>
+                    <span class="toggle-desc"
+                      >Pilih ini jika Anda ingin memesan lebih dari 1 tiket
+                      sekaligus.</span
+                    >
                   </div>
                 </div>
                 <div class="toggle-status">
@@ -340,18 +381,62 @@
             </div>
 
             <!-- Multi-Ticket Selection (Only if mode enabled) -->
-            <div v-if="allowMultiTicket && isMultiTicketMode" class="quantity-section mb-6">
+            <div
+              v-if="allowMultiTicket && isMultiTicketMode"
+              class="quantity-section mb-6"
+            >
               <label class="section-label">Jumlah Tiket yang Dipesan</label>
               <div class="quantity-selector">
-                <button type="button" @click="ticketQuantity > 2 && ticketQuantity--" class="qty-btn" :disabled="ticketQuantity <= 2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button
+                  type="button"
+                  @click="ticketQuantity > 2 && ticketQuantity--"
+                  class="qty-btn"
+                  :disabled="ticketQuantity <= 2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                 </button>
                 <div class="qty-display">
                   <span class="qty-num">{{ ticketQuantity }}</span>
                   <span class="qty-text">Tiket</span>
                 </div>
-                <button type="button" @click="ticketQuantity < (maxTicketsPerOrder || 999) && ticketQuantity++" class="qty-btn" :disabled="maxTicketsPerOrder > 0 && ticketQuantity >= maxTicketsPerOrder">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button
+                  type="button"
+                  @click="
+                    ticketQuantity < (maxTicketsPerOrder || 999) &&
+                    ticketQuantity++
+                  "
+                  class="qty-btn"
+                  :disabled="
+                    maxTicketsPerOrder > 0 &&
+                    ticketQuantity >= maxTicketsPerOrder
+                  "
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                 </button>
               </div>
               <p v-if="maxTicketsPerOrder > 0" class="qty-hint">
@@ -362,7 +447,7 @@
             <!-- Participant Data Section -->
             <div v-if="isMultiTicketMode" class="participants-section mb-6">
               <label class="section-label">Data Peserta Rombongan</label>
-              
+
               <!-- Peserta Utama -->
               <div class="participant-card primary">
                 <div class="participant-badge">Peserta 1 (Utama)</div>
@@ -376,10 +461,269 @@
                     placeholder="Contoh: John Doe"
                   />
                 </div>
+
+                <!-- Participant-specific Questions (Enable Multi) -->
+                <template v-for="q in questionItems" :key="'p1_' + q.id">
+                  <div
+                    v-if="q.enableMulti"
+                    class="form-group dynamic-item multi-participant-item mt-3"
+                  >
+                    <label>
+                      {{ q.label }}
+                      <span v-if="q.required" class="text-red">*</span>
+                    </label>
+                    <p v-if="q.description" class="field-desc">
+                      {{ q.description }}
+                    </p>
+
+                    <input
+                      v-if="q.questionType === 'short_answer'"
+                      v-model="answers[getAnswerId(q.id, 0)]"
+                      type="text"
+                      class="form-input"
+                      :required="q.required"
+                    />
+
+                    <textarea
+                      v-else-if="q.questionType === 'paragraph'"
+                      v-model="answers[getAnswerId(q.id, 0)]"
+                      class="form-input"
+                      rows="4"
+                      :required="q.required"
+                    ></textarea>
+
+                    <div
+                      v-else-if="q.questionType === 'multiple_choice'"
+                      class="radio-group"
+                    >
+                      <label
+                        v-for="opt in q.options"
+                        :key="opt"
+                        class="radio-label"
+                      >
+                        <input
+                          type="radio"
+                          :name="`mc_${getAnswerId(q.id, 0)}`"
+                          :value="opt"
+                          v-model="answers[getAnswerId(q.id, 0)]"
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'checkboxes'"
+                      class="radio-group"
+                    >
+                      <label
+                        v-for="opt in q.options"
+                        :key="opt"
+                        class="radio-label"
+                      >
+                        <input
+                          type="checkbox"
+                          :checked="isChecked(getAnswerId(q.id, 0), opt)"
+                          @change="
+                            toggleCheckbox(
+                              getAnswerId(q.id, 0),
+                              opt,
+                              $event.target.checked,
+                            )
+                          "
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <select
+                      v-else-if="q.questionType === 'dropdown'"
+                      v-model="answers[getAnswerId(q.id, 0)]"
+                      class="form-input"
+                      :required="q.required"
+                    >
+                      <option value="">-- Pilih --</option>
+                      <option v-for="opt in q.options" :key="opt" :value="opt">
+                        {{ opt }}
+                      </option>
+                    </select>
+
+                    <div
+                      v-else-if="q.questionType === 'file_upload'"
+                      class="file-wrap"
+                    >
+                      <input
+                        type="file"
+                        class="form-input"
+                        @change="
+                          handleDynamicFileUpload(getAnswerId(q.id, 0), $event)
+                        "
+                      />
+                      <p
+                        v-if="fileAnswers[getAnswerId(q.id, 0)]"
+                        class="file-note"
+                      >
+                        {{ fileAnswers[getAnswerId(q.id, 0)].name }}
+                      </p>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'linear_scale'"
+                      class="scale-wrap"
+                    >
+                      <div class="scale-options">
+                        <label
+                          v-for="num in scaleRange(q.scaleMin, q.scaleMax)"
+                          :key="`scale-${q.id}-0-${num}`"
+                          class="scale-option"
+                        >
+                          <input
+                            type="radio"
+                            :name="`scale_${getAnswerId(q.id, 0)}`"
+                            :value="String(num)"
+                            v-model="answers[getAnswerId(q.id, 0)]"
+                          />
+                          <span>{{ num }}</span>
+                        </label>
+                      </div>
+                      <div class="scale-labels">
+                        <span>{{ q.scaleMinLabel || q.scaleMin }}</span>
+                        <span>{{ q.scaleMaxLabel || q.scaleMax }}</span>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'rating'"
+                      class="rating-wrap"
+                    >
+                      <label
+                        v-for="num in ratingRange(q.ratingMax)"
+                        :key="`rating-${q.id}-0-${num}`"
+                        class="rating-option"
+                      >
+                        <input
+                          type="radio"
+                          :name="`rating_${getAnswerId(q.id, 0)}`"
+                          :value="String(num)"
+                          v-model="answers[getAnswerId(q.id, 0)]"
+                        />
+                        <span>{{ num }}</span>
+                      </label>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'multiple_choice_grid'"
+                      class="grid-wrap"
+                    >
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-mc-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in q.gridRows"
+                            :key="`${q.id}-mc-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-mc-${row}-${col}`"
+                            >
+                              <input
+                                type="radio"
+                                :name="`grid_mc_${getAnswerId(q.id, 0)}_${row}`"
+                                :checked="
+                                  getGridChoice(getAnswerId(q.id, 0), row) ===
+                                  col
+                                "
+                                @change="
+                                  setGridChoice(getAnswerId(q.id, 0), row, col)
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'checkbox_grid'"
+                      class="grid-wrap"
+                    >
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-cb-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in q.gridRows"
+                            :key="`${q.id}-cb-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-cb-${row}-${col}`"
+                            >
+                              <input
+                                type="checkbox"
+                                :checked="
+                                  isGridChecked(getAnswerId(q.id, 0), row, col)
+                                "
+                                @change="
+                                  toggleGridCheckbox(
+                                    getAnswerId(q.id, 0),
+                                    row,
+                                    col,
+                                    $event.target.checked,
+                                  )
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <input
+                      v-else-if="q.questionType === 'date'"
+                      v-model="answers[getAnswerId(q.id, 0)]"
+                      type="date"
+                      class="form-input"
+                      :required="q.required"
+                    />
+
+                    <input
+                      v-else-if="q.questionType === 'time'"
+                      v-model="answers[getAnswerId(q.id, 0)]"
+                      type="time"
+                      class="form-input"
+                      :required="q.required"
+                    />
+                  </div>
+                </template>
               </div>
 
               <!-- Peserta Tambahan -->
-              <div v-for="(name, idx) in additionalNames" :key="idx" class="participant-card mt-3">
+              <div
+                v-for="(name, idx) in additionalNames"
+                :key="idx"
+                class="participant-card mt-3"
+              >
                 <div class="participant-badge">Peserta {{ idx + 2 }}</div>
                 <div class="form-group mb-0">
                   <label>Nama Lengkap <span class="text-red">*</span></label>
@@ -391,6 +735,277 @@
                     :placeholder="`Nama peserta ke-${idx + 2}`"
                   />
                 </div>
+
+                <!-- Participant-specific Questions (Enable Multi) -->
+                <template
+                  v-for="q in questionItems"
+                  :key="'p' + (idx + 2) + '_' + q.id"
+                >
+                  <div
+                    v-if="q.enableMulti"
+                    class="form-group dynamic-item multi-participant-item mt-3"
+                  >
+                    <label>
+                      {{ q.label }}
+                      <span v-if="q.required" class="text-red">*</span>
+                    </label>
+                    <p v-if="q.description" class="field-desc">
+                      {{ q.description }}
+                    </p>
+
+                    <input
+                      v-if="q.questionType === 'short_answer'"
+                      v-model="answers[getAnswerId(q.id, idx + 1)]"
+                      type="text"
+                      class="form-input"
+                      :required="q.required"
+                    />
+
+                    <textarea
+                      v-else-if="q.questionType === 'paragraph'"
+                      v-model="answers[getAnswerId(q.id, idx + 1)]"
+                      class="form-input"
+                      rows="4"
+                      :required="q.required"
+                    ></textarea>
+
+                    <div
+                      v-else-if="q.questionType === 'multiple_choice'"
+                      class="radio-group"
+                    >
+                      <label
+                        v-for="opt in q.options"
+                        :key="opt"
+                        class="radio-label"
+                      >
+                        <input
+                          type="radio"
+                          :name="`mc_${getAnswerId(q.id, idx + 1)}`"
+                          :value="opt"
+                          v-model="answers[getAnswerId(q.id, idx + 1)]"
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'checkboxes'"
+                      class="radio-group"
+                    >
+                      <label
+                        v-for="opt in q.options"
+                        :key="opt"
+                        class="radio-label"
+                      >
+                        <input
+                          type="checkbox"
+                          :checked="isChecked(getAnswerId(q.id, idx + 1), opt)"
+                          @change="
+                            toggleCheckbox(
+                              getAnswerId(q.id, idx + 1),
+                              opt,
+                              $event.target.checked,
+                            )
+                          "
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <select
+                      v-else-if="q.questionType === 'dropdown'"
+                      v-model="answers[getAnswerId(q.id, idx + 1)]"
+                      class="form-input"
+                      :required="q.required"
+                    >
+                      <option value="">-- Pilih --</option>
+                      <option v-for="opt in q.options" :key="opt" :value="opt">
+                        {{ opt }}
+                      </option>
+                    </select>
+
+                    <div
+                      v-else-if="q.questionType === 'file_upload'"
+                      class="file-wrap"
+                    >
+                      <input
+                        type="file"
+                        class="form-input"
+                        @change="
+                          handleDynamicFileUpload(
+                            getAnswerId(q.id, idx + 1),
+                            $event,
+                          )
+                        "
+                      />
+                      <p
+                        v-if="fileAnswers[getAnswerId(q.id, idx + 1)]"
+                        class="file-note"
+                      >
+                        {{ fileAnswers[getAnswerId(q.id, idx + 1)].name }}
+                      </p>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'linear_scale'"
+                      class="scale-wrap"
+                    >
+                      <div class="scale-options">
+                        <label
+                          v-for="num in scaleRange(q.scaleMin, q.scaleMax)"
+                          :key="`scale-${q.id}-${idx + 1}-${num}`"
+                          class="scale-option"
+                        >
+                          <input
+                            type="radio"
+                            :name="`scale_${getAnswerId(q.id, idx + 1)}`"
+                            :value="String(num)"
+                            v-model="answers[getAnswerId(q.id, idx + 1)]"
+                          />
+                          <span>{{ num }}</span>
+                        </label>
+                      </div>
+                      <div class="scale-labels">
+                        <span>{{ q.scaleMinLabel || q.scaleMin }}</span>
+                        <span>{{ q.scaleMaxLabel || q.scaleMax }}</span>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'rating'"
+                      class="rating-wrap"
+                    >
+                      <label
+                        v-for="num in ratingRange(q.ratingMax)"
+                        :key="`rating-${q.id}-${idx + 1}-${num}`"
+                        class="rating-option"
+                      >
+                        <input
+                          type="radio"
+                          :name="`rating_${getAnswerId(q.id, idx + 1)}`"
+                          :value="String(num)"
+                          v-model="answers[getAnswerId(q.id, idx + 1)]"
+                        />
+                        <span>{{ num }}</span>
+                      </label>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'multiple_choice_grid'"
+                      class="grid-wrap"
+                    >
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-mc-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in q.gridRows"
+                            :key="`${q.id}-mc-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-mc-${row}-${col}`"
+                            >
+                              <input
+                                type="radio"
+                                :name="`grid_mc_${getAnswerId(q.id, idx + 1)}_${row}`"
+                                :checked="
+                                  getGridChoice(
+                                    getAnswerId(q.id, idx + 1),
+                                    row,
+                                  ) === col
+                                "
+                                @change="
+                                  setGridChoice(
+                                    getAnswerId(q.id, idx + 1),
+                                    row,
+                                    col,
+                                  )
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div
+                      v-else-if="q.questionType === 'checkbox_grid'"
+                      class="grid-wrap"
+                    >
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-cb-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in q.gridRows"
+                            :key="`${q.id}-cb-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in q.gridCols"
+                              :key="`${q.id}-cb-${row}-${col}`"
+                            >
+                              <input
+                                type="checkbox"
+                                :checked="
+                                  isGridChecked(
+                                    getAnswerId(q.id, idx + 1),
+                                    row,
+                                    col,
+                                  )
+                                "
+                                @change="
+                                  toggleGridCheckbox(
+                                    getAnswerId(q.id, idx + 1),
+                                    row,
+                                    col,
+                                    $event.target.checked,
+                                  )
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <input
+                      v-else-if="q.questionType === 'date'"
+                      v-model="answers[getAnswerId(q.id, idx + 1)]"
+                      type="date"
+                      class="form-input"
+                      :required="q.required"
+                    />
+
+                    <input
+                      v-else-if="q.questionType === 'time'"
+                      v-model="answers[getAnswerId(q.id, idx + 1)]"
+                      type="time"
+                      class="form-input"
+                      :required="q.required"
+                    />
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -410,7 +1025,10 @@
 
             <div class="static-grid">
               <div class="form-group">
-                <label>Email Aktif (Untuk Pengiriman Tiket) <span class="text-red">*</span></label>
+                <label
+                  >Email Aktif (Untuk Pengiriman Tiket)
+                  <span class="text-red">*</span></label
+                >
                 <input
                   v-model="form.registrantEmail"
                   type="email"
@@ -496,241 +1114,287 @@
                   </p>
                 </div>
 
-                <div
-                  v-else-if="item.itemType === 'question'"
-                  class="form-group dynamic-item"
+                <template
+                  v-if="
+                    item.itemType === 'question' &&
+                    !(isMultiTicketMode && item.enableMulti)
+                  "
                 >
-                  <label>
-                    {{ item.label || `Pertanyaan ${index + 1}` }}
-                    <span v-if="item.required" class="text-red">*</span>
-                  </label>
-                  <p v-if="item.description" class="field-desc">
-                    {{ item.description }}
-                  </p>
-
-                  <input
-                    v-if="item.questionType === 'short_answer'"
-                    v-model="answers[item.id]"
-                    type="text"
-                    class="form-input"
-                    :required="item.required"
-                  />
-
-                  <textarea
-                    v-else-if="item.questionType === 'paragraph'"
-                    v-model="answers[item.id]"
-                    class="form-input"
-                    rows="4"
-                    :required="item.required"
-                  ></textarea>
-
                   <div
-                    v-else-if="item.questionType === 'multiple_choice'"
-                    class="radio-group"
+                    v-for="pIdx in [0]"
+                    :key="item.id"
+                    class="form-group dynamic-item"
                   >
-                    <label
-                      v-for="opt in item.options"
-                      :key="opt"
-                      class="radio-label"
-                    >
-                      <input
-                        type="radio"
-                        :name="`mc_${item.id}`"
-                        :value="opt"
-                        v-model="answers[item.id]"
-                      />
-                      {{ opt }}
+                    <label>
+                      {{ item.label || `Pertanyaan ${index + 1}` }}
+                      <span v-if="item.required" class="text-red">*</span>
                     </label>
-                  </div>
-
-                  <div
-                    v-else-if="item.questionType === 'checkboxes'"
-                    class="radio-group"
-                  >
-                    <label
-                      v-for="opt in item.options"
-                      :key="opt"
-                      class="radio-label"
-                    >
-                      <input
-                        type="checkbox"
-                        :checked="isChecked(item.id, opt)"
-                        @change="
-                          toggleCheckbox(item.id, opt, $event.target.checked)
-                        "
-                      />
-                      {{ opt }}
-                    </label>
-                  </div>
-
-                  <select
-                    v-else-if="item.questionType === 'dropdown'"
-                    v-model="answers[item.id]"
-                    class="form-input"
-                    :required="item.required"
-                  >
-                    <option value="">-- Pilih --</option>
-                    <option v-for="opt in item.options" :key="opt" :value="opt">
-                      {{ opt }}
-                    </option>
-                  </select>
-
-                  <div
-                    v-else-if="item.questionType === 'file_upload'"
-                    class="file-wrap"
-                  >
-                    <input
-                      type="file"
-                      class="form-input"
-                      @change="handleDynamicFileUpload(item.id, $event)"
-                    />
-                    <p v-if="fileAnswers[item.id]" class="file-note">
-                      {{ fileAnswers[item.id].name }}
+                    <p v-if="item.description" class="field-desc">
+                      {{ item.description }}
                     </p>
-                  </div>
 
-                  <div
-                    v-else-if="item.questionType === 'linear_scale'"
-                    class="scale-wrap"
-                  >
-                    <div class="scale-options">
+                    <input
+                      v-if="item.questionType === 'short_answer'"
+                      v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                      type="text"
+                      class="form-input"
+                      :required="item.required"
+                    />
+
+                    <textarea
+                      v-else-if="item.questionType === 'paragraph'"
+                      v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                      class="form-input"
+                      rows="4"
+                      :required="item.required"
+                    ></textarea>
+
+                    <div
+                      v-else-if="item.questionType === 'multiple_choice'"
+                      class="radio-group"
+                    >
                       <label
-                        v-for="num in scaleRange(item.scaleMin, item.scaleMax)"
-                        :key="`scale-${item.id}-${num}`"
-                        class="scale-option"
+                        v-for="opt in item.options"
+                        :key="opt"
+                        class="radio-label"
                       >
                         <input
                           type="radio"
-                          :name="`scale_${item.id}`"
+                          :name="`mc_${getAnswerId(item.id, pIdx - 1)}`"
+                          :value="opt"
+                          v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <div
+                      v-else-if="item.questionType === 'checkboxes'"
+                      class="radio-group"
+                    >
+                      <label
+                        v-for="opt in item.options"
+                        :key="opt"
+                        class="radio-label"
+                      >
+                        <input
+                          type="checkbox"
+                          :checked="
+                            isChecked(getAnswerId(item.id, pIdx - 1), opt)
+                          "
+                          @change="
+                            toggleCheckbox(
+                              getAnswerId(item.id, pIdx - 1),
+                              opt,
+                              $event.target.checked,
+                            )
+                          "
+                        />
+                        {{ opt }}
+                      </label>
+                    </div>
+
+                    <select
+                      v-else-if="item.questionType === 'dropdown'"
+                      v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                      class="form-input"
+                      :required="item.required"
+                    >
+                      <option value="">-- Pilih --</option>
+                      <option
+                        v-for="opt in item.options"
+                        :key="opt"
+                        :value="opt"
+                      >
+                        {{ opt }}
+                      </option>
+                    </select>
+
+                    <div
+                      v-else-if="item.questionType === 'file_upload'"
+                      class="file-wrap"
+                    >
+                      <input
+                        type="file"
+                        class="form-input"
+                        @change="
+                          handleDynamicFileUpload(
+                            getAnswerId(item.id, pIdx - 1),
+                            $event,
+                          )
+                        "
+                      />
+                      <p
+                        v-if="fileAnswers[getAnswerId(item.id, pIdx - 1)]"
+                        class="file-note"
+                      >
+                        {{ fileAnswers[getAnswerId(item.id, pIdx - 1)].name }}
+                      </p>
+                    </div>
+
+                    <div
+                      v-else-if="item.questionType === 'linear_scale'"
+                      class="scale-wrap"
+                    >
+                      <div class="scale-options">
+                        <label
+                          v-for="num in scaleRange(
+                            item.scaleMin,
+                            item.scaleMax,
+                          )"
+                          :key="`scale-${item.id}-${pIdx}-${num}`"
+                          class="scale-option"
+                        >
+                          <input
+                            type="radio"
+                            :name="`scale_${getAnswerId(item.id, pIdx - 1)}`"
+                            :value="String(num)"
+                            v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                          />
+                          <span>{{ num }}</span>
+                        </label>
+                      </div>
+                      <div class="scale-labels">
+                        <span>{{ item.scaleMinLabel || item.scaleMin }}</span>
+                        <span>{{ item.scaleMaxLabel || item.scaleMax }}</span>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else-if="item.questionType === 'rating'"
+                      class="rating-wrap"
+                    >
+                      <label
+                        v-for="num in ratingRange(item.ratingMax)"
+                        :key="`rating-${item.id}-${pIdx}-${num}`"
+                        class="rating-option"
+                      >
+                        <input
+                          type="radio"
+                          :name="`rating_${getAnswerId(item.id, pIdx - 1)}`"
                           :value="String(num)"
-                          v-model="answers[item.id]"
+                          v-model="answers[getAnswerId(item.id, pIdx - 1)]"
                         />
                         <span>{{ num }}</span>
                       </label>
                     </div>
-                    <div class="scale-labels">
-                      <span>{{ item.scaleMinLabel || item.scaleMin }}</span>
-                      <span>{{ item.scaleMaxLabel || item.scaleMax }}</span>
-                    </div>
-                  </div>
 
-                  <div
-                    v-else-if="item.questionType === 'rating'"
-                    class="rating-wrap"
-                  >
-                    <label
-                      v-for="num in ratingRange(item.ratingMax)"
-                      :key="`rating-${item.id}-${num}`"
-                      class="rating-option"
+                    <div
+                      v-else-if="item.questionType === 'multiple_choice_grid'"
+                      class="grid-wrap"
                     >
-                      <input
-                        type="radio"
-                        :name="`rating_${item.id}`"
-                        :value="String(num)"
-                        v-model="answers[item.id]"
-                      />
-                      <span>{{ num }}</span>
-                    </label>
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in item.gridCols"
+                              :key="`${item.id}-mc-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in item.gridRows"
+                            :key="`${item.id}-mc-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in item.gridCols"
+                              :key="`${item.id}-mc-${row}-${col}`"
+                            >
+                              <input
+                                type="radio"
+                                :name="`grid_mc_${getAnswerId(item.id, pIdx - 1)}_${row}`"
+                                :checked="
+                                  getGridChoice(
+                                    getAnswerId(item.id, pIdx - 1),
+                                    row,
+                                  ) === col
+                                "
+                                @change="
+                                  setGridChoice(
+                                    getAnswerId(item.id, pIdx - 1),
+                                    row,
+                                    col,
+                                  )
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div
+                      v-else-if="item.questionType === 'checkbox_grid'"
+                      class="grid-wrap"
+                    >
+                      <table class="grid-table">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th
+                              v-for="col in item.gridCols"
+                              :key="`${item.id}-cb-col-${col}`"
+                            >
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in item.gridRows"
+                            :key="`${item.id}-cb-row-${row}`"
+                          >
+                            <td>{{ row }}</td>
+                            <td
+                              v-for="col in item.gridCols"
+                              :key="`${item.id}-cb-${row}-${col}`"
+                            >
+                              <input
+                                type="checkbox"
+                                :checked="
+                                  isGridChecked(
+                                    getAnswerId(item.id, pIdx - 1),
+                                    row,
+                                    col,
+                                  )
+                                "
+                                @change="
+                                  toggleGridCheckbox(
+                                    getAnswerId(item.id, pIdx - 1),
+                                    row,
+                                    col,
+                                    $event.target.checked,
+                                  )
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <input
+                      v-else-if="item.questionType === 'date'"
+                      v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                      type="date"
+                      class="form-input"
+                      :required="item.required"
+                    />
+
+                    <input
+                      v-else-if="item.questionType === 'time'"
+                      v-model="answers[getAnswerId(item.id, pIdx - 1)]"
+                      type="time"
+                      class="form-input"
+                      :required="item.required"
+                    />
                   </div>
-
-                  <div
-                    v-else-if="item.questionType === 'multiple_choice_grid'"
-                    class="grid-wrap"
-                  >
-                    <table class="grid-table">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th
-                            v-for="col in item.gridCols"
-                            :key="`${item.id}-mc-col-${col}`"
-                          >
-                            {{ col }}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr
-                          v-for="row in item.gridRows"
-                          :key="`${item.id}-mc-row-${row}`"
-                        >
-                          <td>{{ row }}</td>
-                          <td
-                            v-for="col in item.gridCols"
-                            :key="`${item.id}-mc-${row}-${col}`"
-                          >
-                            <input
-                              type="radio"
-                              :name="`grid_mc_${item.id}_${row}`"
-                              :checked="getGridChoice(item.id, row) === col"
-                              @change="setGridChoice(item.id, row, col)"
-                            />
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div
-                    v-else-if="item.questionType === 'checkbox_grid'"
-                    class="grid-wrap"
-                  >
-                    <table class="grid-table">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th
-                            v-for="col in item.gridCols"
-                            :key="`${item.id}-cb-col-${col}`"
-                          >
-                            {{ col }}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr
-                          v-for="row in item.gridRows"
-                          :key="`${item.id}-cb-row-${row}`"
-                        >
-                          <td>{{ row }}</td>
-                          <td
-                            v-for="col in item.gridCols"
-                            :key="`${item.id}-cb-${row}-${col}`"
-                          >
-                            <input
-                              type="checkbox"
-                              :checked="isGridChecked(item.id, row, col)"
-                              @change="
-                                toggleGridCheckbox(
-                                  item.id,
-                                  row,
-                                  col,
-                                  $event.target.checked,
-                                )
-                              "
-                            />
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <input
-                    v-else-if="item.questionType === 'date'"
-                    v-model="answers[item.id]"
-                    type="date"
-                    class="form-input"
-                    :required="item.required"
-                  />
-
-                  <input
-                    v-else-if="item.questionType === 'time'"
-                    v-model="answers[item.id]"
-                    type="time"
-                    class="form-input"
-                    :required="item.required"
-                  />
-                </div>
+                </template>
               </template>
             </div>
           </section>
@@ -747,7 +1411,9 @@
               <div v-if="ticketQuantity > 1" class="billing-summary mt-4">
                 <div class="billing-item">
                   <span class="billing-label">Harga per Tiket</span>
-                  <span class="billing-value">{{ formatPrice(eventNominal) }}</span>
+                  <span class="billing-value">{{
+                    formatPrice(eventNominal)
+                  }}</span>
                 </div>
                 <div class="billing-item">
                   <span class="billing-label">Kuantitas Tiket</span>
@@ -757,7 +1423,9 @@
                 <div class="billing-footer">
                   <span class="total-label">Total Pembayaran</span>
                   <div class="total-wrap">
-                    <span class="total-amount">{{ formatPrice(eventNominal * ticketQuantity) }}</span>
+                    <span class="total-amount">{{
+                      formatPrice(eventNominal * ticketQuantity)
+                    }}</span>
                   </div>
                 </div>
               </div>
@@ -765,7 +1433,9 @@
               <!-- Individual Design (Previous Simple Design) -->
               <div v-else class="global-nominal-card mt-4">
                 <span class="nominal-label">Total yang harus dibayar:</span>
-                <strong class="nominal-value">{{ formatPrice(eventNominal) }}</strong>
+                <strong class="nominal-value">{{
+                  formatPrice(eventNominal)
+                }}</strong>
               </div>
             </div>
 
@@ -788,15 +1458,57 @@
                 >
                   Scan QRIS berikut untuk melakukan pembayaran.
                 </p>
-                <div
-                  v-if="method.type === 'qris' && method.qrisImageUrl"
-                  class="qris-container mt-2"
-                >
-                  <img
-                    :src="method.qrisImageUrl"
-                    :alt="`QRIS ${method.label}`"
-                    class="qris-image"
-                  />
+                <div v-if="method.type === 'qris'" class="qris-wrapper mt-4">
+                  <div class="qris-container">
+                    <template v-if="dynamicQrisUrls[method.id]">
+                      <img
+                        :src="dynamicQrisUrls[method.id]"
+                        :alt="`QRIS Dinamis ${method.label}`"
+                        class="qris-image qris-dynamic"
+                      />
+                    </template>
+                    <img
+                      v-else-if="method.qrisImageUrl"
+                      :src="method.qrisImageUrl"
+                      :alt="`QRIS ${method.label}`"
+                      class="qris-image"
+                    />
+                  </div>
+
+                  <div class="qris-footer">
+                    <p class="scan-instruction">
+                      Scan QR untuk membayar otomatis
+                    </p>
+                    <button
+                      type="button"
+                      class="btn-download-qris"
+                      @click="
+                        downloadQris(
+                          dynamicQrisUrls[method.id] || method.qrisImageUrl,
+                          `QRIS-${method.label}`,
+                        )
+                      "
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"
+                        ></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span>Download QRIS</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div v-else class="payment-details mt-2">
@@ -808,9 +1520,42 @@
                   </div>
                   <div class="detail-row">
                     <span class="detail-label">No. Rekening / Akun</span>
-                    <strong class="detail-value highlight">{{
-                      method.accountNumber
-                    }}</strong>
+                    <div class="detail-value-wrap">
+                      <strong class="detail-value highlight">{{
+                        method.accountNumber
+                      }}</strong>
+                      <button
+                        type="button"
+                        class="btn-copy"
+                        @click="copyToClipboard(method.accountNumber)"
+                        title="Salin Nomor Rekening"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect
+                            x="9"
+                            y="9"
+                            width="13"
+                            height="13"
+                            rx="2"
+                            ry="2"
+                          ></rect>
+                          <path
+                            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                          ></path>
+                        </svg>
+                        <span>Salin</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -924,6 +1669,7 @@
 import { computed, ref, watchEffect, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Swal from "sweetalert2";
+import QRCode from "qrcode";
 
 const route = useRoute();
 const router = useRouter();
@@ -942,6 +1688,30 @@ const showAlert = (title, text, icon = "info") => {
     background: "#0f172a",
     color: "#f8fafc",
     confirmButtonColor: "#3b82f6",
+  });
+};
+
+const downloadQris = (url, filename) => {
+  if (!url) return;
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const showToast = (title, icon = "success") => {
+  return Swal.fire({
+    title,
+    icon,
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: "#0f172a",
+    color: "#f8fafc",
   });
 };
 
@@ -1146,6 +1916,7 @@ const normalizeItem = (item, index) => {
         gridCols: Array.isArray(item.gridCols)
           ? item.gridCols
           : parseList(item.gridColsText),
+        enableMulti: !!item.enableMulti,
       };
     }
 
@@ -1178,6 +1949,7 @@ const normalizeItem = (item, index) => {
     ratingMax: 5,
     gridRows: [],
     gridCols: [],
+    enableMulti: !!item.enableMulti,
   };
 };
 
@@ -1280,11 +2052,13 @@ const paymentSettings = computed(() => {
       accountName: String(method?.accountName || "").trim(),
       accountNumber: String(method?.accountNumber || "").trim(),
       qrisImageUrl: String(method?.qrisImageUrl || "").trim(),
+      qrisString: String(method?.qrisString || "").trim(),
       note: String(method?.note || "").trim(),
     }))
     .filter((method) => {
       if (!method.label) return false;
-      if (method.type === "qris") return !!method.qrisImageUrl;
+      if (method.type === "qris")
+        return !!method.qrisImageUrl || !!method.qrisString;
       return !!method.accountName && !!method.accountNumber;
     });
 });
@@ -1400,11 +2174,117 @@ const deviceMeta = ref(null);
 const deviceStatusChecked = ref(false);
 
 const allowMultiTicket = computed(() => !!formMeta.value?.allowMultiTicket);
-const maxTicketsPerOrder = computed(() => Number(formMeta.value?.maxTicketsPerOrder ?? 5));
+const maxTicketsPerOrder = computed(() =>
+  Number(formMeta.value?.maxTicketsPerOrder ?? 5),
+);
 
 const ticketQuantity = ref(1);
 const additionalNames = ref([]);
 const isMultiTicketMode = ref(false);
+
+const totalAmount = computed(() => {
+  const nominal = Number(eventNominal.value || 0);
+  const qty = Number(ticketQuantity.value || 1);
+  return nominal * qty;
+});
+
+const dynamicQrisUrls = ref({});
+
+const calcCRC16 = (data) => {
+  let crc = 0xffff;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc = crc << 1;
+      }
+    }
+  }
+  return (crc & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+};
+
+const generateDynamicQRIS = (qrisStatic, amount) => {
+  if (!qrisStatic || !amount) return qrisStatic;
+
+  try {
+    const tags = {};
+    let i = 0;
+
+    // Step 1: Parse top-level TLV
+    // Standard QRIS always ends with Tag 63 (CRC)
+    while (i < qrisStatic.length) {
+      const tag = qrisStatic.slice(i, i + 2);
+      if (!tag || tag === "63") break;
+
+      const lengthStr = qrisStatic.slice(i + 2, i + 4);
+      if (!lengthStr) break;
+
+      const length = parseInt(lengthStr, 10);
+      if (isNaN(length)) break;
+
+      const value = qrisStatic.slice(i + 4, i + 4 + length);
+      tags[tag] = value;
+      i += 4 + length;
+    }
+
+    // Step 2: Set Dynamic Mode (Tag 01)
+    // 11 = Static, 12 = Dynamic
+    tags["01"] = "12";
+
+    // Step 3: Set Transaction Amount (Tag 54)
+    // Bank Indonesia standard: Integer for IDR is preferred
+    tags["54"] = String(Math.round(amount));
+
+    // Step 4: Ensure Currency Code is IDR (Tag 53 = 360)
+    // Most static QRIS already have this, but let's ensure it's there
+    if (!tags["53"]) tags["53"] = "360";
+
+    // Step 5: Rebuild the string in numerical order
+    let result = "";
+    const sortedKeys = Object.keys(tags).sort();
+    for (const key of sortedKeys) {
+      const val = tags[key];
+      result += key + String(val.length).padStart(2, "0") + val;
+    }
+
+    // Step 6: Finalize with CRC (Tag 63)
+    result += "6304";
+    const crc = calcCRC16(result);
+    return result + crc;
+  } catch (err) {
+    console.error("QRIS Compliance Parser Error:", err);
+    return qrisStatic; // Fallback to static on error
+  }
+};
+
+const updateDynamicQrs = async () => {
+  if (!import.meta.client) return;
+  const amount = totalAmount.value;
+  if (!amount) return;
+
+  for (const method of paymentSettings.value) {
+    if (method.type === "qris" && method.qrisString) {
+      const dynamicString = generateDynamicQRIS(method.qrisString, amount);
+      try {
+        const url = await QRCode.toDataURL(dynamicString, {
+          margin: 1,
+          width: 600,
+          color: {
+            dark: "#000000",
+            light: "#ffffff",
+          },
+        });
+        dynamicQrisUrls.value[method.id] = url;
+      } catch (err) {
+        console.error("Failed to generate dynamic QRIS:", err);
+      }
+    }
+  }
+};
+
+watch([totalAmount, paymentSettings], updateDynamicQrs, { immediate: true });
 
 watch(isMultiTicketMode, (val) => {
   if (val) {
@@ -1622,18 +2502,37 @@ const removeProofCache = () => {
   selectedProofFile.value = null;
 };
 
+const getAnswerId = (qId, pIdx) => {
+  if (isMultiTicketMode.value) {
+    const item = schemaItems.value.find((i) => i.id === qId);
+    if (item?.enableMulti) {
+      return `${qId}_p${pIdx}`;
+    }
+  }
+  return qId;
+};
+
 watchEffect(() => {
   for (const question of questionItems.value) {
-    if (answers.value[question.id] !== undefined) continue;
-    if (question.questionType === "checkboxes") {
-      answers.value[question.id] = [];
-    } else if (
-      question.questionType === "multiple_choice_grid" ||
-      question.questionType === "checkbox_grid"
-    ) {
-      answers.value[question.id] = {};
-    } else {
-      answers.value[question.id] = "";
+    const iterations =
+      isMultiTicketMode.value && question.enableMulti
+        ? ticketQuantity.value
+        : 1;
+
+    for (let pIdx = 0; pIdx < iterations; pIdx++) {
+      const ansId = getAnswerId(question.id, pIdx);
+      if (answers.value[ansId] !== undefined) continue;
+
+      if (question.questionType === "checkboxes") {
+        answers.value[ansId] = [];
+      } else if (
+        question.questionType === "multiple_choice_grid" ||
+        question.questionType === "checkbox_grid"
+      ) {
+        answers.value[ansId] = {};
+      } else {
+        answers.value[ansId] = "";
+      }
     }
   }
 });
@@ -1673,10 +2572,10 @@ const handleProofUpload = (e) => {
   reader.readAsDataURL(file);
 };
 
-const handleDynamicFileUpload = (questionId, e) => {
+const handleDynamicFileUpload = (ansId, e) => {
   const file = e.target.files?.[0];
   if (!file) {
-    fileAnswers.value[questionId] = null;
+    fileAnswers.value[ansId] = null;
     return;
   }
   if (file.size > 10 * 1024 * 1024) {
@@ -1686,20 +2585,20 @@ const handleDynamicFileUpload = (questionId, e) => {
       "warning",
     );
     e.target.value = "";
-    fileAnswers.value[questionId] = null;
+    fileAnswers.value[ansId] = null;
     return;
   }
-  fileAnswers.value[questionId] = file;
+  fileAnswers.value[ansId] = file;
 };
 
-const isChecked = (questionId, option) => {
-  const value = answers.value[questionId];
+const isChecked = (ansId, option) => {
+  const value = answers.value[ansId];
   return Array.isArray(value) && value.includes(option);
 };
 
-const toggleCheckbox = (questionId, option, checked) => {
-  const current = Array.isArray(answers.value[questionId])
-    ? [...answers.value[questionId]]
+const toggleCheckbox = (ansId, option, checked) => {
+  const current = Array.isArray(answers.value[ansId])
+    ? [...answers.value[ansId]]
     : [];
   if (checked) {
     if (!current.includes(option)) current.push(option);
@@ -1707,28 +2606,28 @@ const toggleCheckbox = (questionId, option, checked) => {
     const idx = current.indexOf(option);
     if (idx >= 0) current.splice(idx, 1);
   }
-  answers.value[questionId] = current;
+  answers.value[ansId] = current;
 };
 
-const getGridChoice = (questionId, row) => {
-  const matrix = answers.value[questionId] || {};
+const getGridChoice = (ansId, row) => {
+  const matrix = answers.value[ansId] || {};
   return matrix[row] || "";
 };
 
-const setGridChoice = (questionId, row, col) => {
-  const matrix = { ...(answers.value[questionId] || {}) };
+const setGridChoice = (ansId, row, col) => {
+  const matrix = { ...(answers.value[ansId] || {}) };
   matrix[row] = col;
-  answers.value[questionId] = matrix;
+  answers.value[ansId] = matrix;
 };
 
-const isGridChecked = (questionId, row, col) => {
-  const matrix = answers.value[questionId] || {};
+const isGridChecked = (ansId, row, col) => {
+  const matrix = answers.value[ansId] || {};
   const rowValues = Array.isArray(matrix[row]) ? matrix[row] : [];
   return rowValues.includes(col);
 };
 
-const toggleGridCheckbox = (questionId, row, col, checked) => {
-  const matrix = { ...(answers.value[questionId] || {}) };
+const toggleGridCheckbox = (ansId, row, col, checked) => {
+  const matrix = { ...(answers.value[ansId] || {}) };
   const rowValues = Array.isArray(matrix[row]) ? [...matrix[row]] : [];
   if (checked) {
     if (!rowValues.includes(col)) rowValues.push(col);
@@ -1737,7 +2636,7 @@ const toggleGridCheckbox = (questionId, row, col, checked) => {
     if (idx >= 0) rowValues.splice(idx, 1);
   }
   matrix[row] = rowValues;
-  answers.value[questionId] = matrix;
+  answers.value[ansId] = matrix;
 };
 
 const scaleRange = (min, max) => {
@@ -1753,6 +2652,27 @@ const ratingRange = (max) => {
   const range = [];
   for (let i = 1; i <= end; i += 1) range.push(i);
   return range;
+};
+
+const copyToClipboard = async (text) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("Berhasil Disalin");
+  } catch (err) {
+    // fallback for older browsers or insecure contexts
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      showToast("Berhasil Disalin");
+    } catch (e) {
+      showToast("Gagal Menyalin", "error");
+    }
+    document.body.removeChild(textArea);
+  }
 };
 
 const handleCloseTab = () => {
@@ -1793,52 +2713,64 @@ const toEmbedVideo = (url) => {
 const validateRequired = () => {
   for (const question of questionItems.value) {
     if (!question.required) continue;
-    const value = answers.value[question.id];
 
-    if (
-      [
-        "short_answer",
-        "paragraph",
-        "multiple_choice",
-        "dropdown",
-        "date",
-        "time",
-        "linear_scale",
-        "rating",
-      ].includes(question.questionType)
-    ) {
+    const iterations =
+      isMultiTicketMode.value && question.enableMulti
+        ? ticketQuantity.value
+        : 1;
+
+    for (let pIdx = 0; pIdx < iterations; pIdx++) {
+      const ansId = getAnswerId(question.id, pIdx);
+      const value = answers.value[ansId];
+      const participantLabel = iterations > 1 ? ` (Peserta ${pIdx + 1})` : "";
+
       if (
-        value === undefined ||
-        value === null ||
-        String(value).trim() === ""
+        [
+          "short_answer",
+          "paragraph",
+          "multiple_choice",
+          "dropdown",
+          "date",
+          "time",
+          "linear_scale",
+          "rating",
+        ].includes(question.questionType)
       ) {
-        return question.label || "Pertanyaan wajib";
-      }
-    } else if (question.questionType === "checkboxes") {
-      if (!Array.isArray(value) || value.length === 0) {
-        return question.label || "Pertanyaan wajib";
-      }
-    } else if (question.questionType === "file_upload") {
-      if (!fileAnswers.value[question.id]) {
-        return question.label || "Pertanyaan upload wajib";
-      }
-    } else if (question.questionType === "multiple_choice_grid") {
-      const matrix = value || {};
-      const rows = question.gridRows || [];
-      const allAnswered = rows.every(
-        (row) => matrix[row] && String(matrix[row]).trim() !== "",
-      );
-      if (!allAnswered) {
-        return question.label || "Grid wajib diisi";
-      }
-    } else if (question.questionType === "checkbox_grid") {
-      const matrix = value || {};
-      const rows = question.gridRows || [];
-      const allAnswered = rows.every(
-        (row) => Array.isArray(matrix[row]) && matrix[row].length > 0,
-      );
-      if (!allAnswered) {
-        return question.label || "Grid wajib diisi";
+        if (
+          value === undefined ||
+          value === null ||
+          String(value).trim() === ""
+        ) {
+          return (question.label || "Pertanyaan wajib") + participantLabel;
+        }
+      } else if (question.questionType === "checkboxes") {
+        if (!Array.isArray(value) || value.length === 0) {
+          return (question.label || "Pertanyaan wajib") + participantLabel;
+        }
+      } else if (question.questionType === "file_upload") {
+        if (!fileAnswers.value[ansId]) {
+          return (
+            (question.label || "Pertanyaan upload wajib") + participantLabel
+          );
+        }
+      } else if (question.questionType === "multiple_choice_grid") {
+        const matrix = value || {};
+        const rows = question.gridRows || [];
+        const allAnswered = rows.every(
+          (row) => matrix[row] && String(matrix[row]).trim() !== "",
+        );
+        if (!allAnswered) {
+          return (question.label || "Grid wajib diisi") + participantLabel;
+        }
+      } else if (question.questionType === "checkbox_grid") {
+        const matrix = value || {};
+        const rows = question.gridRows || [];
+        const allAnswered = rows.every(
+          (row) => Array.isArray(matrix[row]) && matrix[row].length > 0,
+        );
+        if (!allAnswered) {
+          return (question.label || "Grid wajib diisi") + participantLabel;
+        }
       }
     }
   }
@@ -1889,8 +2821,16 @@ const submitRegistration = async () => {
   try {
     const payloadAnswers = { ...answers.value };
     for (const question of questionItems.value) {
-      if (question.questionType === "file_upload") {
-        payloadAnswers[question.id] = payloadAnswers[question.id] || null;
+      const iterations =
+        isMultiTicketMode.value && question.enableMulti
+          ? ticketQuantity.value
+          : 1;
+
+      for (let pIdx = 0; pIdx < iterations; pIdx++) {
+        const ansId = getAnswerId(question.id, pIdx);
+        if (question.questionType === "file_upload") {
+          payloadAnswers[ansId] = payloadAnswers[ansId] || null;
+        }
       }
     }
 
@@ -1899,10 +2839,13 @@ const submitRegistration = async () => {
     multipart.append("registrantName", form.value.registrantName);
     multipart.append("registrantEmail", form.value.registrantEmail);
     multipart.append("formData", JSON.stringify(payloadAnswers));
-    
+
     if (allowMultiTicket.value) {
       multipart.append("quantity", String(ticketQuantity.value));
-      multipart.append("additionalNames", JSON.stringify(additionalNames.value));
+      multipart.append(
+        "additionalNames",
+        JSON.stringify(additionalNames.value),
+      );
     }
 
     if (deviceMeta.value) {
@@ -2432,9 +3375,64 @@ const submitRegistration = async () => {
   color: #fff;
 }
 
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-0 { margin-bottom: 0; }
-.mb-4 { margin-bottom: 1rem; }
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+.mb-0 {
+  margin-bottom: 0;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.participant-badge-inline {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.detail-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    opacity: 0.8;
+  }
+}
 
 .mode-toggle-section {
   cursor: pointer;
@@ -2705,22 +3703,73 @@ label {
   letter-spacing: 0.02em;
 }
 
+/* QRIS Redesign */
+.qris-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.25rem;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.3),
+    0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 260px;
+  margin: 0.75rem auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
 .qris-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: white;
-  padding: 1rem;
-  border-radius: 12px;
-  width: fit-content;
-  margin: 0.5rem auto;
+  justify-content: center;
+  background: #fff;
+  padding: 0.25rem;
+  border-radius: 6px;
 }
 
 .qris-image {
   width: 100%;
-  max-width: 280px;
+  max-width: 220px;
   height: auto;
   display: block;
+}
+
+.qris-footer {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.scan-instruction {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.btn-download-qris {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.45rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-download-qris:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-download-qris svg {
+  opacity: 0.8;
 }
 
 .radio-group {
