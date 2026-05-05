@@ -2,6 +2,11 @@
 
 Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite. Dirancang untuk memberikan solusi manajemen pendaftaran yang aman, fleksibel, dan mudah diimplementasikan.
 
+<!-- logo -->
+<p align="center">
+<img src="public/logo.png" alt="Logo" width="200" height="200">
+</p>
+
 ## Fitur Utama
 
 ### Manajemen Form & Penjadwalan

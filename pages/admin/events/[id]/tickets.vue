@@ -171,13 +171,13 @@ const closeDropdown = (e) => {
   }
 };
 
-const customFieldLabels = computed(() => {
+const customFields = computed(() => {
   if (!event.value?.formSchema) return [];
   try {
     const schema = JSON.parse(event.value.formSchema);
     return schema
       .filter(item => item.itemType !== 'form_meta')
-      .map(item => item.label || item.title || 'Field');
+      .map(item => ({ id: item.id, label: item.label || item.title || 'Field' }));
   } catch { return []; }
 });
 
@@ -217,7 +217,8 @@ const handleExport = async (type) => {
   }
 
   // Define column order: Name, Email, Custom Fields, Date, Approval, (optional) Attendance
-  const headers = ['Nama Lengkap', 'Email', ...customFieldLabels.value, 'Waktu Daftar', 'Status Approval'];
+  const customHeaders = customFields.value.map(f => f.label);
+  const headers = ['Nama Lengkap', 'Email', ...customHeaders, 'Waktu Daftar', 'Status Approval'];
   if (isEventStarted.value) {
     headers.push('Status Kehadiran');
   }
@@ -232,9 +233,24 @@ const handleExport = async (type) => {
     row['Nama Lengkap'] = t.registrantName;
     row['Email'] = t.registrantEmail;
     
-    // Custom fields data sync
-    customFieldLabels.value.forEach(label => {
-      row[label] = parsedFormData[label] || '-';
+    // Custom fields data sync using ID mapping
+    customFields.value.forEach(field => {
+      const val = parsedFormData[field.id];
+      if (Array.isArray(val)) {
+        row[field.label] = val.join(', ') || '-';
+      } else if (typeof val === 'object' && val !== null) {
+        if (val.originalName) {
+          // File upload
+          row[field.label] = val.originalName;
+        } else {
+          // Grid or complex object
+          row[field.label] = Object.entries(val)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(',') : v}`)
+            .join(' | ') || '-';
+        }
+      } else {
+        row[field.label] = val || '-';
+      }
     });
 
     row['Waktu Daftar'] = new Date(t.createdAt).toLocaleString('id-ID');
