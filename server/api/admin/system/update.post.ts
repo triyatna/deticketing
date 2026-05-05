@@ -65,69 +65,37 @@ export default defineEventHandler(async (event) => {
       console.error("Auto-backup failed:", bakErr);
     }
 
-    // 3. Jalankan build di folder terpisah atau langsung
-    // Agar tidak mengganggu server yang jalan, kita biarkan build menimpa file secara bertahap 
-    // atau biarkan Nitro menangani penggantian file di .output
-    console.log("Running full sync chain...");
-    // Gunakan perintah build standar, Nitro biasanya cukup cerdas untuk mengganti file di .output di akhir proses
-    const fullCommand = "npm install && npm run prisma:generate && npm run prisma:push && npm run build";
-    const { stdout: syncStdout } = await execAsync(fullCommand);
-
-    console.log("Sync Result:", syncStdout);
-
-    // 3.1 Data Migration: Ensure the very first admin is always OWNER
-    try {
-      console.log("Running data migration for Owner role...");
-      const prismaUtils = await import("../../../utils/prisma");
-      const db = prismaUtils.default;
-      const firstUser = await db.admin.findFirst({ orderBy: { createdAt: "asc" } });
-      if (firstUser && firstUser.role !== "OWNER") {
-        await db.admin.update({
-          where: { id: firstUser.id },
-          data: { role: "OWNER" },
-        });
-        console.log(`Promoted first user (${firstUser.username}) to OWNER.`);
+    // 4. Jalankan build di latar belakang (Background Process)
+    // Kita tidak menggunakan 'await' di sini agar bisa langsung membalas ke browser
+    console.log("Starting full sync chain in background...");
+    const fullCommand = "npm install && npx prisma generate && npx prisma migrate deploy && npm run build";
+    
+    // Eksekusi tanpa await agar request tidak timeout
+    exec(fullCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Background Update Error:", error);
+        return;
       }
-
-      if (firstUser) {
-        const ownerName = firstUser.name || firstUser.username;
-        await db.event.updateMany({
-          where: { createdByName: null },
-          data: { createdByName: ownerName },
-        });
-        console.log(`Backfilled createdByName for old events with owner: ${ownerName}`);
+      console.log("Background Update Success:", stdout);
+      
+      // Trigger Restart setelah build selesai
+      console.log("Update finished in background. Triggering restart...");
+      if (process.platform !== "win32") {
+        exec("pm2 reload all");
+      } else {
+        setTimeout(() => process.exit(0), 1000);
       }
-
-    } catch (migErr) {
-      console.error("Data migration error:", migErr);
-    }
-
-    // 4. Trigger Restart (Berikan jeda 2 detik agar response sempat terkirim)
-    console.log("Update finished. Triggering restart in 2 seconds...");
-    if (process.platform !== "win32") {
-      // Untuk Linux (PM2)
-      exec("(sleep 2 && pm2 reload all) &", (err) => {
-        if (err) console.error("Gagal reload PM2:", err);
-      });
-    } else {
-      // Untuk Windows/Local
-      setTimeout(() => {
-        console.log("Exiting for restart...");
-        process.exit(0);
-      }, 2000);
-    }
+    });
 
     return {
       success: true,
-      message:
-        "Update berhasil! Sistem sedang melakukan restart otomatis untuk menerapkan perubahan.",
-      details: syncStdout,
+      message: "Update telah dimulai di latar belakang. Proses build memerlukan waktu 1-3 menit. Anda dapat terus menggunakan dashboard, sistem akan melakukan restart otomatis setelah selesai.",
     };
   } catch (error: any) {
-    console.error("Update Error:", error);
+    console.error("Initialization Error:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: `Gagal Update: ${error.message}`,
+      statusMessage: `Gagal Memulai Update: ${error.message}`,
     });
   }
 });

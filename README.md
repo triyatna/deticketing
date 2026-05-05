@@ -23,16 +23,16 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 - **Advanced Dashboard Trend**: Visualisasi tren pendaftaran yang akurat (7 hari, 30 hari, 1 tahun) dengan dukungan data hari ini (_real-time_).
 - **Sinkronisasi Real-Time**: Monitoring pendaftaran dan perubahan status secara instan tanpa perlu memuat ulang halaman (Powered by WebSocket).
 
-### Keamanan Data dan Privasi
+### Keamanan & Manajemen Sistem (Admin Only)
 
-- **Security Hardening**: Implementasi **HttpOnly Cookie** dan **SameSite: Strict** untuk perlindungan maksimal terhadap serangan CSRF dan XSS.
-- **Global API Interceptor**: Penanganan error 401/403 secara otomatis untuk pembersihan sesi dan pengalihan login yang aman.
-- **Enkripsi File**: Semua dokumen sensitif dan bukti pembayaran disimpan dalam keadaan terenkripsi di sisi server (**AES-256**).
-- **Proteksi Anti-Spam**: Mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda.
-
-### Kontrol Akses Berbasis Peran (RBAC)
-
-Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**. Akses terhadap data event dan tiket dibatasi sesuai dengan penugasan staff yang ditetapkan oleh Admin/Owner.
+- **Security Hardening (RBAC)**: Validasi JWT ketat dengan pengecekan role **OWNER** pada semua fungsi sensitif.
+- **Database Management**: 
+  - **Manual Backup**: Buat salinan database kapan saja melalui satu klik.
+  - **Auto-Backup**: Sistem otomatis mencadangkan database setiap kali melakukan pembaharuan kode.
+  - **Restore Feature**: Pulihkan data dari daftar riwayat backup jika terjadi kesalahan sistem.
+  - **Database Export**: Unduh file database (.db) langsung ke komputer lokal untuk arsip offline.
+- **Zero-Downtime Update**: Proses pembaruan sistem yang mulus tanpa mengganggu pengguna aktif (Atomic Build Replacement).
+- **Safe Sync (Migrations)**: Menggunakan **Prisma Migrations** (`migrate deploy`) untuk sinkronisasi database yang aman tanpa risiko kehilangan data.
 
 ### Operasional Lapangan
 
@@ -44,9 +44,9 @@ Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**.
 
 - **Framework**: Nuxt 3 (Vue.js 3 & Nitro)
 - **Real-Time**: WebSocket (Nitro/CrossWS)
-- **ORM**: Prisma 7
-- **Database**: SQLite / PostgreSQL / MySQL (Prisma compatible)
-- **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption, Nuxt Security
+- **ORM**: Prisma 7 (Migration-based workflow)
+- **Database**: SQLite dengan LibSQL Adapter
+- **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption
 - **Reporting**: jsPDF, AutoTable
 - **Email**: SMTP integration via Nodemailer
 
@@ -64,10 +64,9 @@ Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**.
    ```bash
    npm install
    ```
-3. Lakukan inisialisasi basis data dan generate client Prisma:
+3. Lakukan inisialisasi basis data menggunakan migrasi:
    ```bash
-   npm run prisma:generate
-   npm run prisma:push
+   npx prisma migrate deploy
    ```
 
 ## Konfigurasi
