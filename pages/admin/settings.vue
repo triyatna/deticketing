@@ -135,6 +135,49 @@
               </template>
               <template v-else> Jalankan Update </template>
             </button>
+
+            <div class="divider-small"></div>
+
+            <button
+              type="button"
+              class="btn-outline w-full"
+              :disabled="isBackingUp"
+              @click="runBackup"
+            >
+              <template v-if="isBackingUp">
+                <span class="spinner-small"></span>
+                Membuat Backup...
+              </template>
+              <template v-else> 
+                 <div class="i-heroicons-archive-box-arrow-down-solid mr-2"></div>
+                 Backup Database Sekarang
+              </template>
+            </button>
+            <p class="field-hint text-center">Backup akan disimpan di folder <code>/data/backups/</code></p>
+            
+            <div class="divider-small"></div>
+
+            <div class="backup-management">
+              <div class="backup-list-header">
+                <p class="field-hint">Daftar Backup Tersedia:</p>
+                <button type="button" class="btn-refresh-small" @click="fetchBackups" title="Segarkan Daftar">
+                  <div class="i-heroicons-arrow-path-solid"></div>
+                </button>
+              </div>
+              
+              <div v-if="backups.length > 0" class="backup-scroll-area">
+                <div v-for="bak in backups" :key="bak.name" class="backup-item">
+                  <div class="bak-info">
+                    <span class="bak-name" :title="bak.name">{{ bak.name }}</span>
+                    <span class="bak-meta">{{ (bak.size / 1024).toFixed(1) }} KB • {{ new Date(bak.createdAt).toLocaleString() }}</span>
+                  </div>
+                  <button type="button" class="btn-restore-small" @click="runRestore(bak.name)">
+                    Restore
+                  </button>
+                </div>
+              </div>
+              <p v-else class="field-hint italic text-center py-2">Belum ada file backup.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -410,7 +453,9 @@ const isSaving = ref(false);
 const isTesting = ref(false);
 const isTestingWa = ref(false);
 const isUpdating = ref(false);
+const isBackingUp = ref(false);
 const isChangingPass = ref(false);
+const backups = ref([]);
 const passwordForm = ref({
   currentPassword: "",
   newPassword: "",
@@ -562,6 +607,70 @@ const changePassword = async () => {
     showNotice("error", err.data?.statusMessage || "Gagal mengubah password.");
   } finally {
     isChangingPass.value = false;
+  }
+};
+
+const fetchBackups = async () => {
+  try {
+    const res = await $fetch("/api/admin/system/backups");
+    if (res.success) {
+      backups.value = res.backups;
+    }
+  } catch {
+    // silence
+  }
+};
+
+const runRestore = async (fileName) => {
+  const result = await Swal.fire({
+    title: "Konfirmasi Restore",
+    text: `Apakah Anda yakin ingin memulihkan database dari file "${fileName}"? Data saat ini akan ditimpa.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#f59e0b",
+    confirmButtonText: "Ya, Restore Sekarang",
+    cancelButtonText: "Batal",
+    background: "#0f172a",
+    color: "#f8fafc",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await $fetch("/api/admin/system/restore", {
+      method: "POST",
+      body: { fileName }
+    });
+    if (res.success) {
+      await Swal.fire({
+        title: "Restore Berhasil",
+        text: res.message,
+        icon: "success",
+        background: "#0f172a",
+        color: "#f8fafc",
+      });
+      window.location.reload();
+    }
+  } catch (err) {
+    showNotice("error", err.data?.statusMessage || "Gagal memulihkan database.");
+  }
+};
+
+onMounted(() => {
+  fetchBackups();
+});
+
+const runBackup = async () => {
+  isBackingUp.value = true;
+  try {
+    const res = await $fetch("/api/admin/system/backup", { method: "POST" });
+    if (res.success) {
+      showNotice("success", res.message || "Backup berhasil dibuat.");
+    }
+  } catch (err) {
+    showNotice("error", err.data?.statusMessage || "Gagal membuat backup.");
+  } finally {
+    isBackingUp.value = false;
   }
 };
 
@@ -746,6 +855,97 @@ label {
     background: #f59e0b;
     animation: pulse 1.5s infinite;
   }
+}
+
+.divider-small {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.2rem 0;
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+.backup-management {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.backup-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.backup-scroll-area {
+  max-height: 150px;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.backup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.bak-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.bak-name {
+  color: #e2e8f0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.bak-meta {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.btn-refresh-small, .btn-restore-small {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.btn-refresh-small:hover { color: white; }
+.btn-restore-small {
+  padding: 0.25rem 0.5rem;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 4px;
+}
+
+.btn-restore-small:hover {
+  background: #f59e0b;
+  color: #0f172a;
 }
 
 .btn-update-action {

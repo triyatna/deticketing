@@ -8,7 +8,7 @@ import {
   getRuntimeDataDir,
 } from "./runtimeSecrets";
 
-const normalizeDbUrl = (value: string) => {
+export const normalizeDbUrl = (value: string) => {
   return String(value || "").trim();
 };
 
@@ -16,7 +16,7 @@ const toPrismaFileUrl = (absolutePath: string) => {
   return `file:${path.resolve(absolutePath)}`;
 };
 
-const resolveSqliteFilePath = (databaseUrl: string) => {
+export const resolveSqliteFilePath = (databaseUrl: string) => {
   const normalized = normalizeDbUrl(databaseUrl);
   if (!normalized.startsWith("file:")) return "";
 
@@ -113,8 +113,8 @@ const ensureDatabaseUrl = () => {
 
 const dbUrl = ensureDatabaseUrl();
 
-console.log("PRISMA DATABASE URL INJECTED:", dbUrl);
-console.log(">>> PRISMA UTILS LOADED V3 WITH LIBSQL ADAPTER <<<");
+console.log(">>> PRISMA DATABASE CONNECTED TO:", dbUrl);
+console.log(">>> PRISMA UTILS LOADED WITH LIBSQL ADAPTER <<<");
 
 const adapter = new PrismaLibSql({
   url: dbUrl,

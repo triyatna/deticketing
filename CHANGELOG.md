@@ -4,10 +4,13 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 
 ---
 
-## [1.1.0] - 2026-05-04 (pre-release)
+## [1.1.0] - 2026-05-05
 
 ### Added
 
+- **Professional Reporting (Export)**: Fitur ekspor pendaftar ke format PDF dan CSV dengan sinkronisasi kolom dinamis.
+- **Smart Report Logic**: Kolom "Status Kehadiran" pada laporan otomatis muncul hanya jika event telah dilaksanakan (berdasarkan `eventDate`).
+- **Global API Interceptor**: Implementasi penanganan error 401/403 secara global untuk membersihkan sesi dan redirect otomatis ke login jika token tidak valid.
 - **Multi-Ticket Checkout**: Pendaftar kini dapat membeli lebih dari 1 tiket dalam satu kali pengisian form (Checkout Rombongan).
 - **Group Purchase UI**: Toggle interaktif "Daftar untuk Rombongan?" dengan quantity stepper dan input nama dinamis.
 - **Adaptive Billing Summary**: Redesain ringkasan pembayaran dengan tampilan profesional yang menyesuaikan antara mode individu dan rombongan.
@@ -17,10 +20,14 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 - **Batch Approval System**: Persetujuan otomatis untuk seluruh tiket dalam satu pesanan (order) sekaligus dari dashboard admin.
 - **Anti-Spam Email Delivery**: Pengiriman e-ticket secara bertahap dengan delay 1.5 detik per email dan subjek email personal.
 - **Staff Notification Enrichment**: Notifikasi email untuk admin kini menyertakan daftar seluruh nama peserta dan total tiket untuk pesanan rombongan.
-- **UI Refinement**: Penambahan padding dan perbaikan tata letak pada halaman detail tiket di dashboard admin untuk informasi tiket "bersaudara".
 
 ### Changed
 
+- **Optimasi Dashboard Trend**: Perbaikan logika rentang waktu pada Tren Pendaftaran (7 hari, 30 hari, 1 tahun) agar selalu menyertakan data hari ini dan bulan berjalan secara akurat.
+- **Security Hardening**: Penggunaan HttpOnly cookie untuk auth token dan SameSite: Strict untuk perlindungan maksimal terhadap CSRF.
+- **Auth State Caching**: Penggunaan `useState` untuk menyimpan sesi di sisi klien guna mencegah logout acak saat navigasi antar halaman.
+- **Mobile UI Optimization**: Perbaikan tinggi sidebar menggunakan `100dvh` agar tombol logout tidak tertutup oleh bar navigasi browser pada perangkat mobile.
+- **CSP Updates**: Penyesuaian Content Security Policy untuk mendukung Cloudflare Insights secara aman.
 - **Enhanced Admin UI**: Indikator "Multi-Ticket" pada daftar pendaftar dan visualisasi grup pesanan pada halaman detail tiket.
 - **Sistem Real-Time WebSocket**: Migrasi penuh dari sistem polling/interval ke sinkronisasi instan berbasis WebSocket (Nitro/CrossWS). Perubahan mencakup Dashboard Admin, Daftar Event, dan Daftar Pendaftar.
 

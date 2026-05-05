@@ -39,6 +39,26 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 2.1 AUTOMATIC BACKUP BEFORE SYNC
+    try {
+      console.log("Creating automatic pre-update backup...");
+      const { resolveSqliteFilePath } = await import("../../../utils/prisma");
+      const dbUrl = process.env.DATABASE_URL || 'file:./prisma/dev.db';
+      const dbPath = resolveSqliteFilePath(dbUrl);
+
+      if (dbPath && fs.existsSync(dbPath)) {
+        const backupDir = path.resolve(process.cwd(), 'data', 'backups');
+        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupPath = path.resolve(backupDir, `backup_auto_pre_update_${timestamp}.db`);
+        fs.copyFileSync(dbPath, backupPath);
+        console.log(`Auto-backup created: ${backupPath}`);
+      }
+    } catch (bakErr) {
+      console.error("Auto-backup failed, but continuing update:", bakErr);
+    }
+
     // 3. Lanjutkan proses sisanya (Include DB Sync & Data Migration)
     console.log("Running full sync chain...");
     const fullCommand =

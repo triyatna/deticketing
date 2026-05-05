@@ -12,40 +12,42 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 ### Manajemen Form & Penjadwalan
 
 - **Pembangun Form Dinamis**: Mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks.
-- **Fleksibilitas Penjadwalan**: Dukungan untuk event satu hari maupun event berdurasi panjang (multi-day) dengan penanganan tanggal selesai otomatis.
 - **Checkout Rombongan (Multi-Ticket)**: Memungkinkan pendaftaran kolektif dalam satu pesanan (batch) dengan manajemen nama peserta tambahan secara dinamis.
+- **Fleksibilitas Penjadwalan**: Dukungan untuk event satu hari maupun event berdurasi panjang (multi-day) dengan penanganan tanggal selesai otomatis.
 - **Billing Summary Adaptif**: Kalkulasi biaya otomatis dengan tampilan ringkasan pembayaran yang profesional dan terstruktur untuk pesanan rombongan.
-- **Detail Event Komprehensif**: Manajemen event yang mendalam melalui halaman detail khusus untuk peninjauan konfigurasi lengkap.
+
+### Pelaporan dan Analitik
+
+- **Professional Reporting (Export)**: Ekspor daftar pendaftar ke format **PDF** dan **CSV** secara instan dengan sinkronisasi kolom dinamis.
+- **Smart Report Logic**: Kolom status kehadiran otomatis disesuaikan (muncul/sembunyi) pada laporan berdasarkan waktu pelaksanaan event.
+- **Advanced Dashboard Trend**: Visualisasi tren pendaftaran yang akurat (7 hari, 30 hari, 1 tahun) dengan dukungan data hari ini (*real-time*).
+- **Sinkronisasi Real-Time**: Monitoring pendaftaran dan perubahan status secara instan tanpa perlu memuat ulang halaman (Powered by WebSocket).
 
 ### Keamanan Data dan Privasi
 
-- **Enkripsi File**: Semua dokumen sensitif dan bukti pembayaran disimpan dalam keadaan terenkripsi di sisi server.
-- **Proteksi Anti-Spam**: Menggunakan mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda yang tidak diinginkan.
-- **Validasi Ketat**: Implementasi proteksi terhadap serangan XSS dan SQL Injection melalui penggunaan ORM yang aman dan prosedur sanitisasi input.
+- **Security Hardening**: Implementasi **HttpOnly Cookie** dan **SameSite: Strict** untuk perlindungan maksimal terhadap serangan CSRF dan XSS.
+- **Global API Interceptor**: Penanganan error 401/403 secara otomatis untuk pembersihan sesi dan pengalihan login yang aman.
+- **Enkripsi File**: Semua dokumen sensitif dan bukti pembayaran disimpan dalam keadaan terenkripsi di sisi server (**AES-256**).
+- **Proteksi Anti-Spam**: Mekanisme sidik jari perangkat (device fingerprinting) untuk memitigasi pendaftaran ganda.
 
 ### Kontrol Akses Berbasis Peran (RBAC)
 
-Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terhadap data event dan tiket dibatasi sesuai dengan tanggung jawab masing-masing staff yang telah ditetapkan.
-
-### Notifikasi dan Automasi
-
-- **E-Ticket Otomatis**: Peserta akan menerima tiket elektronik dengan QR Code unik segera setelah pendaftaran disetujui.
-- **Notifikasi Staff**: Notifikasi otomatis dikirimkan ke email staff operasional saat terdapat pendaftaran baru yang memerlukan peninjauan.
-- **Sinkronisasi Real-Time**: Monitoring pendaftaran dan perubahan status secara instan tanpa perlu memuat ulang halaman (Powered by WebSocket).
+Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**. Akses terhadap data event dan tiket dibatasi sesuai dengan penugasan staff yang ditetapkan oleh Admin/Owner.
 
 ### Operasional Lapangan
 
-- **Advanced QR Scanner**: Pemindai QR berbasis web yang mendukung pemilihan event spesifik, pencarian event, dan validasi ketat antar event.
-- **Peringatan Audio-Visual**: Feedback suara dan visual real-time saat pemindaian berhasil atau gagal (termasuk peringatan salah event).
+- **Advanced QR Scanner**: Pemindai QR berbasis web dengan validasi ketat antar event dan feedback audio-visual *real-time*.
 - **Pemantauan Multi-Day**: Grafik kehadiran yang mendukung event berdurasi panjang dengan akumulasi data per jam yang akurat.
+- **Automasi E-Ticket**: Pengiriman tiket elektronik secara otomatis segera setelah pendaftaran disetujui oleh admin.
 
 ## Teknologi Utama
 
 - **Framework**: Nuxt 3 (Vue.js 3 & Nitro)
 - **Real-Time**: WebSocket (Nitro/CrossWS)
 - **ORM**: Prisma 7
-- **Database**: SQLite (Default)
-- **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption
+- **Database**: SQLite / PostgreSQL / MySQL (Prisma compatible)
+- **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption, Nuxt Security
+- **Reporting**: jsPDF, AutoTable
 - **Email**: SMTP integration via Nodemailer
 
 ## Screenshot
