@@ -34,7 +34,10 @@ prisma/*.db-shm
 *.db-journal
 *.db-wal
 *.db-shm
-data/runtime-secrets.json
+
+# Data, Backups & Secrets
+data/
+!data/.gitkeep
 
 # Uploads
 public/uploads/*
