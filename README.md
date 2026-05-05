@@ -20,7 +20,7 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 
 - **Professional Reporting (Export)**: Ekspor daftar pendaftar ke format **PDF** dan **CSV** secara instan dengan sinkronisasi kolom dinamis.
 - **Smart Report Logic**: Kolom status kehadiran otomatis disesuaikan (muncul/sembunyi) pada laporan berdasarkan waktu pelaksanaan event.
-- **Advanced Dashboard Trend**: Visualisasi tren pendaftaran yang akurat (7 hari, 30 hari, 1 tahun) dengan dukungan data hari ini (*real-time*).
+- **Advanced Dashboard Trend**: Visualisasi tren pendaftaran yang akurat (7 hari, 30 hari, 1 tahun) dengan dukungan data hari ini (_real-time_).
 - **Sinkronisasi Real-Time**: Monitoring pendaftaran dan perubahan status secara instan tanpa perlu memuat ulang halaman (Powered by WebSocket).
 
 ### Keamanan Data dan Privasi
@@ -36,7 +36,7 @@ Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**.
 
 ### Operasional Lapangan
 
-- **Advanced QR Scanner**: Pemindai QR berbasis web dengan validasi ketat antar event dan feedback audio-visual *real-time*.
+- **Advanced QR Scanner**: Pemindai QR berbasis web dengan validasi ketat antar event dan feedback audio-visual _real-time_.
 - **Pemantauan Multi-Day**: Grafik kehadiran yang mendukung event berdurasi panjang dengan akumulasi data per jam yang akurat.
 - **Automasi E-Ticket**: Pengiriman tiket elektronik secara otomatis segera setelah pendaftaran disetujui oleh admin.
 
@@ -49,13 +49,6 @@ Mendukung pembagian tugas melalui peran **Admin**, **Panitia**, dan **Petugas**.
 - **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption, Nuxt Security
 - **Reporting**: jsPDF, AutoTable
 - **Email**: SMTP integration via Nodemailer
-
-## Screenshot
-
-<!-- screenshot -->
-<p align="center">
-<img src="public/screenshot.png" alt="Screenshot 1" width="600">
-</p>
 
 ## Instalasi
 
