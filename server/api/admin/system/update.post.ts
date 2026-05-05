@@ -28,18 +28,13 @@ export default defineEventHandler(async (event) => {
     );
     console.log("Git Reset Output:", resetStdout);
 
-    // 2. Pembersihan (Cleaning) folder build lama
+    // 2. Pembersihan (Cleaning) folder lama (Hanya .nuxt, jangan hapus .output dulu agar server tetap jalan)
     console.log("Cleaning old build artifacts...");
-    const foldersToClean = [".output", ".nuxt"];
-    for (const folder of foldersToClean) {
-      const folderPath = path.resolve(process.cwd(), folder);
-      if (fs.existsSync(folderPath)) {
-        console.log(`Removing ${folder}...`);
-        fs.rmSync(folderPath, { recursive: true, force: true });
-      }
+    if (fs.existsSync(path.resolve(process.cwd(), ".nuxt"))) {
+      fs.rmSync(path.resolve(process.cwd(), ".nuxt"), { recursive: true, force: true });
     }
 
-    // 2.1 AUTOMATIC BACKUP BEFORE SYNC
+    // 2.1 AUTOMATIC BACKUP BEFORE SYNC (Tetap dilakukan)
     try {
       console.log("Creating automatic pre-update backup...");
       const { resolveSqliteFilePath } = await import("../../../utils/prisma");
@@ -56,13 +51,15 @@ export default defineEventHandler(async (event) => {
         console.log(`Auto-backup created: ${backupPath}`);
       }
     } catch (bakErr) {
-      console.error("Auto-backup failed, but continuing update:", bakErr);
+      console.error("Auto-backup failed:", bakErr);
     }
 
-    // 3. Lanjutkan proses sisanya (Include DB Sync & Data Migration)
+    // 3. Jalankan build di folder terpisah atau langsung
+    // Agar tidak mengganggu server yang jalan, kita biarkan build menimpa file secara bertahap 
+    // atau biarkan Nitro menangani penggantian file di .output
     console.log("Running full sync chain...");
-    const fullCommand =
-      "npm install && npm run prisma:push && npm run prisma:generate && npm run build";
+    // Gunakan perintah build standar, Nitro biasanya cukup cerdas untuk mengganti file di .output di akhir proses
+    const fullCommand = "npm install && npm run prisma:generate && npm run prisma:push && npm run build";
     const { stdout: syncStdout } = await execAsync(fullCommand);
 
     console.log("Sync Result:", syncStdout);
