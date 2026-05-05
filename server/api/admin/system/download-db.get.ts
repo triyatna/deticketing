@@ -1,8 +1,19 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { resolveSqliteFilePath } from '../../../utils/prisma'
+import { verifyToken } from '../../../utils/jwt'
+import prisma from '../../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
+  const token = getCookie(event, 'auth_token')
+  if (!token) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+
+  const decoded: any = verifyToken(token)
+  if (!decoded) throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
+
+  const admin = await prisma.admin.findUnique({ where: { id: decoded.id } })
+  if (!admin || admin.role !== 'OWNER') throw createError({ statusCode: 403, statusMessage: 'Akses ditolak' })
+
   const query = getQuery(event)
   const fileName = query.fileName as string
   
