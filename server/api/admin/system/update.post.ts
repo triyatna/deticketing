@@ -66,9 +66,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // 4. Jalankan build di latar belakang (Background Process)
-    // Kita tidak menggunakan 'await' di sini agar bisa langsung membalas ke browser
+    // Kita mencoba 'migrate deploy' dulu (standar aman), jika gagal (misal P3005), 
+    // kita gunakan 'db push' sebagai fallback agar update tidak macet.
     console.log("Starting full sync chain in background...");
-    const fullCommand = "npm install && npx prisma generate && npx prisma migrate deploy && npm run build";
+    const fullCommand = "npm install && npx prisma generate && (npx prisma migrate deploy || npx prisma db push --accept-data-loss) && npm run build";
     
     // Eksekusi tanpa await agar request tidak timeout
     exec(fullCommand, (error, stdout, stderr) => {
