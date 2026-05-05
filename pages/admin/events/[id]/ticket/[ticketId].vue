@@ -18,16 +18,67 @@
         <div class="detail-grid">
           <!-- Kolom Kiri: Info Dasar & Form Tambahan -->
           <div class="detail-col">
-            <h3 class="section-title">Informasi Pendaftar</h3>
+            <div class="section-header-flex">
+              <h3 class="section-title">Informasi Pendaftar</h3>
+              <button
+                v-if="userRole === 'OWNER' || userRole === 'ADMIN'"
+                @click="isEditingInfo = !isEditingInfo"
+                class="btn-edit-toggle"
+                :title="isEditingInfo ? 'Batal Edit' : 'Edit Data'"
+              >
+                <svg
+                  v-if="!isEditingInfo"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  ></path>
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  ></path>
+                </svg>
+                <span v-else>&times; Batal</span>
+              </button>
+            </div>
 
             <div class="detail-group">
               <label>Nama Lengkap</label>
-              <p>{{ ticket.registrantName }}</p>
+              <input
+                v-if="isEditingInfo"
+                v-model="editForm.registrantName"
+                type="text"
+                class="form-input small"
+              />
+              <p v-else>{{ ticket.registrantName }}</p>
             </div>
 
             <div class="detail-group">
               <label>Email</label>
-              <p>{{ ticket.registrantEmail }}</p>
+              <input
+                v-if="isEditingInfo"
+                v-model="editForm.registrantEmail"
+                type="email"
+                class="form-input small"
+              />
+              <p v-else>{{ ticket.registrantEmail }}</p>
+            </div>
+
+            <div v-if="isEditingInfo" class="mt-2 mb-4">
+              <button
+                @click="handleUpdateData"
+                class="btn-primary small"
+                :disabled="isSaving"
+              >
+                {{ isSaving ? "Menyimpan..." : "Simpan Perubahan" }}
+              </button>
             </div>
 
             <div class="detail-group">
@@ -41,7 +92,7 @@
             </div>
 
             <div v-if="ticket.orderId" class="detail-group">
-              <label>Order ID (Multi-Ticket)</label>
+              <label>Order ID</label>
               <p>
                 <span class="badge badge-gray">{{ ticket.orderId }}</span>
               </p>
@@ -75,35 +126,113 @@
             </div>
 
             <div v-if="parsedFormData.length" class="mt-6">
-              <h3 class="section-title">Data Tambahan Form</h3>
+              <div class="section-header-flex">
+                <h3 class="section-title">Data Tambahan Form</h3>
+                <button
+                  v-if="userRole === 'OWNER' || userRole === 'ADMIN'"
+                  @click="isEditingForm = !isEditingForm"
+                  class="btn-edit-toggle"
+                >
+                  <span v-if="!isEditingForm">Edit Jawaban</span>
+                  <span v-else>&times; Batal</span>
+                </button>
+              </div>
+
               <div
                 v-for="(item, idx) in parsedFormData"
                 :key="idx"
                 class="detail-group mb-3"
               >
                 <label>{{ item.question }}</label>
-                <p v-if="item.type === 'file'">
-                  <a
-                    :href="`/api/admin/proof/${ticket.id}?file=${item.answer.fileName}`"
-                    target="_blank"
-                    class="text-blue font-semibold"
-                    >Unduh {{ item.answer.originalName }}</a
-                  >
-                </p>
-                <p v-else style="white-space: pre-wrap">
-                  {{
-                    Array.isArray(item.answer)
-                      ? item.answer.join(", ")
-                      : item.answer
-                  }}
-                </p>
+                <div v-if="isEditingForm && item.type !== 'file'">
+                  <!-- Simple text input for editing most types -->
+                  <textarea
+                    v-if="item.answer && String(item.answer).length > 50"
+                    v-model="editForm.formData[item.id]"
+                    class="form-input small"
+                    rows="3"
+                  ></textarea>
+                  <input
+                    v-else
+                    v-model="editForm.formData[item.id]"
+                    type="text"
+                    class="form-input small"
+                  />
+                </div>
+                <div v-else>
+                  <p v-if="item.type === 'file'">
+                    <a
+                      :href="`/api/admin/proof/${ticket.id}?file=${item.answer.fileName}`"
+                      target="_blank"
+                      class="text-blue font-semibold"
+                      >Unduh {{ item.answer.originalName }}</a
+                    >
+                  </p>
+                  <p v-else style="white-space: pre-wrap">
+                    {{
+                      Array.isArray(item.answer)
+                        ? item.answer.join(", ")
+                        : item.answer
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <div v-if="isEditingForm" class="mt-2">
+                <button
+                  @click="handleUpdateData"
+                  class="btn-primary small"
+                  :disabled="isSaving"
+                >
+                  {{ isSaving ? "Simpan Perubahan Form" : "Simpan Form" }}
+                </button>
               </div>
             </div>
           </div>
 
           <!-- Kolom Kanan: Status & Bukti Pembayaran -->
           <div class="detail-col status-col">
-            <h3 class="section-title">Status & Pembayaran</h3>
+            <h3 class="section-title">Status & QR Tiket</h3>
+
+            <!-- QR Code Section (Only if Approved) -->
+            <div
+              v-if="ticket.status === 'APPROVED'"
+              class="qr-section glass-panel mb-6"
+            >
+              <div class="qr-header">
+                <span class="qr-label">QR CODE TIKET</span>
+                <button 
+                  v-if="isQrVisible"
+                  @click="downloadQr" 
+                  class="btn-icon-only" 
+                  title="Unduh QR"
+                >
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+              </div>
+
+              <div class="qr-content-area">
+                <div v-if="!isQrVisible" class="qr-locked">
+                  <div class="lock-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                  <p class="lock-text">QR Code disembunyikan untuk keamanan</p>
+                  <button @click="confirmShowQr" class="btn-primary small mt-2">
+                    Lihat QR Ticket
+                  </button>
+                </div>
+                <div v-else class="qr-unlocked">
+                  <div class="qr-wrapper">
+                    <img v-if="qrDataUrl" :src="qrDataUrl" alt="QR Code" class="qr-image" />
+                    <div v-else class="qr-placeholder">Generating...</div>
+                  </div>
+                  <p class="qr-id">ID: {{ ticket.id }}</p>
+                  <button @click="isQrVisible = false" class="btn-text-only mt-2">
+                    Sembunyikan Kembali
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <div class="status-card">
               <div class="status-row">
@@ -214,9 +343,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import Swal from "sweetalert2";
+import QRCode from "qrcode";
 
 definePageMeta({ layout: "admin", middleware: "auth" });
 const route = useRoute();
@@ -244,6 +374,150 @@ const {
 const event = computed(() => response.value?.event);
 const ticket = computed(() => response.value?.ticket);
 const siblings = computed(() => response.value?.siblings || []);
+
+// QR Code Logic
+const qrDataUrl = ref("");
+const isQrVisible = ref(false);
+
+const generateQr = async () => {
+  if (ticket.value?.id && ticket.value?.status === "APPROVED") {
+    try {
+      qrDataUrl.value = await QRCode.toDataURL(ticket.value.id, {
+        margin: 2,
+        width: 300,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      });
+    } catch (err) {
+      console.error("QR Gen Error:", err);
+    }
+  }
+};
+
+watch(() => ticket.value?.status, generateQr);
+onMounted(generateQr);
+
+const confirmShowQr = async () => {
+  const { value: password } = await Swal.fire({
+    title: "Konfirmasi Keamanan",
+    text: "Masukkan password akun Anda untuk melihat QR Code pendaftar ini.",
+    input: "password",
+    inputPlaceholder: "Password Anda",
+    inputAttributes: {
+      autocapitalize: "off",
+      autocorrect: "off",
+    },
+    showCancelButton: true,
+    confirmButtonText: "Konfirmasi",
+    cancelButtonText: "Batal",
+    background: "#0f172a",
+    color: "#f8fafc",
+    confirmButtonColor: "#3b82f6",
+  });
+
+  if (!password) return;
+
+  try {
+    const res = await $fetch("/api/auth/confirm-password", {
+      method: "POST",
+      body: { password },
+    });
+
+    if (res.success) {
+      isQrVisible.value = true;
+      generateQr(); // Re-generate just in case
+    }
+  } catch (err) {
+    Swal.fire({
+      title: "Gagal",
+      text: err.data?.statusMessage || "Password salah",
+      icon: "error",
+      background: "#0f172a",
+      color: "#f8fafc",
+    });
+  }
+};
+
+const downloadQr = () => {
+  if (!qrDataUrl.value) return;
+  const link = document.createElement("a");
+  link.href = qrDataUrl.value;
+  link.download = `QR_${ticket.value.registrantName.replace(/\s+/g, "_")}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// Edit Mode Logic
+const isEditingInfo = ref(false);
+const isEditingForm = ref(false);
+const isSaving = ref(false);
+const editForm = ref({
+  registrantName: "",
+  registrantEmail: "",
+  formData: {},
+});
+
+watch(
+  ticket,
+  (val) => {
+    if (val) {
+      editForm.value.registrantName = val.registrantName;
+      editForm.value.registrantEmail = val.registrantEmail;
+      try {
+        editForm.value.formData = JSON.parse(val.formData || "{}");
+      } catch {
+        editForm.value.formData = {};
+      }
+    }
+  },
+  { immediate: true },
+);
+
+const handleUpdateData = async () => {
+  isSaving.value = true;
+  try {
+    const res = await $fetch("/api/ticket/update-data", {
+      method: "POST",
+      body: {
+        ticketId: ticket.value.id,
+        registrantName: editForm.value.registrantName,
+        registrantEmail: editForm.value.registrantEmail,
+        formData: editForm.value.formData,
+      },
+    });
+
+    if (res.success) {
+      Swal.fire({
+        title: "Sukses!",
+        text: "Data berhasil diperbarui.",
+        icon: "success",
+        background: "#0f172a",
+        color: "#f8fafc",
+        confirmButtonColor: "#3b82f6",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+      isEditingInfo.value = false;
+      isEditingForm.value = false;
+      await refresh();
+    }
+  } catch (err) {
+    Swal.fire({
+      title: "Error",
+      text: err.data?.statusMessage || "Gagal memperbarui data",
+      icon: "error",
+      background: "#0f172a",
+      color: "#f8fafc",
+    });
+  } finally {
+    isSaving.value = false;
+  }
+};
 
 useHead(() => ({
   title: ticket.value
@@ -277,6 +551,7 @@ const parsedFormData = computed(() => {
         if (Array.isArray(answer) && answer.length === 0) continue;
 
         result.push({
+          id: q.id,
           question: q.label,
           type: q.questionType === "file_upload" ? "file" : "text",
           answer: answer,
@@ -613,5 +888,179 @@ const updateTicketStatus = async (id, newStatus) => {
 .sibling-item:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--glass-border);
+}
+
+.section-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 0.5rem;
+}
+.section-header-flex .section-title {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.btn-edit-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+.btn-edit-toggle:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.qr-section {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.qr-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.qr-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.qr-wrapper {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+.qr-image {
+  width: 180px;
+  height: 180px;
+  display: block;
+}
+.qr-placeholder {
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: 600;
+}
+.qr-id {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.btn-icon-only {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-icon-only:hover {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.form-input.small {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.btn-primary.small {
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+}
+
+.qr-content-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+
+.qr-locked, .qr-unlocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  width: 100%;
+}
+
+.lock-icon {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.lock-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  max-width: 200px;
+}
+
+.btn-text-only {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+.btn-text-only:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 640px) {
+  .detail-container {
+    padding: 1rem;
+  }
+  .qr-section {
+    padding: 1rem;
+  }
+  .qr-wrapper {
+    padding: 0.75rem;
+  }
+  .qr-image, .qr-placeholder {
+    width: 160px;
+    height: 160px;
+  }
+  .status-col {
+    padding: 1rem;
+  }
 }
 </style>
