@@ -1,11 +1,11 @@
-# DeTicketing
-
-Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite. Dirancang untuk memberikan solusi manajemen pendaftaran yang aman, fleksibel, dan mudah diimplementasikan.
-
 <!-- logo -->
 <p align="center">
 <img src="public/logo.png" alt="Logo" width="200" height="200">
 </p>
+
+# DeTicketing
+
+Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite. Dirancang untuk memberikan solusi manajemen pendaftaran yang aman, fleksibel, dan mudah diimplementasikan.
 
 ## Fitur Utama
 
@@ -47,6 +47,13 @@ Mendukung pembagian tugas melalui peran Admin, Panitia, dan Petugas. Akses terha
 - **Database**: SQLite (Default)
 - **Keamanan**: JWT Authentication, SHA-256 Fingerprinting, AES-256 File Encryption
 - **Email**: SMTP integration via Nodemailer
+
+## Screenshot
+
+<!-- screenshot -->
+<p align="center">
+<img src="public/screenshot.png" alt="Screenshot 1" width="600">
+</p>
 
 ## Instalasi
 
