@@ -216,6 +216,8 @@ watch(
 
 const logout = async () => {
   await $fetch("/api/auth/logout", { method: "POST" });
+  const userState = useState("auth_user");
+  userState.value = null;
   router.push("/admin/login");
 };
 </script>
@@ -245,6 +247,7 @@ const logout = async () => {
   flex-direction: column;
   position: fixed;
   height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   left: 0;
   top: 0;
   z-index: 1000;

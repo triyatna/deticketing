@@ -28,11 +28,6 @@ export default defineNuxtConfig({
 
   security: {
     headers: {
-      /**
-       * PENTING UNTUK KAMERA
-       * Default nuxt-security: camera=()
-       * Jadi harus di-allow manual.
-       */
       permissionsPolicy: {
         camera: ["self"],
         microphone: [],
@@ -58,16 +53,20 @@ export default defineNuxtConfig({
 
         "font-src": ["'self'", "https://fonts.gstatic.com"],
 
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        "script-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          "https://static.cloudflareinsights.com",
+        ],
 
-        /**
-         * Aman ditambahkan untuk API same-origin, ngrok, dan dev websocket.
-         */
-        "connect-src": ["'self'", "https:", "wss:", "ws:"],
-
-        /**
-         * Tambahan aman untuk media/camera preview jika browser butuh blob.
-         */
+        "connect-src": [
+          "'self'",
+          "https:",
+          "wss:",
+          "ws:",
+          "https://cloudflareinsights.com",
+        ],
         "media-src": ["'self'", "blob:", "data:"],
       },
     },

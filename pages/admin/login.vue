@@ -94,6 +94,10 @@ const handleLogin = async () => {
     })
 
     if (response.success) {
+      // Set the global auth state immediately so middleware doesn't need to fetch it again
+      const userState = useState('auth_user')
+      userState.value = response.user
+
       const redirect = route.query.redirect
       if (redirect && typeof redirect === 'string') {
         router.push(redirect)

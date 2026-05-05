@@ -27,13 +27,13 @@ export default defineEventHandler(async (event) => {
 
     const token = generateToken({ id: admin.id, username: admin.username, role: admin.role })
 
-    // Set HTTP-Only Cookie
+    // Set HTTP-Only Cookie with Strict SameSite for maximum CSRF protection
     setCookie(event, 'auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24, // 1 day
       path: '/',
-      sameSite: 'lax'
+      sameSite: 'strict'
     })
 
     return {
