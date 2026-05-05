@@ -153,6 +153,16 @@
                  Backup Database Sekarang
               </template>
             </button>
+
+            <button
+               type="button"
+               class="btn-outline w-full mt-2"
+               @click="downloadActiveDb"
+             >
+               <div class="i-heroicons-cloud-arrow-down-solid mr-2"></div>
+               Unduh Database Aktif (.db)
+             </button>
+
             <p class="field-hint text-center">Backup akan disimpan di folder <code>/data/backups/</code></p>
             
             <div class="divider-small"></div>
@@ -171,9 +181,14 @@
                     <span class="bak-name" :title="bak.name">{{ bak.name }}</span>
                     <span class="bak-meta">{{ (bak.size / 1024).toFixed(1) }} KB • {{ new Date(bak.createdAt).toLocaleString() }}</span>
                   </div>
-                  <button type="button" class="btn-restore-small" @click="runRestore(bak.name)">
-                    Restore
-                  </button>
+                  <div class="bak-actions">
+                    <button type="button" class="btn-icon-small" @click="downloadBackup(bak.name)" title="Unduh Backup">
+                      <div class="i-heroicons-arrow-down-tray-solid"></div>
+                    </button>
+                    <button type="button" class="btn-restore-small" @click="runRestore(bak.name)">
+                      Restore
+                    </button>
+                  </div>
                 </div>
               </div>
               <p v-else class="field-hint italic text-center py-2">Belum ada file backup.</p>
@@ -666,12 +681,21 @@ const runBackup = async () => {
     const res = await $fetch("/api/admin/system/backup", { method: "POST" });
     if (res.success) {
       showNotice("success", res.message || "Backup berhasil dibuat.");
+      fetchBackups();
     }
   } catch (err) {
     showNotice("error", err.data?.statusMessage || "Gagal membuat backup.");
   } finally {
     isBackingUp.value = false;
   }
+};
+
+const downloadActiveDb = () => {
+  window.open("/api/admin/system/download-db", "_blank");
+};
+
+const downloadBackup = (fileName) => {
+  window.open(`/api/admin/system/download-db?fileName=${fileName}`, "_blank");
 };
 
 const runUpdate = async () => {
@@ -909,6 +933,12 @@ label {
   flex-direction: column;
 }
 
+.bak-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .bak-name {
   color: #e2e8f0;
   font-weight: 600;
@@ -923,7 +953,7 @@ label {
   font-size: 0.7rem;
 }
 
-.btn-refresh-small, .btn-restore-small {
+.btn-refresh-small, .btn-restore-small, .btn-icon-small {
   background: none;
   border: none;
   cursor: pointer;
@@ -934,7 +964,7 @@ label {
   transition: color 0.2s;
 }
 
-.btn-refresh-small:hover { color: white; }
+.btn-refresh-small:hover, .btn-icon-small:hover { color: white; }
 .btn-restore-small {
   padding: 0.25rem 0.5rem;
   background: rgba(245, 158, 11, 0.15);
