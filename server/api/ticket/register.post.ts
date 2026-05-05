@@ -228,6 +228,15 @@ export default defineEventHandler(async (event) => {
       savedFileName = uniqueFileName
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(registrantEmail.trim())) {
+      throw createError({ statusCode: 400, statusMessage: 'Format Email tidak valid' })
+    }
+
+    if (quantity > 1 && additionalNames.length !== quantity - 1) {
+      throw createError({ statusCode: 400, statusMessage: 'Daftar nama peserta rombongan tidak lengkap' })
+    }
+
     let parsedFormData: Record<string, any> = {}
     try {
       const parsed = JSON.parse(formDataStr)
@@ -236,6 +245,52 @@ export default defineEventHandler(async (event) => {
       }
     } catch {
       parsedFormData = {}
+    }
+
+    // Server-side validation of required fields from schema
+    try {
+      const schema = JSON.parse(evt.formSchema || '[]')
+      if (Array.isArray(schema)) {
+        const questions = schema.filter(item => item?.itemType === 'question')
+        for (const q of questions) {
+          if (!q.required) continue
+          
+          const iterations = (quantity > 1 && q.enableMulti) ? quantity : 1
+          for (let pIdx = 0; pIdx < iterations; pIdx++) {
+            const ansId = (quantity > 1 && q.enableMulti) ? `${q.id}_p${pIdx}` : q.id
+            const val = parsedFormData[ansId]
+            const pLabel = iterations > 1 ? ` (Peserta ${pIdx + 1})` : ''
+
+            if (['short_answer', 'paragraph', 'multiple_choice', 'dropdown', 'date', 'time', 'linear_scale', 'rating'].includes(q.questionType)) {
+              if (val === undefined || val === null || String(val).trim() === '') {
+                throw createError({ statusCode: 400, statusMessage: `Field wajib belum diisi: ${q.label}${pLabel}` })
+              }
+            } else if (q.questionType === 'checkboxes') {
+              if (!Array.isArray(val) || val.length === 0) {
+                throw createError({ statusCode: 400, statusMessage: `Field wajib belum diisi: ${q.label}${pLabel}` })
+              }
+            } else if (q.questionType === 'file_upload') {
+              if (!dynamicFiles[ansId] && !parsedFormData[ansId]?.fileName) {
+                throw createError({ statusCode: 400, statusMessage: `File wajib diunggah: ${q.label}${pLabel}` })
+              }
+            } else if (q.questionType === 'multiple_choice_grid' || q.questionType === 'checkbox_grid') {
+              const matrix = val || {}
+              const rows = Array.isArray(q.gridRows) ? q.gridRows : (String(q.gridRowsText || '').split(/\r?\n|,/).map(s => s.trim()).filter(Boolean))
+              const isAllAnswered = rows.every((row: string) => {
+                const rVal = matrix[row]
+                if (q.questionType === 'multiple_choice_grid') return rVal && String(rVal).trim() !== ''
+                return Array.isArray(rVal) && rVal.length > 0
+              })
+              if (!isAllAnswered) {
+                throw createError({ statusCode: 400, statusMessage: `Grid wajib diisi lengkap: ${q.label}${pLabel}` })
+              }
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      if (e.statusCode) throw e
+      console.error('Schema validation error:', e)
     }
 
     parsedDeviceMeta = {

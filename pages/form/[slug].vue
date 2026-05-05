@@ -2711,6 +2711,22 @@ const toEmbedVideo = (url) => {
 };
 
 const validateRequired = () => {
+  // 1. Validasi Pendaftar Utama (Root Fields)
+  if (!form.value.registrantName?.trim()) {
+    return "Nama Lengkap Anda wajib diisi";
+  }
+  
+  if (!form.value.registrantEmail?.trim()) {
+    return "Email Anda wajib diisi";
+  }
+
+  // Regex sederhana untuk validasi email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(form.value.registrantEmail.trim())) {
+    return "Format Email tidak valid";
+  }
+
+  // 2. Validasi Pertanyaan Kustom (Dynamic Fields)
   for (const question of questionItems.value) {
     if (!question.required) continue;
 
@@ -2775,19 +2791,25 @@ const validateRequired = () => {
     }
   }
 
-  if (event.value?.requireProof && !paymentSettings.value.length) {
+  // 3. Validasi Pembayaran
+  if (isPaymentEnabled.value && event.value?.requireProof && !paymentSettings.value.length) {
     return "Konfigurasi metode pembayaran belum lengkap";
   }
 
-  if (event.value?.requireProof && !selectedProofFile.value) {
-    return "Bukti Pembayaran / Transfer";
+  if (isPaymentEnabled.value && event.value?.requireProof && !selectedProofFile.value) {
+    return "Bukti Pembayaran / Transfer wajib diunggah";
   }
 
-  if (allowMultiTicket.value) {
+  // 4. Validasi Nama Peserta Rombongan
+  if (isMultiTicketMode.value) {
     for (let i = 0; i < additionalNames.value.length; i++) {
       if (!additionalNames.value[i]?.trim()) {
-        return `Nama Pendaftar ${i + 2}`;
+        return `Nama Peserta ke-${i + 2} wajib diisi`;
       }
+    }
+    
+    if (additionalNames.value.length !== ticketQuantity.value - 1) {
+      return "Jumlah nama peserta tidak sesuai dengan jumlah tiket";
     }
   }
 
