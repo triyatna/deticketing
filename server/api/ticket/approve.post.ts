@@ -30,17 +30,30 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!primaryTicket) throw createError({ statusCode: 404, statusMessage: 'Tiket tidak ditemukan' })
-    if (primaryTicket.status === 'APPROVED') throw createError({ statusCode: 400, statusMessage: 'Tiket sudah diapprove' })
+    
+    const isResend = primaryTicket.status === 'APPROVED'
 
-    const ticketsToApprove = (primaryTicket as any).orderId 
-      ? await prisma.ticket.findMany({ where: { orderId: (primaryTicket as any).orderId, status: 'PENDING' } as any, include: { event: true } })
-      : [primaryTicket]
+    const ticketsToProcess = isResend
+      ? [primaryTicket]
+      : ((primaryTicket as any).orderId 
+          ? await prisma.ticket.findMany({ 
+              where: { 
+                orderId: (primaryTicket as any).orderId, 
+                status: 'PENDING' 
+              } as any, 
+              include: { event: true } 
+            })
+          : [primaryTicket])
+
+    if (ticketsToProcess.length === 0 && !isResend) {
+       throw createError({ statusCode: 400, statusMessage: 'Tidak ada tiket pending yang bisa diapprove' })
+    }
 
     const baseUrl = resolveRequestBaseUrl(event)
     const eventQrSecret = await getOrCreateEventQrSecret(primaryTicket.eventId)
 
-    for (let i = 0; i < ticketsToApprove.length; i++) {
-      const ticket: any = ticketsToApprove[i]
+    for (let i = 0; i < ticketsToProcess.length; i++) {
+      const ticket: any = ticketsToProcess[i]
       if (!ticket) continue
       
       // Delay if more than one ticket to avoid spam flagging
@@ -84,9 +97,11 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: ticketsToApprove.length > 1 
-        ? `${ticketsToApprove.length} tiket dalam pesanan ini berhasil diapprove.`
-        : 'Tiket berhasil diapprove dan QR Code telah dikirim ke email.'
+      message: isResend
+        ? 'E-Ticket berhasil dikirim ulang ke email.'
+        : (ticketsToProcess.length > 1 
+            ? `${ticketsToProcess.length} tiket dalam pesanan ini berhasil diapprove.`
+            : 'Tiket berhasil diapprove dan QR Code telah dikirim ke email.')
     }
   } catch (error: any) {
     console.error('Approve Ticket Error:', error)

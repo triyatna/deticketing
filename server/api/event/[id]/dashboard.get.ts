@@ -61,8 +61,39 @@ export default defineEventHandler(async (event) => {
       const formMeta = Array.isArray(schema) ? schema.find((s: any) => s.itemType === 'form_meta') : {}
       if (formMeta) {
         if (formMeta.paymentEnabled && formMeta.nominal) {
-          isPaid = true
-          revenue = approvedTickets * Number(formMeta.nominal)
+          isPaid = true;
+          
+          // Get all approved tickets to calculate revenue per order
+          const approvedTicketsList = await prisma.ticket.findMany({
+            where: { eventId, status: 'APPROVED' },
+            select: { orderId: true }
+          });
+
+          const orders: Record<string, number> = {};
+          approvedTicketsList.forEach(t => {
+            const oid = t.orderId || 'manual';
+            orders[oid] = (orders[oid] || 0) + 1;
+          });
+
+          const nominal = Number(formMeta.nominal);
+          const pEnabled = !!formMeta.promoEnabled;
+          const pMin = Number(formMeta.promoMinTickets || 2);
+          const pType = String(formMeta.promoType || 'free_ticket');
+          const pVal = Number(formMeta.promoValue || 1);
+
+          for (const qty of Object.values(orders)) {
+            let orderDiscount = 0;
+            if (pEnabled) {
+              if (pType === 'free_ticket') {
+                const bundleSize = pMin + pVal;
+                const freeCount = Math.floor(qty / bundleSize) * pVal;
+                orderDiscount = freeCount * nominal;
+              } else if (pType === 'discount' && qty >= pMin) {
+                orderDiscount = pVal;
+              }
+            }
+            revenue += Math.max(0, (qty * nominal) - orderDiscount);
+          }
         }
         if (formMeta.eventDate) {
           const now = new Date()
