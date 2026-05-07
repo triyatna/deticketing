@@ -1419,12 +1419,16 @@
                   <span class="billing-label">Kuantitas Tiket</span>
                   <span class="billing-value">x {{ ticketQuantity }}</span>
                 </div>
+                <div v-if="promoResult" class="billing-item promo-applied">
+                  <span class="billing-label">{{ promoResult.label }}</span>
+                  <span class="billing-value text-green">- {{ formatPrice(promoResult.discountAmount) }}</span>
+                </div>
                 <div class="billing-divider"></div>
                 <div class="billing-footer">
                   <span class="total-label">Total Pembayaran</span>
                   <div class="total-wrap">
                     <span class="total-amount">{{
-                      formatPrice(eventNominal * ticketQuantity)
+                      formatPrice(totalAmount)
                     }}</span>
                   </div>
                 </div>
@@ -1434,7 +1438,7 @@
               <div v-else class="global-nominal-card mt-4">
                 <span class="nominal-label">Total yang harus dibayar:</span>
                 <strong class="nominal-value">{{
-                  formatPrice(eventNominal)
+                  formatPrice(totalAmount)
                 }}</strong>
               </div>
             </div>
@@ -2182,10 +2186,45 @@ const ticketQuantity = ref(1);
 const additionalNames = ref([]);
 const isMultiTicketMode = ref(false);
 
+const promoEnabled = computed(() => !!formMeta.value?.promoEnabled);
+const promoMinTickets = computed(() => Number(formMeta.value?.promoMinTickets ?? 2));
+const promoType = computed(() => String(formMeta.value?.promoType || "free_ticket"));
+const promoValue = computed(() => Number(formMeta.value?.promoValue ?? 1));
+
+const promoResult = computed(() => {
+  if (!promoEnabled.value) return null;
+  const qty = Number(ticketQuantity.value || 1);
+  const nominal = Number(eventNominal.value || 0);
+
+  if (promoType.value === 'free_ticket') {
+    const bundleSize = promoMinTickets.value + promoValue.value;
+    const freeTicketCount = Math.floor(qty / bundleSize) * promoValue.value;
+    if (freeTicketCount > 0) {
+      return {
+        type: 'free_ticket',
+        freeCount: freeTicketCount,
+        discountAmount: freeTicketCount * nominal,
+        label: `Promo: Beli ${promoMinTickets.value} Gratis ${promoValue.value}`
+      };
+    }
+  } else if (promoType.value === 'discount') {
+    if (qty >= promoMinTickets.value) {
+      return {
+        type: 'discount',
+        discountAmount: promoValue.value,
+        label: `Promo: Diskon Rombongan`
+      };
+    }
+  }
+  return null;
+});
+
 const totalAmount = computed(() => {
   const nominal = Number(eventNominal.value || 0);
   const qty = Number(ticketQuantity.value || 1);
-  return nominal * qty;
+  const baseTotal = nominal * qty;
+  const discount = promoResult.value?.discountAmount || 0;
+  return Math.max(0, baseTotal - discount);
 });
 
 const dynamicQrisUrls = ref({});
@@ -3405,6 +3444,15 @@ const submitRegistration = async () => {
 }
 .mb-4 {
   margin-bottom: 1rem;
+}
+
+.text-green {
+  color: #22c55e;
+}
+
+.billing-item.promo-applied .billing-label {
+  color: #22c55e;
+  font-weight: 700;
 }
 
 .participant-badge-inline {

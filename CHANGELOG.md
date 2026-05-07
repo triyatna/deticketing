@@ -4,10 +4,13 @@ Seluruh perubahan penting pada proyek DeTicketing akan dicatat dalam dokumen ini
 
 ---
 
-## [1.1.0] - 2026-05-05
+## [1.1.0] - 2026-05-08
 
 ### Added
 
+- **Ticket Promo System**: Implementasi fitur promo "Gratis Tiket" (Buy X Get Y Free) dan "Diskon" (Potongan Harga Tetap).
+- **Smart Promo Logic**: Sistem otomatis menyesuaikan batas maksimal tiket per pesanan berdasarkan syarat promo yang diaktifkan di dashboard admin.
+- **Decoupled Email Duplicate**: Pengaturan pendaftaran email berulang kini bersifat independen dan tidak lagi dipaksa aktif saat fitur Multi-Ticket digunakan.
 - **Professional Reporting (Export)**: Fitur ekspor pendaftar ke format PDF dan CSV dengan sinkronisasi kolom dinamis.
 - **Smart Report Logic**: Kolom "Status Kehadiran" pada laporan otomatis muncul hanya jika event telah dilaksanakan (berdasarkan `eventDate`).
 - **Global API Interceptor**: Implementasi penanganan error 401/403 secara global untuk membersihkan sesi dan redirect otomatis ke login jika token tidak valid.

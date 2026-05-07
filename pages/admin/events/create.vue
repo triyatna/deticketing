@@ -456,14 +456,64 @@
               <p class="helper-text">Batas jumlah tiket dalam satu kali checkout. Isi <strong>0</strong> untuk tidak terbatas.</p>
             </div>
 
+            <!-- Promo Settings -->
+            <div class="form-group row-full mt-4" v-if="form.allowMultiTicket">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="form.promoEnabled" />
+                <span class="checkmark"></span>
+                Aktifkan Promo / Diskon (Berdasarkan Jumlah Tiket)
+              </label>
+              <p class="helper-text ml-8">
+                Terapkan diskon atau tiket gratis jika pendaftar membeli dalam jumlah tertentu.
+              </p>
+            </div>
+
+            <div class="promo-box-wrapper row-full ml-8 mt-2" v-if="form.allowMultiTicket && form.promoEnabled">
+              <div class="promo-box">
+                <div class="grid-three">
+                  <div class="form-group">
+                    <label>Minimal Tiket Dibeli</label>
+                    <input
+                      v-model="form.promoMinTickets"
+                      type="number"
+                      class="form-input"
+                      min="1"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Tipe Promo</label>
+                    <select v-model="form.promoType" class="form-input">
+                      <option value="free_ticket">Gratis Tiket (Buy X Get Y Free)</option>
+                      <option value="discount">Diskon (Potongan Harga)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>{{ form.promoType === 'free_ticket' ? 'Jumlah Tiket Gratis' : 'Potongan Harga (Rp)' }}</label>
+                    <input
+                      v-model="form.promoValue"
+                      type="number"
+                      class="form-input"
+                      min="1"
+                    />
+                  </div>
+                </div>
+                <p class="helper-text mt-1" v-if="form.promoType === 'free_ticket'">
+                  Contoh: Beli <strong>{{ form.promoMinTickets }}</strong> tiket, gratis <strong>{{ form.promoValue }}</strong> tiket (total <strong>{{ Number(form.promoMinTickets) + Number(form.promoValue) }}</strong> tiket, bayar <strong>{{ form.promoMinTickets }}</strong>).
+                </p>
+                <p class="helper-text mt-1" v-else>
+                  Contoh: Beli minimal <strong>{{ form.promoMinTickets }}</strong> tiket, dapat potongan <strong>Rp {{ Number(form.promoValue).toLocaleString('id-ID') }}</strong>.
+                </p>
+              </div>
+            </div>
+
             <div class="form-group row-full mt-4">
               <label class="checkbox-container">
-                <input type="checkbox" v-model="form.allowDuplicateEmail" :disabled="form.allowMultiTicket" />
+                <input type="checkbox" v-model="form.allowDuplicateEmail" />
                 <span class="checkmark"></span>
                 Izinkan Pendaftaran Email Berulang (Duplikat)
               </label>
-              <p class="helper-text mt-1 ml-8">
-                {{ form.allowMultiTicket ? 'Wajib aktif jika fitur Multi-Ticket diaktifkan.' : 'Jika dicentang, 1 email yang sama diizinkan mendaftar berkali-kali pada event ini.' }}
+              <p class="helper-text ml-8">
+                Jika dicentang, 1 email yang sama diizinkan mendaftar berkali-kali pada event ini (meskipun dalam mode Multi-Ticket).
               </p>
             </div>
 
@@ -473,7 +523,7 @@
                 <span class="checkmark"></span>
                 Izinkan Pendaftaran Berulang (Device yang Sama)
               </label>
-              <p class="helper-text mt-1 ml-8">
+              <p class="helper-text ml-8">
                 Default aktif. Jika dimatikan, device yang sudah pernah berhasil daftar tidak bisa mengisi form lagi.
               </p>
             </div>
@@ -953,13 +1003,40 @@ const form = ref({
   eventLocation: "",
   assignmentEnabled: false,
   assignedStaffIds: [],
+  promoEnabled: false,
+  promoMinTickets: 2,
+  promoType: "free_ticket",
+  promoValue: 1,
 });
 
-watch(() => form.value.allowMultiTicket, (val) => {
-  if (val) {
-    form.value.allowDuplicateEmail = true;
+watch([
+  () => form.value.promoEnabled,
+  () => form.value.promoMinTickets,
+  () => form.value.promoType,
+  () => form.value.promoValue,
+], ([enabled, min, type, val]) => {
+  if (!enabled) return;
+
+  const minTickets = Number(min || 1);
+  const promoVal = Number(val || 1);
+  const currentMax = Number(form.value.maxTicketsPerOrder || 0);
+
+  // If max is 0, it means unlimited, so no adjustment needed
+  if (currentMax === 0) return;
+
+  if (type === 'free_ticket') {
+    const requiredTotal = minTickets + promoVal;
+    if (currentMax < requiredTotal) {
+      form.value.maxTicketsPerOrder = requiredTotal;
+    }
+  } else {
+    // For discount, just ensure max is at least min
+    if (currentMax < minTickets) {
+      form.value.maxTicketsPerOrder = minTickets;
+    }
   }
 });
+
 
 watch(
   () => form.value.paymentMethods,
@@ -1370,6 +1447,12 @@ const loadEventForEdit = async () => {
     form.value.assignmentEnabled = !!meta?.assignmentEnabled;
     form.value.assignedStaffIds = Array.isArray(meta?.assignedStaffIds) ? meta.assignedStaffIds : [];
 
+    // Promo
+    form.value.promoEnabled = !!meta.promoEnabled;
+    form.value.promoMinTickets = Number(meta.promoMinTickets ?? 2);
+    form.value.promoType = String(meta.promoType || "free_ticket");
+    form.value.promoValue = Number(meta.promoValue ?? 1);
+
     form.value.paymentMethods = Array.isArray(meta?.paymentSettings)
       ? meta.paymentSettings.map((method, index) => ({
           id: String(method?.id || `pay_${index}`),
@@ -1592,8 +1675,11 @@ const submitEvent = async () => {
       allowDuplicateDevice: !!form.value.allowDuplicateDevice,
       allowMultiTicket: !!form.value.allowMultiTicket,
       maxTicketsPerOrder: Number(form.value.maxTicketsPerOrder ?? 5),
-      assignmentEnabled: !!form.value.assignmentEnabled,
       assignedStaffIds: Array.isArray(form.value.assignedStaffIds) ? form.value.assignedStaffIds : [],
+      promoEnabled: !!form.value.promoEnabled,
+      promoMinTickets: Number(form.value.promoMinTickets || 2),
+      promoType: String(form.value.promoType || "free_ticket"),
+      promoValue: Number(form.value.promoValue || 1),
     };
 
     if (form.value.paymentEnabled && !validPaymentMethods.value.length) {
@@ -1890,7 +1976,8 @@ onMounted(async () => {
 .helper-text {
   color: #fbbf24;
   font-size: 0.78rem;
-  margin-top: 0.4rem;
+  margin-top: 0.15rem;
+  line-height: 1.4;
 }
 
 .form-grid {
@@ -2116,6 +2203,13 @@ label {
   border-radius: 12px;
   padding: 0.78rem;
   background: rgba(9, 18, 34, 0.52);
+}
+
+.promo-box {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 1rem;
 }
 
 .payment-head {
@@ -2449,4 +2543,7 @@ input:checked + .slider:before {
 .flex-row { display: flex; align-items: center; }
 .gap-2 { gap: 0.5rem; }
 .mt-auto { margin-top: auto; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.ml-8 { margin-left: 1.8rem; }
 </style>

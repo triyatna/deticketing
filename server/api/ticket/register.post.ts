@@ -117,8 +117,11 @@ export default defineEventHandler(async (event) => {
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
-        notifyEnabled = !!meta?.notifyEnabled
         notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : []
+        const promoEnabled = !!meta?.promoEnabled
+        const promoMinTickets = Number(meta?.promoMinTickets ?? 2)
+        const promoType = String(meta?.promoType || 'free_ticket')
+        const promoValue = Number(meta?.promoValue ?? 1)
         const methods: Array<Record<string, any>> = Array.isArray(meta?.paymentSettings)
           ? meta.paymentSettings as Array<Record<string, any>>
           : []

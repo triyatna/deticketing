@@ -13,8 +13,11 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 
 - **Pembangun Form Dinamis**: Mendukung berbagai tipe input mulai dari teks sederhana hingga unggahan file dan pilihan grid kompleks.
 - **Checkout Rombongan (Multi-Ticket)**: Memungkinkan pendaftaran kolektif dalam satu pesanan (batch) dengan manajemen nama peserta tambahan secara dinamis.
+- **Sistem Promo & Diskon**: Dukungan promo "Beli X Gratis Y" atau potongan harga tetap berdasarkan jumlah tiket yang dibeli untuk mendorong pendaftaran rombongan.
+- **Smart Promo Adjustment**: Batas maksimal tiket per pesanan otomatis menyesuaikan dengan kebutuhan promo agar pendaftar selalu dapat memanfaatkan penawaran (misal: Beli 5 Gratis 1 otomatis menaikkan batas order menjadi 6).
 - **Fleksibilitas Penjadwalan**: Dukungan untuk event satu hari maupun event berdurasi panjang (multi-day) dengan penanganan tanggal selesai otomatis.
-- **Billing Summary Adaptif**: Kalkulasi biaya otomatis dengan tampilan ringkasan pembayaran yang profesional dan terstruktur untuk pesanan rombongan.
+- **Billing Summary Adaptif**: Kalkulasi biaya otomatis dengan tampilan ringkasan pembayaran yang profesional, termasuk kalkulasi potongan promo secara real-time.
+- **Pendaftaran Email Independen**: Opsi untuk membatasi pendaftaran email berulang kini bersifat opsional dan tidak lagi dipaksa aktif saat mode Multi-Ticket menyala.
 
 ### Pelaporan dan Analitik
 
@@ -87,6 +90,10 @@ Sistem manajemen tiket dan pendaftaran event berbasis Nuxt 3, Prisma, dan SQLite
 - `data/backups/`: Tempat penyimpanan file cadangan database (Manual & Auto).
 - `public/uploads/`: Folder penyimpanan gambar bukti pembayaran pendaftar.
 - `server/api/admin/system/`: Endpoint manajemen inti (Backup, Restore, Update, Download).
+
+## Lisensi
+
+Proyek ini dilisensikan di bawah [Lisensi MIT](LICENSE).
 
 ---
 © 2026 DeTicketing Platform - Advanced Event Management System.
