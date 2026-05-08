@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { ticketId, registrantName, registrantEmail, formData } = body
+  const { ticketId, registrantEmail, formData } = body
 
   if (!ticketId) {
     throw createError({ statusCode: 400, statusMessage: 'Ticket ID is required' })
@@ -34,7 +34,6 @@ export default defineEventHandler(async (event) => {
     const updatedTicket = await prisma.ticket.update({
       where: { id: ticketId },
       data: {
-        registrantName: registrantName || ticket.registrantName,
         registrantEmail: registrantEmail || ticket.registrantEmail,
         formData: formData ? JSON.stringify(formData) : ticket.formData
       }

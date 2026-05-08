@@ -1400,7 +1400,7 @@
           </section>
 
           <div
-            v-if="isPaymentEnabled && paymentSettings.length"
+            v-if="isPaymentEnabled && paymentSettings.length && totalAmount > 0"
             class="payment-box mt-4"
           >
             <h4>Instruksi Pembayaran</h4>
@@ -1581,7 +1581,7 @@
           </div>
 
           <div
-            v-if="isPaymentEnabled && event.requireProof"
+            v-if="isPaymentEnabled && event.requireProof && totalAmount > 0"
             class="form-group mt-4 p-4 border-dashed rounded proof-box"
           >
             <label
@@ -1878,7 +1878,7 @@ const mapLegacyQuestionType = (legacyType) => {
 };
 
 const formatPrice = (value) => {
-  if (!value) return "";
+  if (value === undefined || value === null || value === "") return "";
   const num = parseInt(value);
   if (isNaN(num)) return value;
   return new Intl.NumberFormat("id-ID", {
@@ -2752,14 +2752,13 @@ const toEmbedVideo = (url) => {
 const validateRequired = () => {
   // 1. Validasi Pendaftar Utama (Root Fields)
   if (!form.value.registrantName?.trim()) {
-    return "Nama Lengkap Anda wajib diisi";
+    return "Nama Lengkap wajib diisi";
   }
   
   if (!form.value.registrantEmail?.trim()) {
-    return "Email Anda wajib diisi";
+    return "Email wajib diisi";
   }
 
-  // Regex sederhana untuk validasi email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(form.value.registrantEmail.trim())) {
     return "Format Email tidak valid";
@@ -2778,6 +2777,7 @@ const validateRequired = () => {
       const ansId = getAnswerId(question.id, pIdx);
       const value = answers.value[ansId];
       const participantLabel = iterations > 1 ? ` (Peserta ${pIdx + 1})` : "";
+      const fieldLabel = question.label || "Field";
 
       if (
         [
@@ -2796,17 +2796,15 @@ const validateRequired = () => {
           value === null ||
           String(value).trim() === ""
         ) {
-          return (question.label || "Pertanyaan wajib") + participantLabel;
+          return `${fieldLabel}${participantLabel} wajib diisi`;
         }
       } else if (question.questionType === "checkboxes") {
         if (!Array.isArray(value) || value.length === 0) {
-          return (question.label || "Pertanyaan wajib") + participantLabel;
+          return `${fieldLabel}${participantLabel} wajib dipilih minimal satu`;
         }
       } else if (question.questionType === "file_upload") {
         if (!fileAnswers.value[ansId]) {
-          return (
-            (question.label || "Pertanyaan upload wajib") + participantLabel
-          );
+          return `${fieldLabel}${participantLabel} wajib diunggah`;
         }
       } else if (question.questionType === "multiple_choice_grid") {
         const matrix = value || {};
@@ -2815,7 +2813,7 @@ const validateRequired = () => {
           (row) => matrix[row] && String(matrix[row]).trim() !== "",
         );
         if (!allAnswered) {
-          return (question.label || "Grid wajib diisi") + participantLabel;
+          return `Semua baris pada ${fieldLabel}${participantLabel} wajib diisi`;
         }
       } else if (question.questionType === "checkbox_grid") {
         const matrix = value || {};
@@ -2824,31 +2822,31 @@ const validateRequired = () => {
           (row) => Array.isArray(matrix[row]) && matrix[row].length > 0,
         );
         if (!allAnswered) {
-          return (question.label || "Grid wajib diisi") + participantLabel;
+          return `Minimal pilih satu opsi per baris pada ${fieldLabel}${participantLabel}`;
         }
       }
     }
   }
 
   // 3. Validasi Pembayaran
-  if (isPaymentEnabled.value && event.value?.requireProof && !paymentSettings.value.length) {
-    return "Konfigurasi metode pembayaran belum lengkap";
+  if (isPaymentEnabled.value && event.value?.requireProof && totalAmount.value > 0 && !paymentSettings.value.length) {
+    return "Konfigurasi pembayaran belum lengkap oleh panitia";
   }
 
-  if (isPaymentEnabled.value && event.value?.requireProof && !selectedProofFile.value) {
-    return "Bukti Pembayaran / Transfer wajib diunggah";
+  if (isPaymentEnabled.value && event.value?.requireProof && totalAmount.value > 0 && !selectedProofFile.value) {
+    return "Bukti Transfer wajib diunggah";
   }
 
   // 4. Validasi Nama Peserta Rombongan
   if (isMultiTicketMode.value) {
     for (let i = 0; i < additionalNames.value.length; i++) {
       if (!additionalNames.value[i]?.trim()) {
-        return `Nama Peserta ke-${i + 2} wajib diisi`;
+        return `Nama Peserta ke-${i + 2} belum diisi`;
       }
     }
     
     if (additionalNames.value.length !== ticketQuantity.value - 1) {
-      return "Jumlah nama peserta tidak sesuai dengan jumlah tiket";
+      return "Jumlah nama peserta tidak sesuai";
     }
   }
 
@@ -2865,11 +2863,11 @@ const submitRegistration = async () => {
     return;
   }
 
-  const invalidField = validateRequired();
-  if (invalidField) {
+  const validationError = validateRequired();
+  if (validationError) {
     await showAlert(
       "Form Belum Lengkap",
-      `Field wajib belum lengkap: ${invalidField}`,
+      validationError,
       "warning",
     );
     return;
@@ -2937,7 +2935,7 @@ const submitRegistration = async () => {
       window.scrollTo(0, 0);
     }
   } catch (err) {
-    const statusMessage = err?.data?.statusMessage || "Pendaftaran gagal";
+    const statusMessage = err?.data?.statusMessage || err?.statusMessage || err?.message || "Terjadi kesalahan sistem saat mendaftar.";
     if (/perangkat ini sudah pernah mendaftar/i.test(statusMessage)) {
       isSuccess.value = true;
       clearAllRegistrationState();

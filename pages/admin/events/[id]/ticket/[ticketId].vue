@@ -51,13 +51,7 @@
 
             <div class="detail-group">
               <label>Nama Lengkap</label>
-              <input
-                v-if="isEditingInfo"
-                v-model="editForm.registrantName"
-                type="text"
-                class="form-input small"
-              />
-              <p v-else>{{ ticket.registrantName }}</p>
+              <p>{{ ticket.registrantName }}</p>
             </div>
 
             <div class="detail-group">
@@ -455,7 +449,6 @@ const isEditingInfo = ref(false);
 const isEditingForm = ref(false);
 const isSaving = ref(false);
 const editForm = ref({
-  registrantName: "",
   registrantEmail: "",
   formData: {},
 });
@@ -464,7 +457,6 @@ watch(
   ticket,
   (val) => {
     if (val) {
-      editForm.value.registrantName = val.registrantName;
       editForm.value.registrantEmail = val.registrantEmail;
       try {
         editForm.value.formData = JSON.parse(val.formData || "{}");
@@ -483,7 +475,6 @@ const handleUpdateData = async () => {
       method: "POST",
       body: {
         ticketId: ticket.value.id,
-        registrantName: editForm.value.registrantName,
         registrantEmail: editForm.value.registrantEmail,
         formData: editForm.value.formData,
       },

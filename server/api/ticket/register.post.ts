@@ -118,6 +118,7 @@ export default defineEventHandler(async (event) => {
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
         notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : []
+        const eventNominal = Number(meta?.nominal || 0)
         const promoEnabled = !!meta?.promoEnabled
         const promoMinTickets = Number(meta?.promoMinTickets ?? 2)
         const promoType = String(meta?.promoType || 'free_ticket')
@@ -154,14 +155,22 @@ export default defineEventHandler(async (event) => {
     if (registrationDeadlineEnabled && registrationDeadlineAt) {
       const deadlineDate = new Date(registrationDeadlineAt)
       if (!Number.isNaN(deadlineDate.getTime()) && Date.now() > deadlineDate.getTime()) {
-        throw createError({ statusCode: 400, statusMessage: 'Pendaftaran sudah ditutup.' })
+        const deadlineStr = deadlineDate.toLocaleString('id-ID')
+        throw createError({ 
+          statusCode: 400, 
+          statusMessage: `Pendaftaran sudah ditutup sejak ${deadlineStr}.` 
+        })
       }
     }
 
     if (evt.quota !== null) {
       const currentRegistrants = await prisma.ticket.count({ where: { eventId } })
+      const remaining = Math.max(0, evt.quota - currentRegistrants)
       if (currentRegistrants + quantity > evt.quota) {
-        throw createError({ statusCode: 400, statusMessage: 'Kuota pendaftaran tidak mencukupi untuk jumlah tiket yang diminta' })
+        throw createError({ 
+          statusCode: 400, 
+          statusMessage: `Kuota tidak mencukupi. Tersisa ${remaining} tiket, tetapi Anda meminta ${quantity} tiket.` 
+        })
       }
     }
 
@@ -170,7 +179,10 @@ export default defineEventHandler(async (event) => {
         where: { eventId, registrantEmail }
       })
       if (existingTicket) {
-        throw createError({ statusCode: 400, statusMessage: 'Email ini sudah terdaftar pada event ini.' })
+        throw createError({ 
+          statusCode: 400, 
+          statusMessage: `Email ${registrantEmail} sudah terdaftar pada event ini. Silakan gunakan email lain.` 
+        })
       }
     }
 
@@ -208,8 +220,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    if (evt.requireProof && !paymentProofFile) {
-      throw createError({ statusCode: 400, statusMessage: 'Bukti pembayaran (gambar) wajib dilampirkan' })
+    if (evt.requireProof && !paymentProofFile && eventNominal > 0) {
+      throw createError({ statusCode: 400, statusMessage: 'Bukti transfer wajib dilampirkan untuk event ini.' })
     }
 
     if (evt.requireProof && !paymentSettings.length) {
@@ -237,7 +249,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (quantity > 1 && additionalNames.length !== quantity - 1) {
-      throw createError({ statusCode: 400, statusMessage: 'Daftar nama peserta rombongan tidak lengkap' })
+      throw createError({ statusCode: 400, statusMessage: `Nama peserta tambahan belum lengkap (membutuhkan ${quantity - 1} nama).` })
     }
 
     let parsedFormData: Record<string, any> = {}
@@ -266,15 +278,15 @@ export default defineEventHandler(async (event) => {
 
             if (['short_answer', 'paragraph', 'multiple_choice', 'dropdown', 'date', 'time', 'linear_scale', 'rating'].includes(q.questionType)) {
               if (val === undefined || val === null || String(val).trim() === '') {
-                throw createError({ statusCode: 400, statusMessage: `Field wajib belum diisi: ${q.label}${pLabel}` })
+                throw createError({ statusCode: 400, statusMessage: `Field ${q.label}${pLabel} wajib diisi.` })
               }
             } else if (q.questionType === 'checkboxes') {
               if (!Array.isArray(val) || val.length === 0) {
-                throw createError({ statusCode: 400, statusMessage: `Field wajib belum diisi: ${q.label}${pLabel}` })
+                throw createError({ statusCode: 400, statusMessage: `Field ${q.label}${pLabel} wajib dipilih minimal satu.` })
               }
             } else if (q.questionType === 'file_upload') {
               if (!dynamicFiles[ansId] && !parsedFormData[ansId]?.fileName) {
-                throw createError({ statusCode: 400, statusMessage: `File wajib diunggah: ${q.label}${pLabel}` })
+                throw createError({ statusCode: 400, statusMessage: `Field ${q.label}${pLabel} wajib diunggah.` })
               }
             } else if (q.questionType === 'multiple_choice_grid' || q.questionType === 'checkbox_grid') {
               const matrix = val || {}
@@ -285,7 +297,7 @@ export default defineEventHandler(async (event) => {
                 return Array.isArray(rVal) && rVal.length > 0
               })
               if (!isAllAnswered) {
-                throw createError({ statusCode: 400, statusMessage: `Grid wajib diisi lengkap: ${q.label}${pLabel}` })
+                throw createError({ statusCode: 400, statusMessage: `Semua baris pada ${q.label}${pLabel} wajib diisi.` })
               }
             }
           }
