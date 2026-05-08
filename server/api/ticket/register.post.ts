@@ -117,6 +117,7 @@ export default defineEventHandler(async (event) => {
         registrationDeadlineAt = String(meta?.registrationDeadlineAt || '').trim()
         allowDuplicateEmail = !!meta?.allowDuplicateEmail
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
+        notifyEnabled = !!meta?.notifyEnabled
         notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : []
         const eventNominal = Number(meta?.nominal || 0)
         const promoEnabled = !!meta?.promoEnabled

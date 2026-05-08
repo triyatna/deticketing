@@ -282,15 +282,30 @@ export const sendStaffNotificationEmail = async (
 
   const html = buildEmailTemplate(`Pendaftar Baru: ${safeEventName}`, contentHtml, safeAppName, appFooterLogoUrl, "#3b82f6", "left");
 
-  await transporter.sendMail({
-    from: {
-      name: smtpFromName,
-      address: smtpFromEmail
-    },
-    to: toEmails.join(","),
-    subject: `[Notification] Pendaftar Baru: ${safeEventName}`,
-    html,
-    attachments,
-  });
+  // Send individually with delay to avoid spam filters
+  const uniqueEmails = [...new Set(toEmails.map(e => e.trim().toLowerCase()).filter(Boolean))];
+
+  for (let i = 0; i < uniqueEmails.length; i++) {
+    const recipient = uniqueEmails[i];
+    try {
+      await transporter.sendMail({
+        from: {
+          name: smtpFromName,
+          address: smtpFromEmail
+        },
+        to: recipient,
+        subject: `[Notification] Pendaftar Baru: ${safeEventName}`,
+        html,
+        attachments,
+      });
+
+      // Add delay if there are more recipients to process
+      if (i < uniqueEmails.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    } catch (err) {
+      console.error(`Gagal mengirim notifikasi staff ke ${recipient}:`, err);
+    }
+  }
 };
 
