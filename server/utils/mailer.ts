@@ -38,6 +38,15 @@ const getMailSettings = async () => {
   return settingsMap;
 };
 
+const escapeHtml = (unsafe: string) => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const getTransporter = (
   smtpHost: string,
   smtpPort: string,
@@ -57,6 +66,12 @@ const getTransporter = (
       user: smtpUser,
       pass: smtpPass,
     },
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 5000,
+    socketTimeout: 30000,
   });
 
   transporterCache = {
@@ -138,10 +153,14 @@ export const sendTicketEmail = async (
 
   const transporter = getTransporter(smtpHost, smtpPort, smtpUser, smtpPass);
 
+  const safeRegistrantName = escapeHtml(registrantName);
+  const safeEventName = escapeHtml(eventName);
+  const safeAppName = escapeHtml(appName);
+
   const contentHtml = `
-        <p style="font-size: 16px; color: #333;">Halo Kak <strong>${registrantName}</strong>!</p>
+        <p style="font-size: 16px; color: #333;">Halo Kak <strong>${safeRegistrantName}</strong>!</p>
         <p style="font-size: 16px; color: #333; line-height: 1.6;">
-          Terima kasih sudah mendaftar di <strong>${eventName}</strong>. Pembayaran Anda sudah kami konfirmasi.
+          Terima kasih sudah mendaftar di <strong>${safeEventName}</strong>. Pembayaran Anda sudah kami konfirmasi.
         </p>
         <p style="font-size: 16px; color: #333; line-height: 1.6;">
           Berikut QR Code e-ticket Anda. Silakan simpan email ini dan tunjukkan QR Code saat proses check-in.
@@ -154,14 +173,15 @@ export const sendTicketEmail = async (
         </p>
   `;
 
-  const html = buildEmailTemplate(`E-Ticket: ${eventName}`, contentHtml, appName, appFooterLogoUrl, "#3b82f6", "center");
-
-  const formattedFrom = `"${smtpFromName}" <${smtpFromEmail}>`;
+  const html = buildEmailTemplate(`E-Ticket: ${safeEventName}`, contentHtml, safeAppName, appFooterLogoUrl, "#3b82f6", "center");
 
   await transporter.sendMail({
-    from: formattedFrom,
+    from: {
+      name: smtpFromName,
+      address: smtpFromEmail
+    },
     to,
-    subject: `E-Ticket ${registrantName} untuk ${eventName} - ${appName}`,
+    subject: `E-Ticket ${safeRegistrantName} untuk ${safeEventName} - ${safeAppName}`,
     html,
     attachments: [
       {
@@ -230,23 +250,28 @@ export const sendStaffNotificationEmail = async (
     });
   }
 
+  const safeRegistrantName = escapeHtml(registrantName);
+  const safeRegistrantEmail = escapeHtml(registrantEmail);
+  const safeEventName = escapeHtml(eventName);
+  const safeAppName = escapeHtml(appName);
+
   const groupHtml = groupInfo && groupInfo.totalTickets > 1 ? `
     <div style="margin-top: 15px; padding: 15px; background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
       <p style="margin: 0 0 8px; font-size: 14px; font-weight: bold; color: #0369a1;">Pendaftaran Rombongan (${groupInfo.totalTickets} Tiket)</p>
       <p style="margin: 0 0 5px; font-size: 13px; color: #0c4a6e; font-weight: 600;">Daftar Nama:</p>
       <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #0c4a6e;">
-        ${groupInfo.allNames.map(name => `<li>${name}</li>`).join('')}
+        ${groupInfo.allNames.map(name => `<li>${escapeHtml(name)}</li>`).join('')}
       </ul>
     </div>
   ` : "";
 
   const contentHtml = `
         <p style="font-size: 16px; color: #333; line-height: 1.6;">
-          Terdapat pendaftaran baru pada event <strong>${eventName}</strong>.
+          Terdapat pendaftaran baru pada event <strong>${safeEventName}</strong>.
         </p>
         <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 20px;">
-          <p style="margin: 0 0 10px; font-size: 15px; color: #333;"><strong>Pendaftar Utama:</strong> ${registrantName}</p>
-          <p style="margin: 0; font-size: 15px; color: #333;"><strong>Email:</strong> ${registrantEmail}</p>
+          <p style="margin: 0 0 10px; font-size: 15px; color: #333;"><strong>Pendaftar Utama:</strong> ${safeRegistrantName}</p>
+          <p style="margin: 0; font-size: 15px; color: #333;"><strong>Email:</strong> ${safeRegistrantEmail}</p>
         </div>
         ${groupHtml}
         ${paymentProof ? `<p style="margin-top: 15px; font-size: 14px; color: #16a34a; font-weight: bold;">✓ Bukti pembayaran terlampir pada email ini.</p>` : ""}
@@ -255,14 +280,15 @@ export const sendStaffNotificationEmail = async (
         </div>
   `;
 
-  const html = buildEmailTemplate(`Pendaftar Baru: ${eventName}`, contentHtml, appName, appFooterLogoUrl, "#3b82f6", "left");
-
-  const formattedFrom = `"${smtpFromName}" <${smtpFromEmail}>`;
+  const html = buildEmailTemplate(`Pendaftar Baru: ${safeEventName}`, contentHtml, safeAppName, appFooterLogoUrl, "#3b82f6", "left");
 
   await transporter.sendMail({
-    from: formattedFrom,
+    from: {
+      name: smtpFromName,
+      address: smtpFromEmail
+    },
     to: toEmails.join(","),
-    subject: `[Notification] Pendaftar Baru: ${eventName}`,
+    subject: `[Notification] Pendaftar Baru: ${safeEventName}`,
     html,
     attachments,
   });

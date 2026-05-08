@@ -23,20 +23,22 @@ export default defineEventHandler(async (event) => {
         user: smtpUser,
         pass: smtpPass,
       },
-      // Timeout lebih lama untuk test
+      pool: true,
       connectionTimeout: 10000,
+      socketTimeout: 30000,
     })
 
     // Verifikasi koneksi
     await transporter.verify()
 
-    const formattedFrom = `"${smtpFromName}" <${smtpFromEmail}>`
-
     await transporter.sendMail({
-      from: formattedFrom,
+      from: {
+        name: smtpFromName,
+        address: smtpFromEmail
+      },
       to: testEmail,
       subject: `Test Koneksi SMTP Berhasil - ${appName}`,
-      html: `<p>Selamat! Konfigurasi SMTP Anda di ${appName} berjalan dengan sempurna.</p>`
+      html: `<p>Selamat! Konfigurasi SMTP Anda di <strong>${appName}</strong> berjalan dengan sempurna.</p>`
     })
 
     return {
