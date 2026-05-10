@@ -58,6 +58,7 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th>No</th>
               <th>Nama Lengkap</th>
               <th>Email</th>
               <th>Waktu Daftar</th>
@@ -68,7 +69,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="ticket in filteredTickets" :key="ticket.id">
+            <tr v-for="(ticket, index) in filteredTickets" :key="ticket.id">
+              <td>{{ index + 1 }}</td>
               <td>
                 <div class="flex flex-col">
                   <span>{{ ticket.registrantName }}</span>
@@ -218,18 +220,19 @@ const handleExport = async (type) => {
 
   // Define column order: Name, Email, Custom Fields, Date, Approval, (optional) Attendance
   const customHeaders = customFields.value.map(f => f.label);
-  const headers = ['Nama Lengkap', 'Email', ...customHeaders, 'Waktu Daftar', 'Status Approval'];
+  const headers = ['No', 'Nama Lengkap', 'Email', ...customHeaders, 'Waktu Daftar', 'Status Approval'];
   if (isEventStarted.value) {
     headers.push('Status Kehadiran');
   }
 
-  const dataToExport = filteredTickets.value.map(t => {
+  const dataToExport = filteredTickets.value.map((t, index) => {
     let parsedFormData = {};
     try {
       parsedFormData = t.formData ? JSON.parse(t.formData) : {};
     } catch { parsedFormData = {}; }
 
     const row = {};
+    row['No'] = index + 1;
     row['Nama Lengkap'] = t.registrantName;
     row['Email'] = t.registrantEmail;
     

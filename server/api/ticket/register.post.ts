@@ -98,6 +98,11 @@ export default defineEventHandler(async (event) => {
     let allowDuplicateDevice = true
     let notifyEnabled = false
     let notifyEmails: string[] = []
+    let eventNominal = 0
+    let promoEnabled = false
+    let promoMinTickets = 2
+    let promoType = 'free_ticket'
+    let promoValue = 1
     try {
       const parsedSchema = JSON.parse(evt.formSchema || '[]')
       if (Array.isArray(parsedSchema)) {
@@ -119,11 +124,11 @@ export default defineEventHandler(async (event) => {
         allowDuplicateDevice = meta?.allowDuplicateDevice !== false
         notifyEnabled = !!meta?.notifyEnabled
         notifyEmails = Array.isArray(meta?.notifyEmails) ? meta.notifyEmails : []
-        const eventNominal = Number(meta?.nominal || 0)
-        const promoEnabled = !!meta?.promoEnabled
-        const promoMinTickets = Number(meta?.promoMinTickets ?? 2)
-        const promoType = String(meta?.promoType || 'free_ticket')
-        const promoValue = Number(meta?.promoValue ?? 1)
+        eventNominal = Number(meta?.nominal || 0)
+        promoEnabled = !!meta?.promoEnabled
+        promoMinTickets = Number(meta?.promoMinTickets ?? 2)
+        promoType = String(meta?.promoType || 'free_ticket')
+        promoValue = Number(meta?.promoValue ?? 1)
         const methods: Array<Record<string, any>> = Array.isArray(meta?.paymentSettings)
           ? meta.paymentSettings as Array<Record<string, any>>
           : []
@@ -338,6 +343,33 @@ export default defineEventHandler(async (event) => {
     const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase()
     const allNames = [registrantName, ...additionalNames]
     
+    // Promo Logic for Nominal
+    const ticketNominals = new Array(allNames.length).fill(eventNominal)
+    if (promoEnabled && allNames.length >= promoMinTickets) {
+      if (promoType === 'free_ticket') {
+        const bundleSize = promoMinTickets + promoValue
+        const totalBundles = Math.floor(allNames.length / bundleSize)
+        const totalFree = totalBundles * promoValue
+        // Set last 'totalFree' tickets to 0 nominal
+        for (let i = 0; i < totalFree; i++) {
+          const idx = allNames.length - 1 - i
+          if (idx >= 0) ticketNominals[idx] = 0
+        }
+      } else if (promoType === 'discount') {
+        // Discount is usually a flat amount off the TOTAL order
+        // We'll subtract it from the first ticket(s) or distribute it
+        // User said "nominal adalah harga tiket yang dibeli", so let's distribute
+        const totalBeforeDiscount = allNames.length * eventNominal
+        const totalAfterDiscount = Math.max(0, totalBeforeDiscount - promoValue)
+        const nominalPerTicket = Math.floor(totalAfterDiscount / allNames.length)
+        const remainder = totalAfterDiscount % allNames.length
+        
+        for (let i = 0; i < allNames.length; i++) {
+          ticketNominals[i] = nominalPerTicket + (i < remainder ? 1 : 0)
+        }
+      }
+    }
+
     const ticketCreationPromises = allNames.map((name, index) => {
       const formattedName = name
         .toLowerCase()
@@ -365,7 +397,8 @@ export default defineEventHandler(async (event) => {
           registrantEmail,
           formData: JSON.stringify(ticketFormData),
           paymentProofUrl: savedFileName,
-          orderId
+          orderId,
+          nominal: ticketNominals[index]
         } as any
       })
     })

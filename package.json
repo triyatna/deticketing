@@ -12,7 +12,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "prisma:generate": "node scripts/prisma-runner.mjs generate",
-    "prisma:push": "node scripts/prisma-runner.mjs db push",
+    "prisma:push": "node scripts/prisma-runner.mjs db push && node scripts/migrate-data.mjs",
     "prisma:studio": "node scripts/prisma-runner.mjs studio",
     "postinstall": "nuxt prepare"
   },

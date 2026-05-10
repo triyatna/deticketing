@@ -119,7 +119,7 @@
               </div>
             </div>
 
-            <div v-if="parsedFormData.length" class="mt-6">
+            <div class="mt-6">
               <div class="section-header-flex">
                 <h3 class="section-title">Data Tambahan Form</h3>
                 <button
@@ -133,8 +133,9 @@
               </div>
 
               <div
-                v-for="(item, idx) in parsedFormData"
+                v-for="(item, idx) in formItemsForDisplay"
                 :key="idx"
+                v-show="isEditingForm || item.hasAnswer"
                 class="detail-group mb-3"
               >
                 <label>{{ item.question }}</label>
@@ -526,30 +527,30 @@ const parsedFormSchema = computed(() => {
   }
 });
 
-const parsedFormData = computed(() => {
-  if (!ticket.value || !ticket.value.formData) return [];
+const formItemsForDisplay = computed(() => {
+  if (!ticket.value) return [];
   try {
-    const data = JSON.parse(ticket.value.formData);
-    const result = [];
-
-    const questions = parsedFormSchema.value.filter(
+    const schema = parsedFormSchema.value.filter(
       (q) => q.itemType === "question",
     );
+    
+    let data = {};
+    try {
+      data = JSON.parse(ticket.value.formData || "{}");
+    } catch { data = {}; }
 
-    for (const q of questions) {
+    return schema.map((q) => {
       const answer = data[q.id];
-      if (answer !== undefined && answer !== null && answer !== "") {
-        if (Array.isArray(answer) && answer.length === 0) continue;
+      const hasAnswer = answer !== undefined && answer !== null && (Array.isArray(answer) ? answer.length > 0 : String(answer).trim() !== "");
 
-        result.push({
-          id: q.id,
-          question: q.label,
-          type: q.questionType === "file_upload" ? "file" : "text",
-          answer: answer,
-        });
-      }
-    }
-    return result;
+      return {
+        id: q.id,
+        question: q.label,
+        type: q.questionType === "file_upload" ? "file" : "text",
+        answer: answer,
+        hasAnswer: hasAnswer
+      };
+    });
   } catch (err) {
     return [];
   }

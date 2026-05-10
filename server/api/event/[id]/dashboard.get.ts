@@ -63,36 +63,46 @@ export default defineEventHandler(async (event) => {
         if (formMeta.paymentEnabled && formMeta.nominal) {
           isPaid = true;
           
-          // Get all approved tickets to calculate revenue per order
+          // Get all approved tickets
           const approvedTicketsList = await prisma.ticket.findMany({
             where: { eventId, status: 'APPROVED' },
-            select: { orderId: true }
+            select: { id: true, orderId: true, nominal: true } as any
           });
 
-          const orders: Record<string, number> = {};
-          approvedTicketsList.forEach(t => {
-            const oid = t.orderId || 'manual';
-            orders[oid] = (orders[oid] || 0) + 1;
-          });
+          // Separation: tickets with stored nominal vs legacy tickets
+          const modernTickets = approvedTicketsList.filter((t: any) => (t.nominal || 0) > 0);
+          const legacyTickets = approvedTicketsList.filter((t: any) => (t.nominal || 0) === 0);
 
-          const nominal = Number(formMeta.nominal);
-          const pEnabled = !!formMeta.promoEnabled;
-          const pMin = Number(formMeta.promoMinTickets || 2);
-          const pType = String(formMeta.promoType || 'free_ticket');
-          const pVal = Number(formMeta.promoValue || 1);
+          // 1. Calculate revenue from modern tickets
+          revenue = modernTickets.reduce((sum: number, t: any) => sum + Number(t.nominal || 0), 0);
 
-          for (const qty of Object.values(orders)) {
-            let orderDiscount = 0;
-            if (pEnabled) {
-              if (pType === 'free_ticket') {
-                const bundleSize = pMin + pVal;
-                const freeCount = Math.floor(qty / bundleSize) * pVal;
-                orderDiscount = freeCount * nominal;
-              } else if (pType === 'discount' && qty >= pMin) {
-                orderDiscount = pVal;
+          // 2. Calculate revenue from legacy tickets using old logic
+          if (legacyTickets.length > 0) {
+            const legacyOrders: Record<string, number> = {};
+            legacyTickets.forEach((t: any) => {
+              const oid = String(t.orderId || 'manual');
+              legacyOrders[oid] = (legacyOrders[oid] || 0) + 1;
+            });
+
+            const currentNominal = Number(formMeta.nominal);
+            const pEnabled = !!formMeta.promoEnabled;
+            const pMin = Number(formMeta.promoMinTickets || 2);
+            const pType = String(formMeta.promoType || 'free_ticket');
+            const pVal = Number(formMeta.promoValue || 1);
+
+            for (const qty of Object.values(legacyOrders)) {
+              let orderDiscount = 0;
+              if (pEnabled) {
+                if (pType === 'free_ticket') {
+                  const bundleSize = pMin + pVal;
+                  const freeCount = Math.floor(qty / bundleSize) * pVal;
+                  orderDiscount = freeCount * currentNominal;
+                } else if (pType === 'discount' && qty >= pMin) {
+                  orderDiscount = pVal;
+                }
               }
+              revenue += Math.max(0, (qty * currentNominal) - orderDiscount);
             }
-            revenue += Math.max(0, (qty * nominal) - orderDiscount);
           }
         }
         if (formMeta.eventDate) {
